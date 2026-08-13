@@ -1,0 +1,310 @@
+{
+  "schema_version": "converter-regression-corpus.v1",
+  "documents": [
+    {
+      "manifest": {
+        "doc_id": "major_20250827000423",
+        "rcept_no": "20250827000423",
+        "doc_group": "major",
+        "file_path": "raw/major/fixture/20250827000423"
+      },
+      "sources": [
+        {
+          "archive": "sources/20250827000423.xml.gz",
+          "filename": "20250827000423.xml",
+          "sha256": "5a30390552a579a22e40c9ade5e3017e66ff07d7c3a9b605d1db02e360a95184"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "major_20250324000703",
+        "rcept_no": "20250324000703",
+        "doc_group": "major",
+        "file_path": "raw/major/fixture/20250324000703"
+      },
+      "sources": [
+        {
+          "archive": "sources/20250324000703.xml.gz",
+          "filename": "20250324000703.xml",
+          "sha256": "9e7549bccd16e3c4b2d5802ab0204ebb2109cbac1587559de468282c6b923382"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "major_20230303000185",
+        "rcept_no": "20230303000185",
+        "doc_group": "major",
+        "file_path": "raw/major/fixture/20230303000185"
+      },
+      "sources": [
+        {
+          "archive": "sources/20230303000185.xml.gz",
+          "filename": "20230303000185.xml",
+          "sha256": "50c29a9199ef7580b6d72cf84c029aedc4144bbd410413702f21286b69a4d6b2"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "holding_20251031000575",
+        "rcept_no": "20251031000575",
+        "doc_group": "holding",
+        "file_path": "raw/holding/fixture/20251031000575"
+      },
+      "sources": [
+        {
+          "archive": "sources/20251031000575.xml.gz",
+          "filename": "20251031000575.xml",
+          "sha256": "f22a5b2ab30beb784ea64a1adeb780a19b930609ce986ac2424fc1e14d26f0d7"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "holding_20260311004186",
+        "rcept_no": "20260311004186",
+        "doc_group": "holding",
+        "file_path": "raw/holding/fixture/20260311004186"
+      },
+      "sources": [
+        {
+          "archive": "sources/20260311004186.xml.gz",
+          "filename": "20260311004186.xml",
+          "sha256": "c5e73c3ec315a4908c1b378820ccafaa11a96d02b45f9f7e3edc7367330d14c5"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "periodic_20250314001704",
+        "rcept_no": "20250314001704",
+        "doc_group": "periodic",
+        "file_path": "raw/periodic/fixture/20250314001704"
+      },
+      "sources": [
+        {
+          "archive": "sources/20250314001704.xml.gz",
+          "filename": "20250314001704.xml",
+          "sha256": "71f417303cb7afc7f2a3f8efcdff5d5cfe6e95532237624bf393b994227b77bd"
+        },
+        {
+          "archive": "sources/20250314001704_00760.xml.gz",
+          "filename": "20250314001704_00760.xml",
+          "sha256": "f2f3b30c329afabc640e290a595f4f08fbb388d282a43cf9d62c905aa336657c"
+        },
+        {
+          "archive": "sources/20250314001704_00761.xml.gz",
+          "filename": "20250314001704_00761.xml",
+          "sha256": "57151da868bccf5d9c2b8b46109bcddecd3f7804c995d9211654112c2d9236f5"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "periodic_20240314001585",
+        "rcept_no": "20240314001585",
+        "doc_group": "periodic",
+        "file_path": "raw/periodic/fixture/20240314001585"
+      },
+      "sources": [
+        {
+          "archive": "sources/20240314001585.xml.gz",
+          "filename": "20240314001585.xml",
+          "sha256": "872fc2d08514dd6861bdb7bbe6dc123da301c1e3a0c393147af3c9e8be9d7da7"
+        },
+        {
+          "archive": "sources/20240314001585_00760.xml.gz",
+          "filename": "20240314001585_00760.xml",
+          "sha256": "c9dc20232a3a5d3113e40a2efa0bc25a868c65e63a93685a46317636abc3f7d0"
+        },
+        {
+          "archive": "sources/20240314001585_00761.xml.gz",
+          "filename": "20240314001585_00761.xml",
+          "sha256": "11b7cca8914a0c4f9523f174305572ef228c4ef372053fb1ab22199164c87925"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "periodic_20260324000822",
+        "rcept_no": "20260324000822",
+        "doc_group": "periodic",
+        "file_path": "raw/periodic/fixture/20260324000822"
+      },
+      "sources": [
+        {
+          "archive": "sources/20260324000822.xml.gz",
+          "filename": "20260324000822.xml",
+          "sha256": "f81646927691b5d5eda7ec4ab933aa78fbcefd999f711d4f105557ba2c1e964c"
+        }
+      ]
+    },
+    {
+      "manifest": {
+        "doc_id": "periodic_20230512000974",
+        "rcept_no": "20230512000974",
+        "doc_group": "periodic",
+        "file_path": "raw/periodic/fixture/20230512000974"
+      },
+      "sources": [
+        {
+          "archive": "sources/20230512000974.xml.gz",
+          "filename": "20230512000974.xml",
+          "sha256": "786a40fe93b94a38a09454571c5399b550330a846e8dacb86f6ef05acc8f06b7"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "CVP-A01",
+      "description": "Deep, merged-value KV table in a merger filing",
+      "tags": ["A", "D"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["major_20250827000423"],
+      "section_ids": ["section:20250827000423:src0:s1"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 12, "records": 0},
+        {"op": "evidence_path_equals", "evidence_id": "evidence:20250827000423:src0:s1:e0", "path": ["table_type"], "value": "KV_TABLE"},
+        {"op": "kv_field_equals", "evidence_id": "evidence:20250827000423:src0:s1:e0", "key_paths": [["8. 합병상대회사", "대표이사", "자산총계", "부채총계", "자본총계", "기관명", "- 기업인수목적회사 소멸합병의 경우"], ["8. 합병상대회사", "대표이사", "- 기업인수목적회사 소멸합병의 경우"]], "raw_value": "-"}
+      ]
+    },
+    {
+      "case_id": "CVP-I01",
+      "description": "Nested P/SPAN remains one ordered text evidence",
+      "tags": ["I"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["major_20250827000423"],
+      "section_ids": ["section:20250827000423:src0:s1"],
+      "assertions": [
+        {"op": "text_contains", "evidence_id": "evidence:20250827000423:src0:s1:e1", "value": "기업설명회(IR)를 통해 합병 및 사업재편에 대한 배경"}
+      ]
+    },
+    {
+      "case_id": "CVP-A02",
+      "description": "Hierarchical treasury-stock contract KV table",
+      "tags": ["A"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["major_20250324000703"],
+      "section_ids": ["section:20250324000703:src0:s1"],
+      "assertions": [
+        {"op": "kv_field_equals", "evidence_id": "evidence:20250324000703:src0:s1:e0", "key_paths": [["1. 계약금액(원)", "해지 전"]], "raw_value": "40,000,000,000"}
+      ]
+    },
+    {
+      "case_id": "CVP-B01",
+      "description": "Rowspan, multi-level header, subtotal, total and layout metadata",
+      "tags": ["B", "C", "E", "F"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["major_20250324000703"],
+      "section_ids": ["section:20250324000703:src0:s1"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 3, "records": 18},
+        {"op": "table_path_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "path": ["payload", "title"], "value": "【신탁계약 해지 전 자기주식 보유현황】"},
+        {"op": "table_path_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "path": ["payload", "units"], "value": ["(단위 : 주)"]},
+        {"op": "record_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "record_index": 12, "row_type": "SUBTOTAL", "row_context": ["배당가능이익범위이내취득", "신탁계약에 의한취득", "소계(b)", "보통주식"]},
+        {"op": "record_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "record_index": 16, "row_type": "TOTAL", "values": ["총 계(a+b+c)", "총 계(a+b+c)", "총 계(a+b+c)", "보통주식", "1,691,157", "504,300", "434,200", "-", "1,761,257", "-"]}
+      ]
+    },
+    {
+      "case_id": "CVP-E01",
+      "description": "Subtotal and total classification across two R tables",
+      "tags": ["B", "E", "F"],
+      "profiles": ["full"],
+      "document_ids": ["major_20230303000185"],
+      "section_ids": ["section:20230303000185:src0:s1"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 4, "records": 29},
+        {"op": "record_equals", "table_id": "rtable:20230303000185:src0:s1:t0", "record_index": 4, "row_type": "SUBTOTAL", "values": ["1. 직전사업연도 말 현재 상법상 배당가능이익 한도", "소계(가-나-다-라)", "3,159,917,955,646"]},
+        {"op": "record_equals", "table_id": "rtable:20230303000185:src0:s1:t1", "record_index": 16, "row_type": "TOTAL"}
+      ]
+    },
+    {
+      "case_id": "CVP-C01",
+      "description": "Compact R table with merged multi-level headers",
+      "tags": ["B", "C", "D"],
+      "profiles": ["full"],
+      "document_ids": ["holding_20251031000575"],
+      "section_ids": ["section:20251031000575:src0:s7"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 1, "records": 3},
+        {"op": "record_equals", "table_id": "rtable:20251031000575:src0:s7:t0", "record_index": 0, "row_context": ["직전보고서"], "values": ["직전보고서", "2025년 10월 22일", "삼성물산", "15", "1,192,291,568", "20.14", "1,192,291,568", "20.14", "5,919,637,922"]}
+      ]
+    },
+    {
+      "case_id": "CVP-G01",
+      "description": "Large mixed financial-notes section",
+      "tags": ["G"],
+      "profiles": ["full"],
+      "document_ids": ["periodic_20250314001704"],
+      "section_ids": ["section:20250314001704:src2:s3"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 1012, "records": 5214},
+        {"op": "text_contains", "evidence_id": "evidence:20250314001704:src2:s3:e0", "value": "주식회사 KB금융지주"},
+        {"op": "record_equals", "table_id": "rtable:20250314001704:src2:s3:t0", "record_index": 0, "values": ["순이자이익", "12,141,717", "12,180,860", "39,143"]}
+      ]
+    },
+    {
+      "case_id": "CVP-J01",
+      "description": "Near-duplicate src0/src2 notes with a meaningful K-ICS difference",
+      "tags": ["J"],
+      "profiles": ["full"],
+      "document_ids": ["periodic_20250314001704"],
+      "section_ids": ["section:20250314001704:src0:s17", "section:20250314001704:src2:s3"],
+      "assertions": [
+        {"op": "pair_relation", "left_section_id": "section:20250314001704:src0:s17", "right_section_id": "section:20250314001704:src2:s3", "relation": "SEMANTIC_NOT_EQUAL"}
+      ]
+    },
+    {
+      "case_id": "CVP-J02",
+      "description": "src0/src2 notes differing only in insignificant spacing",
+      "tags": ["J"],
+      "profiles": ["full"],
+      "document_ids": ["periodic_20240314001585"],
+      "section_ids": ["section:20240314001585:src0:s17", "section:20240314001585:src2:s3"],
+      "assertions": [
+        {"op": "pair_relation", "left_section_id": "section:20240314001585:src0:s17", "right_section_id": "section:20240314001585:src2:s3", "relation": "SEMANTIC_EQUAL"}
+      ]
+    },
+    {
+      "case_id": "CVP-H01",
+      "description": "A 7,592-row R table remains one evidence plus external records",
+      "tags": ["H"],
+      "profiles": ["full"],
+      "document_ids": ["holding_20260311004186"],
+      "section_ids": ["section:20260311004186:src0:s17"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 1, "records": 7592},
+        {"op": "table_path_equals", "table_id": "rtable:20260311004186:src0:s17:t0", "path": ["payload", "record_count"], "value": 7592},
+        {"op": "record_equals", "table_id": "rtable:20260311004186:src0:s17:t0", "record_index": 0, "values": ["BlackRockFundAdvisors", "IARD/CRD105247", "2021.02.27", "기타(-)", "의결권있는 주식", "11,099,880", "-664,499", "10,435,381", "-", "-", "주1)"]},
+        {"op": "record_equals", "table_id": "rtable:20260311004186:src0:s17:t0", "record_index": 7591, "values": ["SpiderRockAdvisors, LLC", "CRD 171992", "2026.02.03", "장외매도(-)", "증권예탁증권", "739", "-59", "680", "94", "( )", "주2)"]}
+      ]
+    },
+    {
+      "case_id": "CVP-F01",
+      "description": "Navigation link text must not become an R-table title",
+      "tags": ["F"],
+      "profiles": ["full"],
+      "document_ids": ["periodic_20260324000822"],
+      "section_ids": ["section:20260324000822:src0:s46"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 1, "records": 347},
+        {"op": "table_title_not_navigation", "table_id": "rtable:20260324000822:src0:s46:t0"}
+      ]
+    },
+    {
+      "case_id": "CVP-REF01",
+      "description": "Inline DART disclosure link is preserved as an Evidence reference",
+      "tags": ["REFERENCE"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["periodic_20230512000974"],
+      "section_ids": ["section:20230512000974:src0:s49"],
+      "assertions": [
+        {"op": "section_counts", "evidence": 1, "records": 0},
+        {"op": "evidence_path_equals", "evidence_id": "evidence:20230512000974:src0:s49:e0", "path": ["references"], "value": [{"type": "disclosure", "refno": "20230309000420", "text": "2022년도 사업보고서"}]}
+      ]
+    }
+  ]
+}

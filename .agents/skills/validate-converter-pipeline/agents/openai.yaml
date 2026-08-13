@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate Converter Pipeline"
+  short_description: "DART 변환 파이프라인 고정 회귀 코퍼스 검증"
+  default_prompt: "Use $validate-converter-pipeline to run the fixed DART converter regression suite and explain any failures."

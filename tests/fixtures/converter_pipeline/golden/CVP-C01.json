@@ -1,0 +1,187 @@
+{
+  "schema_version": "converter-regression-golden.v1",
+  "case_id": "CVP-C01",
+  "tags": [
+    "B",
+    "C",
+    "D"
+  ],
+  "normalizer_version": "v1",
+  "source_sha256": [
+    "f22a5b2ab30beb784ea64a1adeb780a19b930609ce986ac2424fc1e14d26f0d7"
+  ],
+  "sections": [
+    {
+      "section_id": "section:20251031000575:src0:s7",
+      "summary": {
+        "evidence_count": 1,
+        "record_count": 3,
+        "type_counts": [
+          {
+            "evidence_type": "TABLE",
+            "table_type": "R_TABLE",
+            "count": 1
+          }
+        ],
+        "normalized_sha256": "674b5e021ebb81d0f0486a1d336f3152d8b22296db95fc435b6384cbaaa72b96",
+        "semantic_sha256": "674b5e021ebb81d0f0486a1d336f3152d8b22296db95fc435b6384cbaaa72b96"
+      },
+      "evidence_list": [
+        {
+          "evidence_type": "TABLE",
+          "order": 0,
+          "payload": {
+            "headers": [
+              [],
+              [
+                "보고서작성기준일"
+              ],
+              [
+                "보고자",
+                "본인 성명"
+              ],
+              [
+                "보고자",
+                "특별관계자수"
+              ],
+              [
+                "주식등",
+                "주식등의 수(주)"
+              ],
+              [
+                "주식등",
+                "비율(%)"
+              ],
+              [
+                "주권",
+                "주식수(주)"
+              ],
+              [
+                "주권",
+                "비율(%)"
+              ],
+              [
+                "의결권 있는 발행주식총수(주)"
+              ]
+            ],
+            "record_count": 3
+          },
+          "table_type": "R_TABLE",
+          "storage_mode": "SECTION_RECORDS"
+        }
+      ],
+      "record_probes": [
+        {
+          "record_index": 0,
+          "row_type": "DATA",
+          "row_context": [
+            "직전보고서"
+          ],
+          "values": [
+            "직전보고서",
+            "2025년 10월 22일",
+            "삼성물산",
+            "15",
+            "1,192,291,568",
+            "20.14",
+            "1,192,291,568",
+            "20.14",
+            "5,919,637,922"
+          ]
+        },
+        {
+          "record_index": 1,
+          "row_type": "DATA",
+          "row_context": [
+            "이번보고서"
+          ],
+          "values": [
+            "이번보고서",
+            "2025년 10월 29일",
+            "삼성물산",
+            "15",
+            "1,192,239,547",
+            "20.14",
+            "1,192,239,547",
+            "20.14",
+            "5,919,637,922"
+          ]
+        },
+        {
+          "record_index": 2,
+          "row_type": "DATA",
+          "row_context": [
+            "증 감"
+          ],
+          "values": [
+            "증 감",
+            "증 감",
+            "증 감",
+            "증 감",
+            "-52,021",
+            "-0.00",
+            "-52,021",
+            "-0.00",
+            "0"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "record_index": 0,
+          "row_type": "DATA",
+          "row_context": [
+            "직전보고서"
+          ],
+          "values": [
+            "직전보고서",
+            "2025년 10월 22일",
+            "삼성물산",
+            "15",
+            "1,192,291,568",
+            "20.14",
+            "1,192,291,568",
+            "20.14",
+            "5,919,637,922"
+          ]
+        },
+        {
+          "record_index": 1,
+          "row_type": "DATA",
+          "row_context": [
+            "이번보고서"
+          ],
+          "values": [
+            "이번보고서",
+            "2025년 10월 29일",
+            "삼성물산",
+            "15",
+            "1,192,239,547",
+            "20.14",
+            "1,192,239,547",
+            "20.14",
+            "5,919,637,922"
+          ]
+        },
+        {
+          "record_index": 2,
+          "row_type": "DATA",
+          "row_context": [
+            "증 감"
+          ],
+          "values": [
+            "증 감",
+            "증 감",
+            "증 감",
+            "증 감",
+            "-52,021",
+            "-0.00",
+            "-52,021",
+            "-0.00",
+            "0"
+          ]
+        }
+      ]
+    }
+  ]
+}

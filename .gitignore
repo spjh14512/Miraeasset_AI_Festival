@@ -20,6 +20,7 @@ wheels/
 
 # Test, coverage, lint, and type-checker caches
 .pytest_cache/
+.pytest_tmp/
 .coverage
 .coverage.*
 htmlcov/
