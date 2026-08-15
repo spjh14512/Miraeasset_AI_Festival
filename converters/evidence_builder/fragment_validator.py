@@ -157,12 +157,40 @@ def validate_fragment(
         payload = evidence.get("payload")
         if not isinstance(payload, Mapping) or not payload:
             errors.append(f"payload:{order}")
+        if isinstance(payload, Mapping) and "heading_path" in payload:
+            heading_path = payload.get("heading_path")
+            if (
+                not isinstance(heading_path, list)
+                or not heading_path
+                or not all(
+                    isinstance(value, str) and value.strip()
+                    for value in heading_path
+                )
+            ):
+                errors.append(f"heading_path:{order}")
         if evidence_type == "TEXT":
             if not set(evidence).issubset(required | {"references"}):
                 errors.append(f"text_fields:{order}")
             if not isinstance(payload, Mapping) or not str(payload.get("text", "")).strip():
                 errors.append(f"text_payload:{order}")
+            elif set(payload) - {"text", "text_role", "heading_path"}:
+                errors.append(f"text_payload_fields:{order}")
+            if isinstance(payload, Mapping) and payload.get("text_role") not in {
+                None,
+                "BODY",
+                "NOTE",
+                "REFERENCE_NOTICE",
+            }:
+                errors.append(f"text_role:{order}")
         else:
+            if isinstance(payload, Mapping):
+                caption = payload.get("caption")
+                if caption is not None and (
+                    not isinstance(caption, str) or not caption.strip()
+                ):
+                    errors.append(f"caption:{order}")
+                if "text_role" in payload:
+                    errors.append(f"table_text_role:{order}")
             table_type = evidence.get("table_type")
             if table_type not in {"KV_TABLE", "R_TABLE"}:
                 errors.append(f"table_type:{order}")

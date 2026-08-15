@@ -18,6 +18,11 @@ from converters.evidence_builder.fragment_models import (
     FragmentEvidence,
     StorageMode,
 )
+from converters.evidence_builder.semantic_text_segmenter import (
+    SemanticTextRole,
+    SemanticTextSegment,
+    segment_paragraph,
+)
 from converters.paragraph_parser.paragraph_models import (
     CanonicalParagraph,
     ParagraphParseStatus,
@@ -68,6 +73,13 @@ class _ParsedBlock:
     primary_source_refs: tuple[SourceRef, ...]
     source_block_order: int
     table_subindex: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _SemanticBlock:
+    parsed_block_index: int
+    parsed: _ParsedBlock
+    segment: SemanticTextSegment | None = None
 
 
 def _clean_text(value: str) -> str:
@@ -292,6 +304,116 @@ def _semantic_json(value: Any) -> str:
     )
 
 
+def _with_semantic_context(
+    payload: Mapping[str, Any],
+    *,
+    heading_path: Sequence[str],
+    captions: Sequence[str] = (),
+) -> dict[str, Any]:
+    result = dict(payload)
+    if heading_path:
+        result["heading_path"] = list(heading_path)
+    if captions:
+        result["caption"] = "\n".join(captions)
+    return result
+
+
+def _semantic_blocks(
+    parsed: Sequence[_ParsedBlock],
+    *,
+    consumed_refs: set[SourceRef],
+) -> list[_SemanticBlock]:
+    result: list[_SemanticBlock] = []
+    for block_index, item in enumerate(parsed):
+        if isinstance(item.value, CanonicalParagraph):
+            if any(ref in consumed_refs for ref in item.value.source_refs):
+                continue
+            result.extend(
+                _SemanticBlock(
+                    parsed_block_index=block_index,
+                    parsed=item,
+                    segment=segment,
+                )
+                for segment in segment_paragraph(item.value)
+            )
+            continue
+        result.append(
+            _SemanticBlock(
+                parsed_block_index=block_index,
+                parsed=item,
+            )
+        )
+    return result
+
+
+def _captions_by_table(
+    blocks: Sequence[_SemanticBlock],
+) -> tuple[dict[int, tuple[SemanticTextSegment, ...]], set[int]]:
+    captions: dict[int, tuple[SemanticTextSegment, ...]] = {}
+    consumed: set[int] = set()
+    for index, block in enumerate(blocks):
+        value = block.parsed.value
+        if (
+            isinstance(value, CanonicalParagraph)
+            or value.table_type in {TableType.LAYOUT_TABLE, TableType.UNKNOWN}
+        ):
+            continue
+        candidates: list[SemanticTextSegment] = []
+        cursor = index - 1
+        while cursor >= 0:
+            candidate_block = blocks[cursor]
+            candidate = candidate_block.segment
+            if candidate is None:
+                candidate_value = candidate_block.parsed.value
+                if (
+                    isinstance(candidate_value, CanonicalTable)
+                    and (
+                        candidate_value.table_type == TableType.LAYOUT_TABLE
+                        or (
+                            candidate_value.table_type == TableType.UNKNOWN
+                            and _fallback_unknown(candidate_value) is None
+                        )
+                    )
+                ):
+                    cursor -= 1
+                    continue
+                break
+            if candidate.role != SemanticTextRole.TABLE_CAPTION:
+                break
+            candidates.append(candidate)
+            consumed.add(cursor)
+            cursor -= 1
+        if candidates:
+            resolved = tuple(reversed(candidates))
+            captions[index] = resolved
+            cursor = index + 1
+            while cursor < len(blocks):
+                following = blocks[cursor]
+                following_value = following.parsed.value
+                if following.segment is not None:
+                    break
+                if not isinstance(following_value, CanonicalTable):
+                    break
+                if (
+                    following_value.table_type == TableType.LAYOUT_TABLE
+                    or (
+                        following_value.table_type == TableType.UNKNOWN
+                        and _fallback_unknown(following_value) is None
+                    )
+                ):
+                    cursor += 1
+                    continue
+                if following_value.table_type in {
+                    TableType.KV_TABLE,
+                    TableType.R_TABLE,
+                }:
+                    captions.setdefault(cursor, resolved)
+                    cursor += 1
+                    continue
+                break
+    return captions, consumed
+
+
 def _parse_blocks(
     section: CanonicalSection,
     *,
@@ -448,6 +570,10 @@ def build_section_fragment(
     r_table_index = 0
     stats = {
         "TEXT": 0,
+        "TEXT_SEGMENT": 0,
+        "TEXT_HEADING_CONTEXT": 0,
+        "TEXT_TABLE_CAPTION_CONTEXT": 0,
+        "TEXT_REFERENCE_NOTICE": 0,
         "KV_TABLE": 0,
         "R_TABLE": 0,
         "R_TABLE_RECORD": 0,
@@ -483,20 +609,81 @@ def build_section_fragment(
             )
         )
 
-    for block_index, item in enumerate(parsed):
-        value = item.value
-        if isinstance(value, CanonicalParagraph):
-            if any(ref in consumed_refs for ref in value.source_refs):
+    semantic_blocks = _semantic_blocks(parsed, consumed_refs=consumed_refs)
+    captions_by_table, consumed_caption_indexes = _captions_by_table(semantic_blocks)
+    stats["TEXT_SEGMENT"] = sum(
+        block.segment is not None for block in semantic_blocks
+    )
+    heading_stack: list[tuple[int, str]] = []
+
+    def current_heading_path() -> tuple[str, ...]:
+        return tuple(text for _, text in heading_stack)
+
+    def update_heading(segment: SemanticTextSegment) -> None:
+        level = segment.heading_level or 4
+        while heading_stack and heading_stack[-1][0] >= level:
+            heading_stack.pop()
+        heading_stack.append((level, segment.text))
+
+    def heading_has_target(index: int) -> bool:
+        for later in semantic_blocks[index + 1 :]:
+            if later.segment is not None:
+                if later.segment.role != SemanticTextRole.HEADING:
+                    return True
                 continue
-            text = _clean_text(value.text)
+            later_value = later.parsed.value
+            if (
+                isinstance(later_value, CanonicalTable)
+                and later_value.table_type != TableType.LAYOUT_TABLE
+            ):
+                return True
+        return False
+
+    for semantic_index, semantic_block in enumerate(semantic_blocks):
+        item = semantic_block.parsed
+        value = item.value
+        segment = semantic_block.segment
+        if segment is not None:
+            text = _clean_text(segment.text)
             if not text or _NAVIGATION_TEXT.search(text):
                 stats["LAYOUT_SKIPPED"] += 1
                 continue
-            paragraph_references = _paragraph_references(value)
+            if semantic_index in consumed_caption_indexes:
+                stats["TEXT_TABLE_CAPTION_CONTEXT"] += 1
+                previous_text = None
+                continue
+            if (
+                segment.role == SemanticTextRole.HEADING
+                and heading_has_target(semantic_index)
+            ):
+                update_heading(segment)
+                stats["TEXT_HEADING_CONTEXT"] += 1
+                previous_text = None
+                continue
+            output_role = (
+                segment.role
+                if segment.role
+                in {
+                    SemanticTextRole.BODY,
+                    SemanticTextRole.NOTE,
+                    SemanticTextRole.REFERENCE_NOTICE,
+                }
+                else SemanticTextRole.BODY
+            )
+            payload: dict[str, Any] = {
+                "text": text,
+                "text_role": output_role.value,
+            }
+            if current_heading_path():
+                payload["heading_path"] = list(current_heading_path())
+            segment_references = _unique_references(segment.references)
             normalized = _semantic_json(
                 {
-                    "text": text.casefold(),
-                    "references": paragraph_references,
+                    "payload": {
+                        **payload,
+                        "text": text.casefold(),
+                    },
+                    "references": segment_references,
                 }
             )
             if normalized == previous_text:
@@ -504,10 +691,12 @@ def build_section_fragment(
                 continue
             append_evidence(
                 EvidenceType.TEXT,
-                {"text": text},
-                references=paragraph_references,
+                payload,
+                references=segment_references,
             )
             stats["TEXT"] += 1
+            if output_role == SemanticTextRole.REFERENCE_NOTICE:
+                stats["TEXT_REFERENCE_NOTICE"] += 1
             previous_text = normalized
             continue
 
@@ -516,15 +705,24 @@ def build_section_fragment(
             stats["LAYOUT_SKIPPED"] += 1
             continue
 
-        bundle = bundles.get(block_index)
+        bundle = bundles.get(semantic_block.parsed_block_index)
         table = bundle.table if bundle is not None else value
-        table_references = _unique_references(tuple(
-            reference
-            for source_ref in (
-                bundle.consumed_source_refs if bundle is not None else ()
+        caption_segments = captions_by_table.get(semantic_index, ())
+        caption_texts = tuple(segment.text for segment in caption_segments)
+        table_references = _unique_references(
+            tuple(
+                reference
+                for source_ref in (
+                    bundle.consumed_source_refs if bundle is not None else ()
+                )
+                for reference in paragraph_references_by_ref.get(source_ref, ())
             )
-            for reference in paragraph_references_by_ref.get(source_ref, ())
-        ))
+            + tuple(
+                reference
+                for caption_segment in caption_segments
+                for reference in caption_segment.references
+            )
+        )
         if table.table_type == TableType.UNKNOWN:
             fallback = _fallback_unknown(table)
             if fallback is None:
@@ -542,9 +740,19 @@ def build_section_fragment(
             )
             if fallback_type == "TEXT":
                 text = str(fallback_payload["text"])
+                fallback_payload = _with_semantic_context(
+                    {
+                        **fallback_payload,
+                        "text_role": SemanticTextRole.BODY.value,
+                    },
+                    heading_path=current_heading_path(),
+                )
                 normalized = _semantic_json(
                     {
-                        "text": text.casefold(),
+                        "payload": {
+                            **fallback_payload,
+                            "text": text.casefold(),
+                        },
                         "references": table_references,
                     }
                 )
@@ -562,10 +770,16 @@ def build_section_fragment(
                 continue
             previous_text = None
             if fallback_type == "KV_TABLE":
+                signature_payload = dict(fallback_payload)
+                fallback_payload = _with_semantic_context(
+                    fallback_payload,
+                    heading_path=current_heading_path(),
+                    captions=caption_texts,
+                )
                 signature = _semantic_json(
                     {
                         "table_type": fallback_type,
-                        "payload": fallback_payload,
+                        "payload": signature_payload,
                         "references": table_references,
                     }
                 )
@@ -600,7 +814,11 @@ def build_section_fragment(
                 f"rtable:{rcept_no}:src{source_index}:{section.id}:"
                 f"t{current_table_index}"
             )
-            payload = _context_payload(table)
+            payload = _with_semantic_context(
+                _context_payload(table),
+                heading_path=current_heading_path(),
+                captions=caption_texts,
+            )
             payload.update(
                 {
                     "table_id": table_id,
@@ -637,11 +855,16 @@ def build_section_fragment(
             continue
 
         if table.table_type == TableType.KV_TABLE:
-            payload = _kv_payload(table)
+            signature_payload = _kv_payload(table)
+            payload = _with_semantic_context(
+                signature_payload,
+                heading_path=current_heading_path(),
+                captions=caption_texts,
+            )
             signature = _semantic_json(
                 {
                     "table_type": TableType.KV_TABLE.value,
-                    "payload": payload,
+                    "payload": signature_payload,
                     "references": table_references,
                 }
             )
@@ -680,7 +903,11 @@ def build_section_fragment(
             f"rtable:{rcept_no}:src{source_index}:{section.id}:"
             f"t{current_table_index}"
         )
-        payload = _context_payload(table)
+        payload = _with_semantic_context(
+            _context_payload(table),
+            heading_path=current_heading_path(),
+            captions=caption_texts,
+        )
         payload.update(
             {
                 "table_id": table_id,

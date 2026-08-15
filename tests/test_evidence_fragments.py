@@ -58,7 +58,8 @@ def test_section_fragment_has_minimal_top_level_and_r_table_records():
         "evidence:20250101000001:src0:s0:e1",
     ]
     assert fragment["evidence_list"][0]["payload"] == {
-        "text": "의미 있는 설명"
+        "text": "의미 있는 설명",
+        "text_role": "BODY",
     }
     table = fragment["evidence_list"][1]
     assert table["storage_mode"] == "SECTION_RECORDS"
@@ -154,6 +155,7 @@ def test_text_evidence_preserves_disclosure_reference_but_not_internal_link():
     assert evidence["payload"]["text"] == (
         "※ 관련 내용은 2022년도 사업보고서를 참고하시기 바랍니다. 본문 위치"
     )
+    assert evidence["payload"]["text_role"] == "REFERENCE_NOTICE"
     assert evidence["references"] == [
         {
             "type": "disclosure",
@@ -329,11 +331,50 @@ def test_unclassified_non_layout_table_is_preserved_as_text_fallback():
             "evidence_type": "TEXT",
             "order": 0,
             "payload": {
-                "text": "첫 번째 설명\n두 번째 설명\n세 번째 설명"
+                "text": "첫 번째 설명\n두 번째 설명\n세 번째 설명",
+                "text_role": "BODY",
             },
         }
     ]
     assert result["stats"]["UNKNOWN_FALLBACK_TEXT"] == 1
+    assert validate_fragment(fragment) == []
+
+
+def test_local_heading_and_table_leadin_become_table_context_not_text_evidence():
+    xml = """<DOCUMENT><SECTION-1><TITLE>3. 연결재무제표 주석</TITLE>
+    <P><SPAN USERMARK=" B">17. 차입금</SPAN></P>
+    <P>가. 당분기말 및 전기말 현재 차입금의 내역은 다음과 같습니다.</P>
+    <TABLE><TR><TD>(단위 : 백만원)</TD></TR></TABLE>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>당분기말</TH><TH>전기말</TH></TR></THEAD>
+      <TBODY><TR><TD>단기차입금</TD><TD>10</TD><TD>20</TD></TR></TBODY>
+    </TABLE>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>당분기</TH><TH>전분기</TH></TR></THEAD>
+      <TBODY><TR><TD>이자비용</TD><TD>1</TD><TD>2</TD></TR></TBODY>
+    </TABLE></SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    fragment = result["fragments"][0]
+    assert len(fragment["evidence_list"]) == 2
+    tables = fragment["evidence_list"]
+    assert all(table["evidence_type"] == "TABLE" for table in tables)
+    assert all(
+        table["payload"]["heading_path"] == ["17. 차입금"] for table in tables
+    )
+    assert all(
+        table["payload"]["caption"]
+        == "가. 당분기말 및 전기말 현재 차입금의 내역은 다음과 같습니다."
+        for table in tables
+    )
+    assert result["stats"]["TEXT_HEADING_CONTEXT"] == 1
+    assert result["stats"]["TEXT_TABLE_CAPTION_CONTEXT"] == 1
     assert validate_fragment(fragment) == []
 
 

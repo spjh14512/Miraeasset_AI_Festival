@@ -201,7 +201,7 @@
       "document_ids": ["major_20250324000703"],
       "section_ids": ["section:20250324000703:src0:s1"],
       "assertions": [
-        {"op": "section_counts", "evidence": 3, "records": 18},
+        {"op": "section_counts", "evidence": 4, "records": 18},
         {"op": "table_path_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "path": ["payload", "title"], "value": "【신탁계약 해지 전 자기주식 보유현황】"},
         {"op": "table_path_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "path": ["payload", "units"], "value": ["(단위 : 주)"]},
         {"op": "record_equals", "table_id": "rtable:20250324000703:src0:s1:t0", "record_index": 12, "row_type": "SUBTOTAL", "row_context": ["배당가능이익범위이내취득", "신탁계약에 의한취득", "소계(b)", "보통주식"]},
@@ -216,7 +216,7 @@
       "document_ids": ["major_20230303000185"],
       "section_ids": ["section:20230303000185:src0:s1"],
       "assertions": [
-        {"op": "section_counts", "evidence": 4, "records": 29},
+        {"op": "section_counts", "evidence": 3, "records": 29},
         {"op": "record_equals", "table_id": "rtable:20230303000185:src0:s1:t0", "record_index": 4, "row_type": "SUBTOTAL", "values": ["1. 직전사업연도 말 현재 상법상 배당가능이익 한도", "소계(가-나-다-라)", "3,159,917,955,646"]},
         {"op": "record_equals", "table_id": "rtable:20230303000185:src0:s1:t1", "record_index": 16, "row_type": "TOTAL"}
       ]
@@ -241,8 +241,8 @@
       "document_ids": ["periodic_20250314001704"],
       "section_ids": ["section:20250314001704:src2:s3"],
       "assertions": [
-        {"op": "section_counts", "evidence": 1012, "records": 5214},
-        {"op": "text_contains", "evidence_id": "evidence:20250314001704:src2:s3:e0", "value": "주식회사 KB금융지주"},
+        {"op": "section_counts", "evidence": 908, "records": 5214},
+        {"op": "evidence_path_equals", "evidence_id": "evidence:20250314001704:src2:s3:e0", "path": ["payload", "heading_path"], "value": ["1. 지배기업의 개요 및 보고주체 : 주식회사 KB금융지주(이하 \""]},
         {"op": "record_equals", "table_id": "rtable:20250314001704:src2:s3:t0", "record_index": 0, "values": ["순이자이익", "12,141,717", "12,180,860", "39,143"]}
       ]
     },
@@ -304,6 +304,29 @@
       "assertions": [
         {"op": "section_counts", "evidence": 1, "records": 0},
         {"op": "evidence_path_equals", "evidence_id": "evidence:20230512000974:src0:s49:e0", "path": ["references"], "value": [{"type": "disclosure", "refno": "20230309000420", "text": "2022년도 사업보고서"}]}
+      ]
+    },
+    {
+      "case_id": "CVP-TEXT01",
+      "description": "Inline headings, quoted filing section names, and table lead-ins become semantic context",
+      "tags": ["TEXT", "CAPTION"],
+      "profiles": ["quick", "full"],
+      "document_ids": ["periodic_20230512000974"],
+      "section_ids": [
+        "section:20230512000974:src0:s15",
+        "section:20230512000974:src0:s19",
+        "section:20230512000974:src0:s26"
+      ],
+      "assertions": [
+        {"op": "section_counts", "section_id": "section:20230512000974:src0:s15", "evidence": 23, "records": 19},
+        {"op": "section_counts", "section_id": "section:20230512000974:src0:s19", "evidence": 149, "records": 748},
+        {"op": "section_counts", "section_id": "section:20230512000974:src0:s26", "evidence": 32, "records": 124},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "path": ["payload", "heading_path"], "value": ["(3) 신규사업의 내용과 전망", "[지배회사의 내용]"]},
+        {"op": "text_contains", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "value": "1.공시내용 진행 및 변경상황'을 참고하시기 바랍니다."},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e49", "path": ["payload", "heading_path"], "value": ["13. 리스"]},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e49", "path": ["payload", "caption"], "value": "가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e50", "path": ["payload", "caption"], "value": "가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s26", "evidence_id": "evidence:20230512000974:src0:s26:e0", "path": ["payload"], "value": {"text": "해당사항 없습니다.", "text_role": "BODY", "heading_path": ["(1) 재무제표 재작성 등 유의사항", "1) 재무제표 재작성"]}}
       ]
     }
   ]

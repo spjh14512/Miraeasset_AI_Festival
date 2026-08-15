@@ -13,6 +13,8 @@
 | `paragraph_parser` | 본문의 `P`와 독립 `SPAN` 묶음을 문단으로 변환 | 구현됨 |
 | `table_parser` | DART 공시의 `TABLE` 구조화 | 구현됨 |
 | `table_context_resolver` | 표와 인접한 제목·단위·캡션·주석 연결 | 구현됨 |
+| `evidence_builder` | section 단위 Evidence Fragment와 R-table record 생성 | 구현됨 |
+| `regression_validation` | 고정 공시 코퍼스의 구조·의미·snapshot 검증 | 구현됨 |
 
 ## `correction_extractor`
 
@@ -127,7 +129,7 @@ XML에서는 `//CORRECTION[1]`을 제외 경로로 반환한다. 거래소 HTML�
 | `CorrectionExtraction` | 추출 상태, 메타데이터, 제외 범위, 이슈를 묶은 결과 |
 
 `correction_blocks`는 정정 전·후 표의 내용을 별도 형식으로 복제하지 않는다. 이후
-`table_parser`, `paragraph_parser`가 원본 참조를 이용해 canonical evidence로
+`table_parser`, `paragraph_parser`가 원본 참조를 이용해 Evidence Fragment로
 변환할 수 있도록 블록 종류, 순서, 위치만 보존한다.
 
 ### 상태와 이슈
@@ -395,7 +397,7 @@ resolver의 `consumed_source_refs`를 이용해 독립 evidence로 다시 출력
 - 번호처럼 보이는 문장 하나만으로는 section을 만들지 않는다.
 - 한 셀 제목 표가 `TABLE-GROUP` 안에 있으면 section 제목이 아니라 table context다.
 - synthetic root의 제목이 없으면 `title`과 `section_path`를 비워 둔다.
-- block parser 실행과 markdown 렌더링은 chunker의 책임이 아니다.
+- block parser 실행과 Evidence 조립은 chunker의 책임이 아니다.
 
 ## DART `paragraph_parser`
 
@@ -449,7 +451,7 @@ paragraph parser와 table parser는 모두 `EvidenceContext`를 받아 같은 `c
 | `blocks` | 역할, 앞뒤 위치, 텍스트, 원본 참조를 가진 문맥 블록 목록 |
 
 문맥 블록의 `role`은 `TITLE`, `UNIT`, `CAPTION`, `NOTE`, `position`은 `BEFORE`,
-`AFTER` 중 하나다. `source_ref`도 함께 저장하므로 markdown에 포함된 문맥을 원문에서
+`AFTER` 중 하나다. `source_ref`도 함께 저장하므로 후속 Evidence의 문맥을 원문에서
 다시 찾을 수 있다. `block_title`, `units`, `captions`, `notes`는 중복 저장하지 않고
 `blocks`에서 계산하는 Python property로만 제공한다.
 
@@ -1280,27 +1282,30 @@ uv run pytest -q
 
 ## `evidence_builder`
 
-`converters/evidence_builder`는 graph-facing `data/canonical_section`과 원문을
-다시 대조하여 section 하나당 canonical Evidence Fragment JSON 하나를 생성한다.
-경량화된 canonical section에는 block ref가 없으므로 원문을 동일한 section chunker로
-재분할하고 graph projection이 저장된 section 목록과 완전히 일치할 때만 생성한다.
+`converters/evidence_builder`는 `data/canonical_section`과 원문을 다시 대조해
+section 하나당 Evidence Fragment JSON 하나를 생성한다. 원문을 동일한 chunker로
+재분할한 결과가 저장된 graph section 목록과 일치할 때만 산출물을 쓴다.
 
 ### Evidence 생성 규칙
 
 | 입력 | 최종 Evidence |
 |---|---|
-| `P`, `SPAN_RUN` | paragraph 하나당 `TEXT` 하나 |
-| `KV_TABLE` | table 전체를 `TABLE` 하나 |
-| 모든 `R_TABLE` | table metadata Evidence 하나, row는 최상위 `records`에 저장 |
-| `UNKNOWN` | layout이면 제외하고, 나머지는 허용된 TEXT/KV/R schema로 보존 |
-| `LAYOUT_TABLE` | 독립 Evidence를 만들지 않고 인접 table의 제목·단위·주석으로 사용 |
+| `P`, `SPAN_RUN` | 의미 단위 `TEXT`; heading과 표 설명문은 문맥으로 전파 |
+| `KV_TABLE` | table 전체를 Evidence 하나로 저장 |
+| `R_TABLE` | table metadata는 Evidence, 모든 row는 최상위 `records`에 저장 |
+| `UNKNOWN` | layout이면 제외하고 나머지는 TEXT/KV/R 중 가까운 구조로 보존 |
+| `LAYOUT_TABLE` | Evidence로 만들지 않고 제목·단위·주석 문맥으로 사용 |
 | `IMAGE` | 현재 생성하지 않고 `IMAGE_SKIPPED` 통계에 기록 |
 
-표 제목·단위·캡션·주석으로 소비된 paragraph와 layout table은 별도 Evidence로
-중복 생성하지 않는다. section 정보는 최상위 `section_id`로만 참조하며 title/path와
-원문 provenance는 `canonical_section` 및 build manifest에서 관리한다.
+TEXT는 `BODY`, `NOTE`, `REFERENCE_NOTICE` 역할을 가진다. 명시적 `BR`, 굵은 span,
+번호형 표지를 기준으로 paragraph를 나누되 원문을 재작성하지 않는다. 소제목은
+`heading_path`, 표 설명문은 `caption`, 다른 공시 링크는 `references`로 보존한다.
 
-### 최종 Evidence 예시
+최상위에는 `schema_version`, `section_id`, `evidence_list`, `records`만 둔다. 문서와 section 경로는
+`canonical_section`에서 조회하며 markdown, source path/hash, cell provenance는
+Fragment에 중복 저장하지 않는다.
+
+### Fragment 예시
 
 ```json
 {
@@ -1315,10 +1320,10 @@ uv run pytest -q
       "order": 0,
       "payload": {
         "table_id": "rtable:20250101000001:src0:s12:t0",
-        "title": "주요 제품 현황",
-        "units": ["(단위 : 억원, %)"],
+        "heading_path": ["3. 주요 제품 및 서비스"],
+        "caption": "당기 주요 제품의 매출은 다음과 같습니다.",
         "headers": [["부문"], ["매출액"]],
-        "record_count": 720
+        "record_count": 1
       }
     }
   ],
@@ -1334,33 +1339,17 @@ uv run pytest -q
 }
 ```
 
-모든 R-table의 Evidence와 row는 `table_id`로 연결한다. header는 table metadata에
-한 번만 저장하고 각 record의 `values`는 header 순서와 대응하는 문자열 배열이다.
-`markdown`, hash, source path와
-source cell은 Fragment에 저장하지 않는다.
+R-table Evidence와 row는 `table_id`로 연결하고, `values`는 header 순서와 대응한다.
 
 ### 전체 생성과 검증
 
 ```powershell
 uv run python -m scripts.build_evidence_fragments --workers 4
 uv run python -m scripts.validate_evidence_fragments
+uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-only
+uv run python scripts/validate_converter_pipeline.py --profile full --semantic-only
 ```
 
-출력은 다음 구조로 원자적으로 저장한다.
-
-```text
-data/evidence_fragment/
-├── manifest.jsonl
-├── periodic/{rcept_no}/src{source_index}__s{section_index}.json
-├── major/{rcept_no}/src{source_index}__s{section_index}.json
-├── holding/{rcept_no}/src{source_index}__s{section_index}.json
-└── exchange/{rcept_no}/src{source_index}__s{section_index}.json
-```
-
-각 JSON은 `section_id`, 순서가 보존된 `evidence_list`, 대형 R-table의 `records`를
-저장한다. 동일한 canonical section 및 원문 SHA-256 출력은 재사용한다. validator는
-section 1:1 coverage, ID와 순서, 금지 field, table-record 연결, manifest 개수와
-타입별 통계를 검사한다.
-
-테스트는 병합 셀, 계층형 키, 다중 문맥, 다단 머리글, `THEAD` 없는 레코드 표,
-소계·합계, 제목·단위 연결, 거래소 HTML, XML 복구, 빈 값 보존을 포함한다.
+출력은 `data/evidence_fragment/{group}/{rcept_no}/src{source_index}__s{section_index}.json`
+경로에 원자적으로 저장한다. validator는 section coverage, ID/order, 금지 field,
+table-record 연결과 manifest 통계를 검사한다.
