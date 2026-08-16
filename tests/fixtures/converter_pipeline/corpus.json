@@ -324,8 +324,8 @@
         {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "path": ["payload", "heading_path"], "value": ["(3) 신규사업의 내용과 전망", "[지배회사의 내용]"]},
         {"op": "text_contains", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "value": "1.공시내용 진행 및 변경상황'을 참고하시기 바랍니다."},
         {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e49", "path": ["payload", "heading_path"], "value": ["13. 리스"]},
-        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e49", "path": ["payload", "caption"], "value": "가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."},
-        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e50", "path": ["payload", "caption"], "value": "가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e49", "path": ["payload", "captions"], "value": ["가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."]},
+        {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s19", "evidence_id": "evidence:20230512000974:src0:s19:e50", "path": ["payload", "captions"], "value": ["가. 당분기 및 전분기 중 사용권자산의 순장부금액 변동내역은 다음과 같습니다."]},
         {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s26", "evidence_id": "evidence:20230512000974:src0:s26:e0", "path": ["payload"], "value": {"text": "해당사항 없습니다.", "text_role": "BODY", "heading_path": ["(1) 재무제표 재작성 등 유의사항", "1) 재무제표 재작성"]}}
       ]
     }

@@ -42,7 +42,7 @@ Hybrid Retrieval → Agent
 - `R_TABLE`: table metadata만 Evidence에 저장하고 모든 row는 `records`에 둡니다.
 - `LAYOUT_TABLE`: 독립 Evidence로 만들지 않고 제목·단위·주석 문맥으로만 사용합니다.
 
-본문의 소제목은 별도 Evidence 대신 `heading_path`로 전파하고, 표 설명문은 `caption`으로 연결합니다. 다른 공시를 가리키는 DART 링크는 Evidence의 `references`에 보존합니다.
+본문의 소제목은 별도 Evidence 대신 `heading_path`로 전파하고, 표 설명문은 `captions` 배열로 연결합니다. 다른 공시를 가리키는 DART 링크는 Evidence의 `references`에 보존합니다.
 
 Evidence에는 `section_id`를 통한 소속 관계만 저장합니다. 문서 정보와 section 경로는 `canonical_section`에서 조회하며, markdown·원문 경로·hash·cell provenance는 Fragment에 중복 저장하지 않습니다.
 

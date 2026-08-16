@@ -308,13 +308,21 @@ def _with_semantic_context(
     payload: Mapping[str, Any],
     *,
     heading_path: Sequence[str],
-    captions: Sequence[str] = (),
+    leading_captions: Sequence[str] = (),
 ) -> dict[str, Any]:
     result = dict(payload)
     if heading_path:
         result["heading_path"] = list(heading_path)
+    parser_captions = result.pop("captions", ())
+    captions: list[str] = []
+    seen: set[str] = set()
+    for caption in (*leading_captions, *parser_captions):
+        if caption in seen:
+            continue
+        seen.add(caption)
+        captions.append(caption)
     if captions:
-        result["caption"] = "\n".join(captions)
+        result["captions"] = captions
     return result
 
 
@@ -774,7 +782,7 @@ def build_section_fragment(
                 fallback_payload = _with_semantic_context(
                     fallback_payload,
                     heading_path=current_heading_path(),
-                    captions=caption_texts,
+                    leading_captions=caption_texts,
                 )
                 signature = _semantic_json(
                     {
@@ -817,7 +825,7 @@ def build_section_fragment(
             payload = _with_semantic_context(
                 _context_payload(table),
                 heading_path=current_heading_path(),
-                captions=caption_texts,
+                leading_captions=caption_texts,
             )
             payload.update(
                 {
@@ -859,7 +867,7 @@ def build_section_fragment(
             payload = _with_semantic_context(
                 signature_payload,
                 heading_path=current_heading_path(),
-                captions=caption_texts,
+                leading_captions=caption_texts,
             )
             signature = _semantic_json(
                 {
@@ -906,7 +914,7 @@ def build_section_fragment(
         payload = _with_semantic_context(
             _context_payload(table),
             heading_path=current_heading_path(),
-            captions=caption_texts,
+            leading_captions=caption_texts,
         )
         payload.update(
             {

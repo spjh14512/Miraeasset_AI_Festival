@@ -1299,7 +1299,7 @@ section 하나당 Evidence Fragment JSON 하나를 생성한다. 원문을 동�
 
 TEXT는 `BODY`, `NOTE`, `REFERENCE_NOTICE` 역할을 가진다. 명시적 `BR`, 굵은 span,
 번호형 표지를 기준으로 paragraph를 나누되 원문을 재작성하지 않는다. 소제목은
-`heading_path`, 표 설명문은 `caption`, 다른 공시 링크는 `references`로 보존한다.
+`heading_path`, 표 설명문은 `captions` 배열, 다른 공시 링크는 `references`로 보존한다.
 
 최상위에는 `schema_version`, `section_id`, `evidence_list`, `records`만 둔다. 문서와 section 경로는
 `canonical_section`에서 조회하며 markdown, source path/hash, cell provenance는
@@ -1321,7 +1321,7 @@ Fragment에 중복 저장하지 않는다.
       "payload": {
         "table_id": "rtable:20250101000001:src0:s12:t0",
         "heading_path": ["3. 주요 제품 및 서비스"],
-        "caption": "당기 주요 제품의 매출은 다음과 같습니다.",
+        "captions": ["당기 주요 제품의 매출은 다음과 같습니다."],
         "headers": [["부문"], ["매출액"]],
         "record_count": 1
       }

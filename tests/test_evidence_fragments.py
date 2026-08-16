@@ -345,7 +345,8 @@ def test_local_heading_and_table_leadin_become_table_context_not_text_evidence()
     <P><SPAN USERMARK=" B">17. 차입금</SPAN></P>
     <P>가. 당분기말 및 전기말 현재 차입금의 내역은 다음과 같습니다.</P>
     <TABLE><TR><TD>(단위 : 백만원)</TD></TR></TABLE>
-    <TABLE><THEAD><TR><TH>구분</TH><TH>당분기말</TH><TH>전기말</TH></TR></THEAD>
+    <TABLE><CAPTION>차입금 상세</CAPTION>
+      <THEAD><TR><TH>구분</TH><TH>당분기말</TH><TH>전기말</TH></TR></THEAD>
       <TBODY><TR><TD>단기차입금</TD><TD>10</TD><TD>20</TD></TR></TBODY>
     </TABLE>
     <TABLE><THEAD><TR><TH>구분</TH><TH>당분기</TH><TH>전분기</TH></TR></THEAD>
@@ -368,14 +369,38 @@ def test_local_heading_and_table_leadin_become_table_context_not_text_evidence()
     assert all(
         table["payload"]["heading_path"] == ["17. 차입금"] for table in tables
     )
-    assert all(
-        table["payload"]["caption"]
-        == "가. 당분기말 및 전기말 현재 차입금의 내역은 다음과 같습니다."
-        for table in tables
-    )
+    leadin = "가. 당분기말 및 전기말 현재 차입금의 내역은 다음과 같습니다."
+    assert tables[0]["payload"]["captions"] == [leadin, "차입금 상세"]
+    assert tables[1]["payload"]["captions"] == [leadin]
+    assert all("caption" not in table["payload"] for table in tables)
     assert result["stats"]["TEXT_HEADING_CONTEXT"] == 1
     assert result["stats"]["TEXT_TABLE_CAPTION_CONTEXT"] == 1
     assert validate_fragment(fragment) == []
+    tables[0]["payload"]["caption"] = "legacy"
+    assert "legacy_caption:0" in validate_fragment(fragment)
+
+
+def test_table_captions_deduplicate_identical_leadin_and_xml_caption():
+    caption = "제품별 매출은 다음과 같습니다."
+    xml = f"""<DOCUMENT><SECTION-1><TITLE>제품</TITLE>
+    <P>{caption}</P>
+    <TABLE><CAPTION>{caption}</CAPTION>
+      <THEAD><TR><TH>제품</TH><TH>매출액</TH></TR></THEAD>
+      <TBODY><TR><TD>A</TD><TD>10</TD></TR></TBODY>
+    </TABLE></SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    table = result["fragments"][0]["evidence_list"][0]
+    assert table["payload"]["captions"] == [caption]
+    assert validate_fragment(result["fragments"][0]) == []
 
 
 def test_pipeline_writes_one_fragment_per_graph_section_and_validates(tmp_path: Path):

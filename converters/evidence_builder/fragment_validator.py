@@ -184,11 +184,19 @@ def validate_fragment(
                 errors.append(f"text_role:{order}")
         else:
             if isinstance(payload, Mapping):
-                caption = payload.get("caption")
-                if caption is not None and (
-                    not isinstance(caption, str) or not caption.strip()
+                if "caption" in payload:
+                    errors.append(f"legacy_caption:{order}")
+                captions = payload.get("captions")
+                if captions is not None and (
+                    not isinstance(captions, list)
+                    or not captions
+                    or not all(
+                        isinstance(caption, str) and caption.strip()
+                        for caption in captions
+                    )
+                    or len(captions) != len(set(captions))
                 ):
-                    errors.append(f"caption:{order}")
+                    errors.append(f"captions:{order}")
                 if "text_role" in payload:
                     errors.append(f"table_text_role:{order}")
             table_type = evidence.get("table_type")
