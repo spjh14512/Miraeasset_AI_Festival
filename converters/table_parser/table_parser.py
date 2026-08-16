@@ -64,6 +64,14 @@ _NAVIGATION_TEXT = re.compile(
 )
 _SUBTOTAL_TEXT = re.compile(r"^\s*소\s*계(?:\b|\()")
 _TOTAL_TEXT = re.compile(r"^\s*(?:총\s*계|합\s*계)(?:\b|\()")
+_BASE_DATE_CONTEXT = re.compile(
+    r"^\(\s*(?:작성\s*)?기준일\s*[:：]\s*.+\)$",
+    re.IGNORECASE,
+)
+_BASE_DATE_MENTION = re.compile(
+    r"(?:배당)?(?:작성\s*)?기준일\s*[:：]",
+    re.IGNORECASE,
+)
 
 
 def _tag(element: ET.Element) -> str:
@@ -900,6 +908,27 @@ def _direct_group_tables(group_element: ET.Element) -> list[ET.Element]:
     return tables
 
 
+def _table_source_ref(table: CanonicalTable) -> SourceRef | None:
+    syntax = DocumentSyntax(table.source.get("syntax", DocumentSyntax.DART_XML.value))
+    table_index = table.source.get("table_index")
+    source_ref_value = table.source.get("source_ref")
+    if isinstance(source_ref_value, Mapping):
+        try:
+            return SourceRef(
+                syntax=DocumentSyntax(source_ref_value["syntax"]),
+                element_path=source_ref_value.get("element_path"),
+                html_id=source_ref_value.get("html_id"),
+                table_index=source_ref_value.get("table_index"),
+            )
+        except (KeyError, TypeError, ValueError):
+            pass
+    return (
+        SourceRef(syntax=syntax, table_index=table_index)
+        if table_index is not None
+        else None
+    )
+
+
 def _group_context_block(
     layout: CanonicalTable,
     position: ContextPosition,
@@ -907,32 +936,139 @@ def _group_context_block(
     role = ContextRole(
         layout.content.get("layout_role", LayoutRole.NOTE.value)
     )
-    syntax = DocumentSyntax(layout.source.get("syntax", DocumentSyntax.DART_XML.value))
-    table_index = layout.source.get("table_index")
-    source_ref_value = layout.source.get("source_ref")
-    source_ref = None
-    if isinstance(source_ref_value, Mapping):
-        try:
-            source_ref = SourceRef(
-                syntax=DocumentSyntax(source_ref_value["syntax"]),
-                element_path=source_ref_value.get("element_path"),
-                html_id=source_ref_value.get("html_id"),
-                table_index=source_ref_value.get("table_index"),
-            )
-        except (KeyError, TypeError, ValueError):
-            source_ref = None
     return EvidenceContextBlock(
         role=role,
         position=position,
         text="\n".join(layout.content.get("values", [])),
-        source_ref=(
-            source_ref
-            if source_ref is not None
-            else SourceRef(syntax=syntax, table_index=table_index)
-            if table_index is not None
-            else None
+        source_ref=_table_source_ref(layout),
+    )
+
+
+def _compound_context_blocks(
+    table: CanonicalTable,
+) -> tuple[EvidenceContextBlock, ...]:
+    """Split a one-row base-date/unit strip into table context blocks."""
+    if (
+        table.table_type not in {TableType.KV_TABLE, TableType.UNKNOWN}
+        or table.dimensions.get("rows") != 1
+    ):
+        return ()
+
+    cells = sorted(
+        (cell for cell in table.cells if cell.raw_value.strip()),
+        key=lambda cell: cell.col_start,
+    )
+    unit_indexes = [
+        index
+        for index, cell in enumerate(cells)
+        if _UNIT_TEXT.match(cell.raw_value.strip())
+    ]
+    if unit_indexes != [len(cells) - 1] or len(cells) < 3:
+        return ()
+
+    caption = " ".join(cell.raw_value.strip() for cell in cells[:-1])
+    caption = re.sub(r"\(\s+", "(", caption)
+    caption = re.sub(r"\s+\)", ")", caption)
+    caption = _clean_text(caption)
+    if _BASE_DATE_CONTEXT.fullmatch(caption) is None:
+        return ()
+
+    source_ref = _table_source_ref(table)
+
+    return (
+        EvidenceContextBlock(
+            role=ContextRole.CAPTION,
+            position=ContextPosition.BEFORE,
+            text=caption,
+            source_ref=source_ref,
+        ),
+        EvidenceContextBlock(
+            role=ContextRole.UNIT,
+            position=ContextPosition.BEFORE,
+            text=cells[-1].raw_value.strip(),
+            source_ref=source_ref,
         ),
     )
+
+
+def _split_context_blocks(
+    date_table: CanonicalTable,
+    unit_table: CanonicalTable,
+) -> tuple[EvidenceContextBlock, ...]:
+    """Resolve XBRL context split across a date-caption and a unit table."""
+    date_cells = [cell for cell in date_table.cells if cell.raw_value.strip()]
+    if (
+        date_table.dimensions.get("rows") != 1
+        or len(date_cells) != 1
+        or _BASE_DATE_MENTION.search(date_cells[0].raw_value) is None
+    ):
+        return ()
+
+    unit_cells = sorted(
+        (cell for cell in unit_table.cells if cell.raw_value.strip()),
+        key=lambda cell: (cell.row_start, cell.col_start),
+    )
+    if unit_table.dimensions.get("rows") not in {1, 2}:
+        return ()
+    units = [cell for cell in unit_cells if _UNIT_TEXT.match(cell.raw_value.strip())]
+    if len(units) != 1:
+        return ()
+    unit_cell = units[0]
+    other_cells = [cell for cell in unit_cells if cell is not unit_cell]
+    if (
+        len(other_cells) not in {1, 2}
+        or any(_strong_value(cell) for cell in other_cells)
+        or any(len(cell.raw_value.strip()) > 200 for cell in other_cells)
+    ):
+        return ()
+
+    title = None
+    period_cells = other_cells
+    if unit_table.dimensions.get("rows") == 2:
+        first_row = [cell for cell in other_cells if cell.row_start == 0]
+        second_row = [cell for cell in other_cells if cell.row_start == 1]
+        if len(first_row) != 1 or len(second_row) != 1:
+            return ()
+        title = first_row[0]
+        period_cells = second_row
+    elif len(other_cells) != 1:
+        return ()
+
+    blocks = [
+        EvidenceContextBlock(
+            role=ContextRole.CAPTION,
+            position=ContextPosition.BEFORE,
+            text=date_cells[0].raw_value.strip(),
+            source_ref=_table_source_ref(date_table),
+        )
+    ]
+    if title is not None:
+        blocks.append(
+            EvidenceContextBlock(
+                role=ContextRole.TITLE,
+                position=ContextPosition.BEFORE,
+                text=title.raw_value.strip(),
+                source_ref=_table_source_ref(unit_table),
+            )
+        )
+    blocks.extend(
+        EvidenceContextBlock(
+            role=ContextRole.CAPTION,
+            position=ContextPosition.BEFORE,
+            text=cell.raw_value.strip(),
+            source_ref=_table_source_ref(unit_table),
+        )
+        for cell in period_cells
+    )
+    blocks.append(
+        EvidenceContextBlock(
+            role=ContextRole.UNIT,
+            position=ContextPosition.BEFORE,
+            text=unit_cell.raw_value.strip(),
+            source_ref=_table_source_ref(unit_table),
+        )
+    )
+    return tuple(blocks)
 
 
 def _append_context_blocks(
@@ -982,15 +1118,37 @@ def parse_table_group(
 
     context_blocks: list[EvidenceContextBlock] = []
     semantic_tables: list[CanonicalTable] = []
-    pending: list[CanonicalTable] = []
-    for table in parsed:
+    pending: list[EvidenceContextBlock] = []
+    consumed_context_indexes: set[int] = set()
+    for table_index, table in enumerate(parsed):
+        if table_index in consumed_context_indexes:
+            continue
+        split_blocks = (
+            _split_context_blocks(table, parsed[table_index + 1])
+            if table_index + 2 < len(parsed)
+            and parsed[table_index + 2].table_type == TableType.R_TABLE
+            else ()
+        )
+        if split_blocks:
+            pending.extend(split_blocks)
+            consumed_context_indexes.add(table_index + 1)
+            continue
+        compound_blocks = (
+            _compound_context_blocks(table)
+            if table_index + 1 < len(parsed)
+            and parsed[table_index + 1].table_type == TableType.R_TABLE
+            else ()
+        )
+        if compound_blocks:
+            pending.extend(compound_blocks)
+            continue
         if table.table_type == TableType.LAYOUT_TABLE:
             if (
                 table.content.get("layout_role")
                 == LayoutRole.NAVIGATION.value
             ):
                 continue
-            pending.append(table)
+            pending.append(_group_context_block(table, ContextPosition.BEFORE))
             continue
 
         semantic_tables.append(table)
@@ -998,8 +1156,8 @@ def parse_table_group(
         if pending:
             if current_index == 0:
                 before = [
-                    _group_context_block(layout, ContextPosition.BEFORE)
-                    for layout in pending
+                    replace(block, position=ContextPosition.BEFORE)
+                    for block in pending
                 ]
                 semantic_tables[current_index] = _append_context_blocks(
                     semantic_tables[current_index],
@@ -1010,18 +1168,17 @@ def parse_table_group(
                 after_previous: list[EvidenceContextBlock] = []
                 before_current: list[EvidenceContextBlock] = []
                 ordered_context: list[EvidenceContextBlock] = []
-                for layout in pending:
-                    role = layout.content.get("layout_role", LayoutRole.NOTE.value)
-                    if role == LayoutRole.NOTE.value:
-                        block = _group_context_block(
-                            layout,
-                            ContextPosition.AFTER,
+                for pending_block in pending:
+                    if pending_block.role == ContextRole.NOTE:
+                        block = replace(
+                            pending_block,
+                            position=ContextPosition.AFTER,
                         )
                         after_previous.append(block)
                     else:
-                        block = _group_context_block(
-                            layout,
-                            ContextPosition.BEFORE,
+                        block = replace(
+                            pending_block,
+                            position=ContextPosition.BEFORE,
                         )
                         before_current.append(block)
                     ordered_context.append(block)
@@ -1038,8 +1195,8 @@ def parse_table_group(
 
     if pending:
         trailing = [
-            _group_context_block(layout, ContextPosition.AFTER)
-            for layout in pending
+            replace(block, position=ContextPosition.AFTER)
+            for block in pending
         ]
         context_blocks.extend(trailing)
         if semantic_tables:

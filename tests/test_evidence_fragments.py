@@ -403,6 +403,78 @@ def test_table_captions_deduplicate_identical_leadin_and_xml_caption():
     assert validate_fragment(result["fragments"][0]) == []
 
 
+def test_compound_base_date_and_unit_strip_becomes_r_table_context():
+    xml = """<DOCUMENT><SECTION-1><TITLE>자금조달</TITLE>
+    <P><SPAN USERMARK="F-14 B">가. 채무증권 발행실적</SPAN></P>
+    <TABLE-GROUP ACLASS="SUB_PIS">
+      <TABLE ACLASS="EXTRACTION"><TR>
+        <TD>(기준일 : </TD>
+        <TU AUNIT="BASE_DT" AUNITVALUE="20230331">2023년 03월 31일</TU>
+        <TD>)</TD>
+        <TU AUNIT="WONPERCENT" AUNITVALUE="3">(단위 : 백만원, %)</TU>
+      </TR></TABLE>
+      <TABLE ACLASS="EXTRACTION"><THEAD><TR>
+        <TH>발행회사</TH><TH>권면총액</TH>
+      </TR></THEAD><TBODY><TR>
+        <TE ACODE="COMPANY">삼성전자㈜</TE><TE ACODE="AMOUNT">130,380</TE>
+      </TR></TBODY></TABLE>
+    </TABLE-GROUP></SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    fragment = result["fragments"][0]
+    assert len(fragment["evidence_list"]) == 1
+    table = fragment["evidence_list"][0]
+    assert table["table_type"] == "R_TABLE"
+    assert table["payload"]["captions"] == ["(기준일 : 2023년 03월 31일)"]
+    assert table["payload"]["units"] == ["(단위 : 백만원, %)"]
+    assert table["payload"]["heading_path"] == ["가. 채무증권 발행실적"]
+    assert fragment["records"][0]["values"] == ["삼성전자㈜", "130,380"]
+    assert validate_fragment(fragment) == []
+
+
+def test_split_xbrl_context_tables_become_r_table_context():
+    xml = """<DOCUMENT><SECTION-1><TITLE>배당</TITLE>
+    <TABLE-GROUP ACLASS="{XBRL}NT_C_D861300">
+      <TABLE><TR><TE><P>분기배당(배당기준일: 2024년 3월 31일, 2024년 6월 30일)</P></TE></TR></TABLE>
+      <TABLE>
+        <TR><TE COLSPAN="2"><P>배당금에 대한 공시</P></TE></TR>
+        <TR><TE><P>당반기</P></TE><TE><P>(단위 : 천원)</P></TE></TR>
+      </TABLE>
+      <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>현금배당</TD><TE ACODE="AMOUNT">10</TE></TR></TBODY></TABLE>
+    </TABLE-GROUP></SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    fragment = result["fragments"][0]
+    assert len(fragment["evidence_list"]) == 1
+    table = fragment["evidence_list"][0]
+    assert table["table_type"] == "R_TABLE"
+    assert table["payload"]["title"] == "배당금에 대한 공시"
+    assert table["payload"]["captions"] == [
+        "분기배당(배당기준일: 2024년 3월 31일, 2024년 6월 30일)",
+        "당반기",
+    ]
+    assert table["payload"]["units"] == ["(단위 : 천원)"]
+    assert fragment["records"][0]["values"] == ["현금배당", "10"]
+    assert validate_fragment(fragment) == []
+
+
 def test_pipeline_writes_one_fragment_per_graph_section_and_validates(tmp_path: Path):
     data_root = tmp_path / "data"
     source_dir = data_root / "raw/major/회사/20250101000001"

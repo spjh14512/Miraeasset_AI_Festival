@@ -1,0 +1,138 @@
+{
+  "schema_version": "converter-regression-golden.v1",
+  "case_id": "CVP-H01",
+  "tags": [
+    "H"
+  ],
+  "normalizer_version": "v1",
+  "source_sha256": [
+    "c5e73c3ec315a4908c1b378820ccafaa11a96d02b45f9f7e3edc7367330d14c5"
+  ],
+  "sections": [
+    {
+      "section_id": "section:20260311004186:src0:s17",
+      "summary": {
+        "evidence_count": 1,
+        "record_count": 7592,
+        "type_counts": [
+          {
+            "evidence_type": "TABLE",
+            "table_type": "R_TABLE",
+            "count": 1
+          }
+        ],
+        "normalized_sha256": "1e793a85652a80866bf8cbb951acb38b34d0f7eb0226fe07a2ae50b043a2a507",
+        "semantic_sha256": "551cedfe2a6c33f152f0c0205c056aa7ed7511eb6bc01f430d926ca6a5afb196"
+      },
+      "evidence_list": [
+        {
+          "evidence_type": "TABLE",
+          "order": 0,
+          "payload": {
+            "units": [
+              "(단위 : 주, 원)"
+            ],
+            "headers": [
+              [
+                "성명(명칭)"
+              ],
+              [
+                "생년월일 또는사업자등록번호 등"
+              ],
+              [
+                "변동일*"
+              ],
+              [
+                "취득/처분방법"
+              ],
+              [
+                "주식등의종류"
+              ],
+              [
+                "변동 내역",
+                "변동전"
+              ],
+              [
+                "변동 내역",
+                "증감"
+              ],
+              [
+                "변동 내역",
+                "변동후"
+              ],
+              [
+                "취득/처분단가**"
+              ],
+              [
+                "취득/처분단가**"
+              ],
+              [
+                "비 고"
+              ]
+            ],
+            "record_count": 7592
+          },
+          "table_type": "R_TABLE",
+          "storage_mode": "SECTION_RECORDS"
+        }
+      ],
+      "record_probes": [
+        {
+          "record_index": 0,
+          "row_type": "DATA",
+          "row_context": [],
+          "values": [
+            "BlackRockFundAdvisors",
+            "IARD/CRD105247",
+            "2021.02.27",
+            "기타(-)",
+            "의결권있는 주식",
+            "11,099,880",
+            "-664,499",
+            "10,435,381",
+            "-",
+            "-",
+            "주1)"
+          ]
+        },
+        {
+          "record_index": 3796,
+          "row_type": "DATA",
+          "row_context": [],
+          "values": [
+            "BlackRockInvestmentManagement,LLC",
+            "IARD/CRD108928",
+            "2023.12.21",
+            "장내매수(+)",
+            "의결권있는 주식",
+            "167,981",
+            "729",
+            "168,710",
+            "53,050",
+            "-",
+            "-"
+          ]
+        },
+        {
+          "record_index": 7591,
+          "row_type": "DATA",
+          "row_context": [],
+          "values": [
+            "SpiderRockAdvisors, LLC",
+            "CRD 171992",
+            "2026.02.03",
+            "장외매도(-)",
+            "증권예탁증권",
+            "739",
+            "-59",
+            "680",
+            "94",
+            "( )",
+            "주2)"
+          ]
+        }
+      ],
+      "records_sha256": "b80a68986af9da4a2125b867a20bd6c1d59a84e15cb168920a205d73cf28b03e"
+    }
+  ]
+}

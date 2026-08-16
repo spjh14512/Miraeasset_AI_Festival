@@ -1,0 +1,48 @@
+{
+  "schema_version": "converter-regression-golden.v1",
+  "case_id": "CVP-REF01",
+  "tags": [
+    "REFERENCE"
+  ],
+  "normalizer_version": "v1",
+  "source_sha256": [
+    "786a40fe93b94a38a09454571c5399b550330a846e8dacb86f6ef05acc8f06b7"
+  ],
+  "sections": [
+    {
+      "section_id": "section:20230512000974:src0:s49",
+      "summary": {
+        "evidence_count": 1,
+        "record_count": 0,
+        "type_counts": [
+          {
+            "evidence_type": "TEXT",
+            "table_type": null,
+            "count": 1
+          }
+        ],
+        "normalized_sha256": "69343f9b19398ab9cd436ee423df64be45ae7171b7952c6b6b9afea45e9ee46e",
+        "semantic_sha256": "69343f9b19398ab9cd436ee423df64be45ae7171b7952c6b6b9afea45e9ee46e"
+      },
+      "evidence_list": [
+        {
+          "evidence_type": "TEXT",
+          "order": 0,
+          "payload": {
+            "text": "※ 기업공시서식 작성기준에 따라 분기보고서에서는 기재하지 않으며, 관련 내용은 2023.3.8에 제출된 2022년도 사업보고서를 참고하시기 바랍니다.",
+            "text_role": "REFERENCE_NOTICE"
+          },
+          "references": [
+            {
+              "type": "disclosure",
+              "refno": "20230309000420",
+              "text": "2022년도 사업보고서"
+            }
+          ]
+        }
+      ],
+      "record_probes": [],
+      "records": []
+    }
+  ]
+}

@@ -312,6 +312,123 @@ def test_layout_and_table_group_attach_title_and_unit():
     )
 
 
+def test_table_group_attaches_compound_base_date_and_unit_strip():
+    group = ET.fromstring(
+        """<TABLE-GROUP ACLASS="SUB_PIS">
+        <TABLE ACLASS="EXTRACTION"><TR>
+          <TD>(기준일 : </TD>
+          <TU AUNIT="BASE_DT" AUNITVALUE="20230331">2023년 03월 31일</TU>
+          <TD>)</TD>
+          <TU AUNIT="WONPERCENT" AUNITVALUE="3">(단위 : 백만원, %)</TU>
+        </TR></TABLE>
+        <TABLE ACLASS="EXTRACTION"><THEAD><TR>
+          <TH>발행회사</TH><TH>권면총액</TH>
+        </TR></THEAD><TBODY><TR>
+          <TE ACODE="COMPANY">삼성전자㈜</TE><TE ACODE="AMOUNT">130,380</TE>
+        </TR></TBODY></TABLE>
+        </TABLE-GROUP>"""
+    )
+
+    result = parse_table_group(group, context=TableContext(table_index=10))
+
+    assert len(result.tables) == 1
+    assert result.tables[0].table_type.value == "R_TABLE"
+    assert result.tables[0].captions == ("(기준일 : 2023년 03월 31일)",)
+    assert result.tables[0].units == ("(단위 : 백만원, %)",)
+    assert [block.role.value for block in result.context_blocks] == [
+        "CAPTION",
+        "UNIT",
+    ]
+    assert [block.position.value for block in result.context_blocks] == [
+        "BEFORE",
+        "BEFORE",
+    ]
+
+
+def test_table_group_keeps_non_context_single_row_kv_table():
+    group = ET.fromstring(
+        """<TABLE-GROUP>
+        <TABLE><TR>
+          <TD>기준일</TD><TU AUNIT="BASE_DT">2023년 03월 31일</TU>
+          <TD>단위</TD><TU AUNIT="TEXT">백만원</TU>
+        </TR></TABLE>
+        <TABLE><THEAD><TR><TH>항목</TH><TH>금액</TH></TR></THEAD>
+        <TBODY><TR><TD>A</TD><TE ACODE="AMOUNT">10</TE></TR></TBODY></TABLE>
+        </TABLE-GROUP>"""
+    )
+
+    result = parse_table_group(group)
+
+    assert [table.table_type.value for table in result.tables] == [
+        "KV_TABLE",
+        "R_TABLE",
+    ]
+    assert result.context_blocks == ()
+
+
+def test_table_group_attaches_split_date_caption_and_unit_strip():
+    group = ET.fromstring(
+        """<TABLE-GROUP ACLASS="{XBRL}NT_C_U800900">
+        <TABLE><TR><TE><P>파생상품의 평가내역(기준일: 당기 2023년 12월 31일, 전기 2022년 12월 31일)</P></TE></TR></TABLE>
+        <TABLE><TR><TE><P>당기</P></TE><TE><P>(단위 : 천원)</P></TE></TR></TABLE>
+        <TABLE><THEAD><TR><TH>금융상품</TH><TH>금액</TH></TR></THEAD>
+        <TBODY><TR><TD>통화선도</TD><TE ACODE="AMOUNT">10</TE></TR></TBODY></TABLE>
+        </TABLE-GROUP>"""
+    )
+
+    result = parse_table_group(group)
+
+    assert len(result.tables) == 1
+    assert result.tables[0].captions == (
+        "파생상품의 평가내역(기준일: 당기 2023년 12월 31일, 전기 2022년 12월 31일)",
+        "당기",
+    )
+    assert result.tables[0].units == ("(단위 : 천원)",)
+    assert result.tables[0].title is None
+
+
+def test_table_group_attaches_split_context_title_period_and_unit():
+    group = ET.fromstring(
+        """<TABLE-GROUP ACLASS="{XBRL}NT_C_D861300">
+        <TABLE><TR><TE><P>분기배당(배당기준일: 2024년 3월 31일, 2024년 6월 30일)</P></TE></TR></TABLE>
+        <TABLE>
+          <TR><TE COLSPAN="2"><P>배당금에 대한 공시</P></TE></TR>
+          <TR><TE><P>당반기</P></TE><TE><P>(단위 : 천원)</P></TE></TR>
+        </TABLE>
+        <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+        <TBODY><TR><TD>현금배당</TD><TE ACODE="AMOUNT">10</TE></TR></TBODY></TABLE>
+        </TABLE-GROUP>"""
+    )
+
+    result = parse_table_group(group)
+
+    assert len(result.tables) == 1
+    assert result.tables[0].title == "배당금에 대한 공시"
+    assert result.tables[0].captions == (
+        "분기배당(배당기준일: 2024년 3월 31일, 2024년 6월 30일)",
+        "당반기",
+    )
+    assert result.tables[0].units == ("(단위 : 천원)",)
+
+
+def test_table_group_keeps_split_context_candidate_with_real_kv_value():
+    group = ET.fromstring(
+        """<TABLE-GROUP>
+        <TABLE><TR><TE><P>평가기준일: 2024년 6월 30일</P></TE></TR></TABLE>
+        <TABLE><TR><TD>보고기간</TD><TE ACODE="PERIOD">당반기</TE><TD>(단위 : 천원)</TD></TR></TABLE>
+        <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+        <TBODY><TR><TD>A</TD><TE ACODE="AMOUNT">10</TE></TR></TBODY></TABLE>
+        </TABLE-GROUP>"""
+    )
+
+    result = parse_table_group(group)
+
+    assert [table.table_type.value for table in result.tables] == [
+        "KV_TABLE",
+        "R_TABLE",
+    ]
+
+
 def test_navigation_layout_is_ignored_but_anchor_title_is_preserved():
     navigation_group = ET.fromstring(
         """<TABLE-GROUP>
