@@ -1,6 +1,6 @@
 """Insert Disclosure, Section, and Evidence data into Neo4j.
 
-The allowed labels and properties are read from ``knowledge_graph/schema.yaml``.
+The allowed labels and properties are read from ``knowledge_graph/neo4j_schema.yaml``.
 Disclosures are sampled evenly across the four disclosure groups.
 """
 
@@ -38,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=500)
     parser.add_argument("--data-root", type=Path, default=Path("data"))
     parser.add_argument(
-        "--schema", type=Path, default=Path("knowledge_graph/schema.yaml")
+        "--schema", type=Path, default=Path("knowledge_graph/neo4j_schema.yaml")
     )
     parser.add_argument("--database", default=None)
     parser.add_argument("--dry-run", action="store_true")
@@ -48,12 +48,12 @@ def parse_args() -> argparse.Namespace:
 def load_schema(path: Path) -> dict[str, Any]:
     schema = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(schema, dict):
-        raise ValueError("schema.yaml must contain a mapping")
+        raise ValueError("neo4j_schema.yaml must contain a mapping")
 
     entities = schema.get("entities")
     relations = schema.get("relations")
     if not isinstance(entities, dict) or not isinstance(relations, dict):
-        raise ValueError("schema.yaml requires entities and relations mappings")
+        raise ValueError("neo4j_schema.yaml requires entities and relations mappings")
 
     for name in ("Disclosure", "Section", "Evidence"):
         if name not in entities:
