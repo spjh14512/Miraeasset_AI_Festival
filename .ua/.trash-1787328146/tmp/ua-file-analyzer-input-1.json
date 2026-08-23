@@ -1,0 +1,216 @@
+{
+  "projectRoot": "D:\\Users\\PC\\Desktop\\Miraeasset_repo",
+  "batchFiles": [
+    {
+      "path": "knowledge_graph/insert_DSE.py",
+      "language": "python",
+      "sizeLines": 486,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_insert_points.py",
+      "language": "python",
+      "sizeLines": 196,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_kv_context_builder.py",
+      "language": "python",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_point_builder.py",
+      "language": "python",
+      "sizeLines": 393,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_r_table_column_profiler.py",
+      "language": "python",
+      "sizeLines": 248,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_r_table_descriptor_builder.py",
+      "language": "python",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_r_table_record_context_builder.py",
+      "language": "python",
+      "sizeLines": 238,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_r_table_row_group_builder.py",
+      "language": "python",
+      "sizeLines": 206,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_r_table_strategy_selector.py",
+      "language": "python",
+      "sizeLines": 254,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_text2vector.py",
+      "language": "python",
+      "sizeLines": 154,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_text_contextual_builder.py",
+      "language": "python",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/bgem3_token_counter.py",
+      "language": "python",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/__init__.py",
+      "language": "python",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "language": "python",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "language": "python",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "language": "python",
+      "sizeLines": 259,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "language": "python",
+      "sizeLines": 262,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/contextual_text_builders/text_context_builder.py",
+      "language": "python",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/insert_points.py",
+      "language": "python",
+      "sizeLines": 412,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/point_builder.py",
+      "language": "python",
+      "sizeLines": 584,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/r_table_column_profiler.py",
+      "language": "python",
+      "sizeLines": 488,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/r_table_strategy_selector.py",
+      "language": "python",
+      "sizeLines": 331,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vector_db/text2vector.py",
+      "language": "python",
+      "sizeLines": 210,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "knowledge_graph/insert_DSE.py": [],
+    "tests/test_insert_points.py": [
+      "vector_db/insert_points.py",
+      "vector_db/point_builder.py"
+    ],
+    "tests/test_kv_context_builder.py": [
+      "vector_db/contextual_text_builders/__init__.py"
+    ],
+    "tests/test_point_builder.py": [
+      "vector_db/point_builder.py",
+      "vector_db/r_table_strategy_selector.py"
+    ],
+    "tests/test_r_table_column_profiler.py": [
+      "vector_db/r_table_column_profiler.py"
+    ],
+    "tests/test_r_table_descriptor_builder.py": [
+      "vector_db/contextual_text_builders/__init__.py",
+      "vector_db/r_table_column_profiler.py"
+    ],
+    "tests/test_r_table_record_context_builder.py": [
+      "vector_db/contextual_text_builders/__init__.py"
+    ],
+    "tests/test_r_table_row_group_builder.py": [
+      "vector_db/contextual_text_builders/r_table_row_group_builder.py"
+    ],
+    "tests/test_r_table_strategy_selector.py": [
+      "vector_db/r_table_strategy_selector.py"
+    ],
+    "tests/test_text2vector.py": [
+      "vector_db/text2vector.py"
+    ],
+    "tests/test_text_contextual_builder.py": [
+      "vector_db/contextual_text_builders/__init__.py"
+    ],
+    "vector_db/bgem3_token_counter.py": [],
+    "vector_db/contextual_text_builders/__init__.py": [
+      "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "vector_db/contextual_text_builders/text_context_builder.py"
+    ],
+    "vector_db/contextual_text_builders/kv_table_context_builder.py": [],
+    "vector_db/contextual_text_builders/r_table_descriptor_builder.py": [
+      "vector_db/r_table_column_profiler.py"
+    ],
+    "vector_db/contextual_text_builders/r_table_record_context_builder.py": [],
+    "vector_db/contextual_text_builders/r_table_row_group_builder.py": [
+      "vector_db/bgem3_token_counter.py",
+      "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "vector_db/r_table_strategy_selector.py"
+    ],
+    "vector_db/contextual_text_builders/text_context_builder.py": [],
+    "vector_db/insert_points.py": [
+      "knowledge_graph/insert_DSE.py",
+      "vector_db/point_builder.py",
+      "vector_db/text2vector.py"
+    ],
+    "vector_db/point_builder.py": [
+      "vector_db/contextual_text_builders/__init__.py",
+      "vector_db/r_table_column_profiler.py",
+      "vector_db/r_table_strategy_selector.py",
+      "vector_db/text2vector.py"
+    ],
+    "vector_db/r_table_column_profiler.py": [
+      "vector_db/r_table_strategy_selector.py"
+    ],
+    "vector_db/r_table_strategy_selector.py": [
+      "vector_db/bgem3_token_counter.py"
+    ],
+    "vector_db/text2vector.py": []
+  }
+}

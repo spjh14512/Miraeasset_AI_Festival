@@ -1,0 +1,1338 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 18,
+  "filesSkipped": [
+    ".python-version",
+    ".ua/.understandignore",
+    "DOCS/universe.xlsx",
+    "DOCS/온톨로지.xlsx",
+    "tmp/excluded_pdf_html_corrections/manifest.jsonl",
+    "tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+    "tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 18,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 5,
+      "failed": 0,
+      "skipped": 13
+    }
+  },
+  "results": [
+    {
+      "path": ".agents/skills/validate-converter-pipeline/SKILL.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 48,
+      "nonEmptyLines": 28,
+      "sections": [
+        {
+          "heading": "Validate Converter Pipeline",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "Workflow",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "Golden changes",
+          "level": 2,
+          "line": 24
+        },
+        {
+          "heading": "Required report",
+          "level": 2,
+          "line": 38
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    },
+    {
+      "path": ".agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 4,
+      "nonEmptyLines": 4,
+      "sections": [
+        {
+          "heading": "interface",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": ".agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 10,
+      "nonEmptyLines": 8,
+      "sections": [
+        {
+          "heading": "Failure codes",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": ".ua/config.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 3,
+      "nonEmptyLines": 3,
+      "sections": [
+        {
+          "heading": "outputLanguage",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "DOCS/README.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 102,
+      "nonEmptyLines": 84,
+      "sections": [
+        {
+          "heading": "DART 공시 코퍼스",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "파일 구성",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "유니버스 (universe.csv / universe.xlsx)",
+          "level": 2,
+          "line": 23
+        },
+        {
+          "heading": "문서 메타데이터 (manifest.jsonl)",
+          "level": 2,
+          "line": 43
+        },
+        {
+          "heading": "문서 구성 (4,204건)",
+          "level": 2,
+          "line": 61
+        },
+        {
+          "heading": "사용 시 주의",
+          "level": 2,
+          "line": 74
+        },
+        {
+          "heading": "파이썬 로딩 예시",
+          "level": 2,
+          "line": 90
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "DOCS/data_filter.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 55,
+      "nonEmptyLines": 52,
+      "sections": [
+        {
+          "heading": "[1] 대상 기업",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "섹터 별 기업 목록",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "[2] 문서 종류",
+          "level": 1,
+          "line": 31
+        },
+        {
+          "heading": "[3] 시계열",
+          "level": 1,
+          "line": 39
+        },
+        {
+          "heading": "[4] 선정 기준",
+          "level": 1,
+          "line": 44
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "agent_graph/graph.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 30,
+      "nonEmptyLines": 24,
+      "functions": [
+        {
+          "name": "analyze_question",
+          "startLine": 8,
+          "endLine": 30,
+          "params": [
+            "state"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "analyze_question",
+          "line": 8,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "analyze_question",
+          "callee": "ChatClovaX",
+          "lineNumber": 19
+        },
+        {
+          "caller": "analyze_question",
+          "callee": "os.getenv",
+          "lineNumber": 20
+        },
+        {
+          "caller": "analyze_question",
+          "callee": "os.getenv",
+          "lineNumber": 21
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "agent_graph/state.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 15,
+      "classes": [
+        {
+          "name": "AgentState",
+          "startLine": 3,
+          "endLine": 10,
+          "methods": [],
+          "properties": [
+            "question_id",
+            "question_text",
+            "query_plan"
+          ]
+        },
+        {
+          "name": "QueryPlan",
+          "startLine": 13,
+          "endLine": 19,
+          "methods": [],
+          "properties": [
+            "plan_id",
+            "source",
+            "query"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "AgentState",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "QueryPlan",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 0,
+        "classCount": 2
+      }
+    },
+    {
+      "path": "converters/README.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 1355,
+      "nonEmptyLines": 1101,
+      "sections": [
+        {
+          "heading": "Converters",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "도구 목록",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "`correction_extractor`",
+          "level": 2,
+          "line": 19
+        },
+        {
+          "heading": "파일 구성",
+          "level": 3,
+          "line": 25
+        },
+        {
+          "heading": "입력 계약",
+          "level": 3,
+          "line": 36
+        },
+        {
+          "heading": "탐지 경계",
+          "level": 3,
+          "line": 64
+        },
+        {
+          "heading": "출력 예시",
+          "level": 3,
+          "line": 78
+        },
+        {
+          "heading": "모델 명세",
+          "level": 3,
+          "line": 121
+        },
+        {
+          "heading": "상태와 이슈",
+          "level": 3,
+          "line": 135
+        },
+        {
+          "heading": "현재 코퍼스 검증",
+          "level": 3,
+          "line": 148
+        },
+        {
+          "heading": "DART `section_canonicalizer`",
+          "level": 2,
+          "line": 163
+        },
+        {
+          "heading": "파일 구성",
+          "level": 3,
+          "line": 170
+        },
+        {
+          "heading": "경계와 계층 규칙",
+          "level": 3,
+          "line": 184
+        },
+        {
+          "heading": "블록 소유와 순서",
+          "level": 3,
+          "line": 198
+        },
+        {
+          "heading": "correction extractor와 함께 사용",
+          "level": 3,
+          "line": 216
+        },
+        {
+          "heading": "출력 예시",
+          "level": 3,
+          "line": 246
+        },
+        {
+          "heading": "중간 산출물 생성",
+          "level": 3,
+          "line": 302
+        },
+        {
+          "heading": "후속 파서 연결",
+          "level": 3,
+          "line": 376
+        },
+        {
+          "heading": "상태와 제한사항",
+          "level": 3,
+          "line": 389
+        },
+        {
+          "heading": "DART `paragraph_parser`",
+          "level": 2,
+          "line": 402
+        },
+        {
+          "heading": "파일 구성",
+          "level": 3,
+          "line": 408
+        },
+        {
+          "heading": "문단 탐지 규칙",
+          "level": 3,
+          "line": 429
+        },
+        {
+          "heading": "공통 문맥 계약",
+          "level": 3,
+          "line": 443
+        },
+        {
+          "heading": "사용법",
+          "level": 3,
+          "line": 462
+        },
+        {
+          "heading": "출력 예시",
+          "level": 3,
+          "line": 510
+        },
+        {
+          "heading": "상태와 제한사항",
+          "level": 3,
+          "line": 566
+        },
+        {
+          "heading": "`table_context_resolver`",
+          "level": 2,
+          "line": 579
+        },
+        {
+          "heading": "파일 구성",
+          "level": 3,
+          "line": 586
+        },
+        {
+          "heading": "연결 규칙",
+          "level": 3,
+          "line": 594
+        },
+        {
+          "heading": "사용법과 출력",
+          "level": 3,
+          "line": 606
+        },
+        {
+          "heading": "DART `table_parser`",
+          "level": 2,
+          "line": 678
+        },
+        {
+          "heading": "파일 구성",
+          "level": 3,
+          "line": 687
+        },
+        {
+          "heading": "처리 범위",
+          "level": 3,
+          "line": 710
+        },
+        {
+          "heading": "처리 과정",
+          "level": 3,
+          "line": 732
+        },
+        {
+          "heading": "표 유형",
+          "level": 3,
+          "line": 745
+        },
+        {
+          "heading": "`KV_TABLE`",
+          "level": 4,
+          "line": 747
+        },
+        {
+          "heading": "`R_TABLE`",
+          "level": 4,
+          "line": 778
+        },
+        {
+          "heading": "`LAYOUT_TABLE`",
+          "level": 4,
+          "line": 823
+        },
+        {
+          "heading": "`UNKNOWN`",
+          "level": 4,
+          "line": 840
+        },
+        {
+          "heading": "데이터 모델 명세",
+          "level": 3,
+          "line": 854
+        },
+        {
+          "heading": "Enum",
+          "level": 4,
+          "line": 859
+        },
+        {
+          "heading": "`TableContext`",
+          "level": 4,
+          "line": 871
+        },
+        {
+          "heading": "`SourceCell`",
+          "level": 4,
+          "line": 881
+        },
+        {
+          "heading": "`LogicalGrid`",
+          "level": 4,
+          "line": 904
+        },
+        {
+          "heading": "`CanonicalTable`",
+          "level": 4,
+          "line": 913
+        },
+        {
+          "heading": "`CanonicalTableGroup`",
+          "level": 4,
+          "line": 947
+        },
+        {
+          "heading": "사용법",
+          "level": 3,
+          "line": 963
+        },
+        {
+          "heading": "이미 파싱한 XML `Element` 변환",
+          "level": 4,
+          "line": 965
+        },
+        {
+          "heading": "XML 문자열 또는 bytes 변환",
+          "level": 4,
+          "line": 1019
+        },
+        {
+          "heading": "거래소 HTML 변환",
+          "level": 4,
+          "line": 1044
+        },
+        {
+          "heading": "`TABLE-GROUP` 변환",
+          "level": 4,
+          "line": 1064
+        },
+        {
+          "heading": "논리 격자만 사용",
+          "level": 4,
+          "line": 1090
+        },
+        {
+          "heading": "입출력 예시",
+          "level": 3,
+          "line": 1110
+        },
+        {
+          "heading": "KV 표",
+          "level": 4,
+          "line": 1112
+        },
+        {
+          "heading": "레코드 표",
+          "level": 4,
+          "line": 1145
+        },
+        {
+          "heading": "레이아웃 표",
+          "level": 4,
+          "line": 1183
+        },
+        {
+          "heading": "판정 불가 표",
+          "level": 4,
+          "line": 1203
+        },
+        {
+          "heading": "텍스트와 값 보존 규칙",
+          "level": 3,
+          "line": 1228
+        },
+        {
+          "heading": "파싱 상태와 이슈",
+          "level": 3,
+          "line": 1237
+        },
+        {
+          "heading": "제한사항과 호출자 책임",
+          "level": 3,
+          "line": 1266
+        },
+        {
+          "heading": "테스트",
+          "level": 3,
+          "line": 1275
+        },
+        {
+          "heading": "`evidence_builder`",
+          "level": 2,
+          "line": 1283
+        },
+        {
+          "heading": "Evidence 생성 규칙",
+          "level": 3,
+          "line": 1289
+        },
+        {
+          "heading": "Fragment 예시",
+          "level": 3,
+          "line": 1308
+        },
+        {
+          "heading": "전체 생성과 검증",
+          "level": 3,
+          "line": 1344
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 65
+      }
+    },
+    {
+      "path": "knowledge_graph/neo4j_schema.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 64,
+      "nonEmptyLines": 57,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "entities",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "relations",
+          "level": 1,
+          "line": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 3
+      }
+    },
+    {
+      "path": "main.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 11,
+      "nonEmptyLines": 8,
+      "functions": [
+        {
+          "name": "main",
+          "startLine": 3,
+          "endLine": 7,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "main",
+          "line": 3,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 4
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 5
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 6
+        },
+        {
+          "caller": "main",
+          "callee": "torch.cuda.is_available",
+          "lineNumber": 6
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 7
+        },
+        {
+          "caller": "main",
+          "callee": "torch.cuda.get_device_name",
+          "lineNumber": 7
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "scripts/approve_converter_golden.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 65,
+      "nonEmptyLines": 52,
+      "functions": [
+        {
+          "name": "_arguments",
+          "startLine": 15,
+          "endLine": 21,
+          "params": []
+        },
+        {
+          "name": "main",
+          "startLine": 24,
+          "endLine": 61,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "_arguments",
+          "line": 15,
+          "isDefault": false
+        },
+        {
+          "name": "main",
+          "line": 24,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "_arguments",
+          "callee": "argparse.ArgumentParser",
+          "lineNumber": 16
+        },
+        {
+          "caller": "_arguments",
+          "callee": "parser.add_argument",
+          "lineNumber": 17
+        },
+        {
+          "caller": "_arguments",
+          "callee": "parser.add_argument",
+          "lineNumber": 18
+        },
+        {
+          "caller": "_arguments",
+          "callee": "parser.add_argument",
+          "lineNumber": 19
+        },
+        {
+          "caller": "_arguments",
+          "callee": "parser.add_argument",
+          "lineNumber": 20
+        },
+        {
+          "caller": "_arguments",
+          "callee": "parser.parse_args",
+          "lineNumber": 21
+        },
+        {
+          "caller": "main",
+          "callee": "_arguments",
+          "lineNumber": 25
+        },
+        {
+          "caller": "main",
+          "callee": "sorted",
+          "lineNumber": 26
+        },
+        {
+          "caller": "main",
+          "callee": "args.candidate_dir.resolve().glob",
+          "lineNumber": 26
+        },
+        {
+          "caller": "main",
+          "callee": "args.candidate_dir.resolve",
+          "lineNumber": 26
+        },
+        {
+          "caller": "main",
+          "callee": "set",
+          "lineNumber": 28
+        },
+        {
+          "caller": "main",
+          "callee": "SystemExit",
+          "lineNumber": 31
+        },
+        {
+          "caller": "main",
+          "callee": "args.golden_dir.resolve",
+          "lineNumber": 33
+        },
+        {
+          "caller": "main",
+          "callee": "golden.read_text(encoding=\"utf-8\").splitlines",
+          "lineNumber": 37
+        },
+        {
+          "caller": "main",
+          "callee": "golden.read_text",
+          "lineNumber": 37
+        },
+        {
+          "caller": "main",
+          "callee": "golden.exists",
+          "lineNumber": 38
+        },
+        {
+          "caller": "main",
+          "callee": "candidate.read_text(encoding=\"utf-8\").splitlines",
+          "lineNumber": 41
+        },
+        {
+          "caller": "main",
+          "callee": "candidate.read_text",
+          "lineNumber": 41
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 42
+        },
+        {
+          "caller": "main",
+          "callee": "\"\".join",
+          "lineNumber": 43
+        },
+        {
+          "caller": "main",
+          "callee": "difflib.unified_diff",
+          "lineNumber": 44
+        },
+        {
+          "caller": "main",
+          "callee": "str",
+          "lineNumber": 47
+        },
+        {
+          "caller": "main",
+          "callee": "str",
+          "lineNumber": 48
+        },
+        {
+          "caller": "main",
+          "callee": "SystemExit",
+          "lineNumber": 54
+        },
+        {
+          "caller": "main",
+          "callee": "golden_dir.mkdir",
+          "lineNumber": 58
+        },
+        {
+          "caller": "main",
+          "callee": "shutil.copyfile",
+          "lineNumber": 60
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 61
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/fixtures/converter_pipeline/corpus.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 333,
+      "nonEmptyLines": 333,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "documents",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "cases",
+          "level": 1,
+          "line": 160
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 3
+      }
+    },
+    {
+      "path": "tests/test_bgem3_token_counter.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 110,
+      "nonEmptyLines": 85,
+      "functions": [
+        {
+          "name": "_clear_tokenizer_cache",
+          "startLine": 9,
+          "endLine": 12,
+          "params": []
+        },
+        {
+          "name": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "startLine": 31,
+          "endLine": 61,
+          "params": [
+            "monkeypatch"
+          ]
+        },
+        {
+          "name": "test_uses_the_requested_huggingface_model_id",
+          "startLine": 64,
+          "endLine": 80,
+          "params": [
+            "monkeypatch"
+          ]
+        },
+        {
+          "name": "test_rejects_invalid_text",
+          "startLine": 84,
+          "endLine": 86,
+          "params": [
+            "text"
+          ]
+        },
+        {
+          "name": "test_rejects_invalid_model_name",
+          "startLine": 90,
+          "endLine": 95,
+          "params": [
+            "model_name"
+          ]
+        },
+        {
+          "name": "test_rejects_invalid_token_ids",
+          "startLine": 98,
+          "endLine": 110,
+          "params": [
+            "monkeypatch"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "_FakeTokenizer",
+          "startLine": 15,
+          "endLine": 28,
+          "methods": [
+            "__init__",
+            "encode"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "_clear_tokenizer_cache",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "_FakeTokenizer",
+          "line": 15,
+          "isDefault": false
+        },
+        {
+          "name": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "test_uses_the_requested_huggingface_model_id",
+          "line": 64,
+          "isDefault": false
+        },
+        {
+          "name": "test_rejects_invalid_text",
+          "line": 83,
+          "isDefault": false
+        },
+        {
+          "name": "test_rejects_invalid_model_name",
+          "line": 89,
+          "isDefault": false
+        },
+        {
+          "name": "test_rejects_invalid_token_ids",
+          "line": 98,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "_clear_tokenizer_cache",
+          "callee": "bgem3_token_counter._load_tokenizer.cache_clear",
+          "lineNumber": 10
+        },
+        {
+          "caller": "_clear_tokenizer_cache",
+          "callee": "bgem3_token_counter._load_tokenizer.cache_clear",
+          "lineNumber": 12
+        },
+        {
+          "caller": "encode",
+          "callee": "self.calls.append",
+          "lineNumber": 20
+        },
+        {
+          "caller": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "callee": "_FakeTokenizer",
+          "lineNumber": 32
+        },
+        {
+          "caller": "fake_from_pretrained",
+          "callee": "load_calls.append",
+          "lineNumber": 36
+        },
+        {
+          "caller": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "callee": "monkeypatch.setattr",
+          "lineNumber": 39
+        },
+        {
+          "caller": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 45
+        },
+        {
+          "caller": "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_uses_the_requested_huggingface_model_id",
+          "callee": "_FakeTokenizer",
+          "lineNumber": 65
+        },
+        {
+          "caller": "test_uses_the_requested_huggingface_model_id",
+          "callee": "monkeypatch.setattr",
+          "lineNumber": 68
+        },
+        {
+          "caller": "test_uses_the_requested_huggingface_model_id",
+          "callee": "load_calls.append",
+          "lineNumber": 71
+        },
+        {
+          "caller": "test_uses_the_requested_huggingface_model_id",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 74
+        },
+        {
+          "caller": "test_rejects_invalid_text",
+          "callee": "pytest.raises",
+          "lineNumber": 85
+        },
+        {
+          "caller": "test_rejects_invalid_text",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 86
+        },
+        {
+          "caller": "test_rejects_invalid_model_name",
+          "callee": "pytest.raises",
+          "lineNumber": 91
+        },
+        {
+          "caller": "test_rejects_invalid_model_name",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 92
+        },
+        {
+          "caller": "test_rejects_invalid_token_ids",
+          "callee": "monkeypatch.setattr",
+          "lineNumber": 103
+        },
+        {
+          "caller": "test_rejects_invalid_token_ids",
+          "callee": "InvalidTokenizer",
+          "lineNumber": 106
+        },
+        {
+          "caller": "test_rejects_invalid_token_ids",
+          "callee": "pytest.raises",
+          "lineNumber": 109
+        },
+        {
+          "caller": "test_rejects_invalid_token_ids",
+          "callee": "bgem3_token_counter.count_bge_m3_tokens",
+          "lineNumber": 110
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 7,
+        "functionCount": 6,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 36,
+      "nonEmptyLines": 36,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 7
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 36,
+      "nonEmptyLines": 36,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 7
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 1,
+      "nonEmptyLines": 1,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "vector_db/qdrant_schema.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 244,
+      "nonEmptyLines": 241,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "collection",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "point",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "payload",
+          "level": 1,
+          "line": 110
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    }
+  ]
+}

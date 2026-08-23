@@ -1,0 +1,1773 @@
+{
+  "nodes": [
+    {
+      "id": "file:converters/correction_extractor/correction_models.py",
+      "type": "file",
+      "name": "correction_models.py",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "summary": "정정공시 추출 상태, issue, metadata, block reference 결과를 직렬화 가능한 model로 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionStatus",
+      "type": "class",
+      "name": "CorrectionStatus",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        12,
+        16
+      ],
+      "summary": "CorrectionStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionBlockType",
+      "type": "class",
+      "name": "CorrectionBlockType",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        19,
+        22
+      ],
+      "summary": "CorrectionBlockType domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionIssue",
+      "type": "class",
+      "name": "CorrectionIssue",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        26,
+        36
+      ],
+      "summary": "CorrectionIssue 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionBlockRef",
+      "type": "class",
+      "name": "CorrectionBlockRef",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        40,
+        50
+      ],
+      "summary": "CorrectionBlockRef domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionMetadata",
+      "type": "class",
+      "name": "CorrectionMetadata",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        54,
+        72
+      ],
+      "summary": "CorrectionMetadata domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_models.py:CorrectionExtraction",
+      "type": "class",
+      "name": "CorrectionExtraction",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "lineRange": [
+        76,
+        106
+      ],
+      "summary": "CorrectionExtraction domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "file",
+      "name": "fragment_assembler.py",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "summary": "canonical section의 paragraph와 table을 semantic evidence로 조립하고 외부 R-table record를 연결한 Evidence Fragment를 생성합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        85,
+        86
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_paragraph_references",
+      "type": "function",
+      "name": "_paragraph_references",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        89,
+        106
+      ],
+      "summary": "paragraph references 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_unique_references",
+      "type": "function",
+      "name": "_unique_references",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        109,
+        124
+      ],
+      "summary": "unique references 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_first_table_index",
+      "type": "function",
+      "name": "_first_table_index",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        127,
+        131
+      ],
+      "summary": "first table index 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_context_payload",
+      "type": "function",
+      "name": "_context_payload",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        134,
+        144
+      ],
+      "summary": "context payload 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_kv_payload",
+      "type": "function",
+      "name": "_kv_payload",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        147,
+        159
+      ],
+      "summary": "kv payload 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_record_payloads",
+      "type": "function",
+      "name": "_record_payloads",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        162,
+        190
+      ],
+      "summary": "record payloads 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_headers",
+      "type": "function",
+      "name": "_headers",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        193,
+        197
+      ],
+      "summary": "headers 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_unknown_rows",
+      "type": "function",
+      "name": "_unknown_rows",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        200,
+        210
+      ],
+      "summary": "unknown rows 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_looks_like_layout_unknown",
+      "type": "function",
+      "name": "_looks_like_layout_unknown",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        213,
+        233
+      ],
+      "summary": "looks like layout unknown 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_fallback_row_type",
+      "type": "function",
+      "name": "_fallback_row_type",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        236,
+        241
+      ],
+      "summary": "fallback row type 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_fallback_unknown",
+      "type": "function",
+      "name": "_fallback_unknown",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        244,
+        295
+      ],
+      "summary": "fallback unknown 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_semantic_json",
+      "type": "function",
+      "name": "_semantic_json",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        298,
+        304
+      ],
+      "summary": "semantic json 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_with_semantic_context",
+      "type": "function",
+      "name": "_with_semantic_context",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        307,
+        326
+      ],
+      "summary": "with semantic context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_semantic_blocks",
+      "type": "function",
+      "name": "_semantic_blocks",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        329,
+        354
+      ],
+      "summary": "semantic blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_captions_by_table",
+      "type": "function",
+      "name": "_captions_by_table",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        357,
+        422
+      ],
+      "summary": "captions by table 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:_parse_blocks",
+      "type": "function",
+      "name": "_parse_blocks",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        425,
+        536
+      ],
+      "summary": "parse blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:build_section_fragment",
+      "type": "function",
+      "name": "build_section_fragment",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        539,
+        957
+      ],
+      "summary": "검증된 입력으로 build section fragment 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_assembler.py:build_source_fragments",
+      "type": "function",
+      "name": "build_source_fragments",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        960,
+        1023
+      ],
+      "summary": "검증된 입력으로 build source fragments 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_assembler.py:_ParsedBlock",
+      "type": "class",
+      "name": "_ParsedBlock",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        71,
+        75
+      ],
+      "summary": "ParsedBlock domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_assembler.py:_SemanticBlock",
+      "type": "class",
+      "name": "_SemanticBlock",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "lineRange": [
+        79,
+        82
+      ],
+      "summary": "SemanticBlock domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "file",
+      "name": "semantic_text_segmenter.py",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "summary": "paragraph 내부 heading, marker, caption 경계를 감지해 원문 reference를 보존한 semantic text segment로 분할합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        82,
+        83
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_fragment_references",
+      "type": "function",
+      "name": "_fragment_references",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        86,
+        101
+      ],
+      "summary": "fragment references 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_references_for_text",
+      "type": "function",
+      "name": "_references_for_text",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        104,
+        108
+      ],
+      "summary": "references for text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker",
+      "type": "function",
+      "name": "_marker",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        111,
+        118
+      ],
+      "summary": "marker 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_looks_like_heading",
+      "type": "function",
+      "name": "_looks_like_heading",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        121,
+        130
+      ],
+      "summary": "looks like heading 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_is_bold_heading",
+      "type": "function",
+      "name": "_is_bold_heading",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        133,
+        139
+      ],
+      "summary": "is bold heading 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker_kind_at",
+      "type": "function",
+      "name": "_marker_kind_at",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        142,
+        145
+      ],
+      "summary": "marker kind at 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_inside_quote",
+      "type": "function",
+      "name": "_inside_quote",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        148,
+        155
+      ],
+      "summary": "inside quote 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_marker_chunks",
+      "type": "function",
+      "name": "_split_marker_chunks",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        158,
+        212
+      ],
+      "summary": "split marker chunks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_heading_body",
+      "type": "function",
+      "name": "_split_heading_body",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        215,
+        230
+      ],
+      "summary": "split heading body 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_caption_prefix",
+      "type": "function",
+      "name": "_split_caption_prefix",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        233,
+        246
+      ],
+      "summary": "split caption prefix 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_classify",
+      "type": "function",
+      "name": "_classify",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        249,
+        264
+      ],
+      "summary": "classify 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:_segments_from_text",
+      "type": "function",
+      "name": "_segments_from_text",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        267,
+        305
+      ],
+      "summary": "segments from text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/semantic_text_segmenter.py:segment_paragraph",
+      "type": "function",
+      "name": "segment_paragraph",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        308,
+        352
+      ],
+      "summary": "segment paragraph 처리 규칙을 구현하여 semantic_text_segmenter workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextRole",
+      "type": "class",
+      "name": "SemanticTextRole",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        17,
+        22
+      ],
+      "summary": "SemanticTextRole domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextSegment",
+      "type": "class",
+      "name": "SemanticTextSegment",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "lineRange": [
+        26,
+        30
+      ],
+      "summary": "SemanticTextSegment domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "file",
+      "name": "paragraph_models.py",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "summary": "paragraph parse 상태, marker, fragment, canonical paragraph collection을 나타내는 model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:ParagraphParseStatus",
+      "type": "class",
+      "name": "ParagraphParseStatus",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        17,
+        20
+      ],
+      "summary": "ParagraphParseStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:ParagraphSourceKind",
+      "type": "class",
+      "name": "ParagraphSourceKind",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        23,
+        25
+      ],
+      "summary": "ParagraphSourceKind domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:FragmentKind",
+      "type": "class",
+      "name": "FragmentKind",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        28,
+        30
+      ],
+      "summary": "FragmentKind domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:MarkerKind",
+      "type": "class",
+      "name": "MarkerKind",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        33,
+        37
+      ],
+      "summary": "MarkerKind domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:ParagraphIssue",
+      "type": "class",
+      "name": "ParagraphIssue",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        41,
+        51
+      ],
+      "summary": "ParagraphIssue 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:LeadingMarker",
+      "type": "class",
+      "name": "LeadingMarker",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        55,
+        60
+      ],
+      "summary": "LeadingMarker domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:ParagraphFragment",
+      "type": "class",
+      "name": "ParagraphFragment",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        64,
+        80
+      ],
+      "summary": "ParagraphFragment domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraph",
+      "type": "class",
+      "name": "CanonicalParagraph",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        84,
+        117
+      ],
+      "summary": "CanonicalParagraph domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraphCollection",
+      "type": "class",
+      "name": "CanonicalParagraphCollection",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "lineRange": [
+        121,
+        136
+      ],
+      "summary": "CanonicalParagraphCollection domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionBlockType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionBlockType",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionIssue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionIssue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionBlockRef",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionBlockRef",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionMetadata",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionMetadata",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionExtraction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "class:converters/correction_extractor/correction_models.py:CorrectionExtraction",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_paragraph_references",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_paragraph_references",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_unique_references",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_unique_references",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_first_table_index",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_first_table_index",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_context_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_context_payload",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_kv_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_kv_payload",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_record_payloads",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_record_payloads",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_headers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_unknown_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_unknown_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_looks_like_layout_unknown",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_looks_like_layout_unknown",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_fallback_row_type",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_fallback_row_type",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_fallback_unknown",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_fallback_unknown",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_semantic_json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_semantic_json",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_with_semantic_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_with_semantic_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_semantic_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_semantic_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_captions_by_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_captions_by_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_parse_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:_parse_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:build_section_fragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:build_section_fragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:build_source_fragments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "function:converters/evidence_builder/fragment_assembler.py:build_source_fragments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "class:converters/evidence_builder/fragment_assembler.py:_ParsedBlock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "class:converters/evidence_builder/fragment_assembler.py:_ParsedBlock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "class:converters/evidence_builder/fragment_assembler.py:_SemanticBlock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "class:converters/evidence_builder/fragment_assembler.py:_SemanticBlock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_fragment_references",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_fragment_references",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_references_for_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_references_for_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_looks_like_heading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_looks_like_heading",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_is_bold_heading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_is_bold_heading",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker_kind_at",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_marker_kind_at",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_inside_quote",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_inside_quote",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_marker_chunks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_marker_chunks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_heading_body",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_heading_body",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_caption_prefix",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_split_caption_prefix",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_classify",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_classify",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_segments_from_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:_segments_from_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:segment_paragraph",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "function:converters/evidence_builder/semantic_text_segmenter.py:segment_paragraph",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextSegment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "class:converters/evidence_builder/semantic_text_segmenter.py:SemanticTextSegment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphParseStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphParseStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphSourceKind",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphSourceKind",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:FragmentKind",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:FragmentKind",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:MarkerKind",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:MarkerKind",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphIssue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphIssue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:LeadingMarker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:LeadingMarker",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphFragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:ParagraphFragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraph",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraph",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraphCollection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "class:converters/paragraph_parser/paragraph_models.py:CanonicalParagraphCollection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

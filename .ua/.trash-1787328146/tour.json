@@ -1,0 +1,112 @@
+[
+  {
+    "order": 1,
+    "title": "프로젝트의 전체 지도",
+    "description": "README에서 DART disclosure가 Canonical Section과 Evidence Fragment를 거쳐 Knowledge Graph 및 Hybrid Retrieval로 이어지는 전체 목적을 먼저 파악합니다. 이후 단계에서 이 큰 흐름을 source ingestion, 변환, 저장, Agent orchestration 순서로 구체화합니다.",
+    "nodeIds": [
+      "document:README.md"
+    ]
+  },
+  {
+    "order": 2,
+    "title": "실행 환경과 시작점",
+    "description": "main.py는 현재 application workflow가 아니라 PyTorch와 CUDA 가용성을 확인하는 환경 진단용 entry point입니다. pyproject.toml은 Python 3.14와 LangChain, LangGraph, Neo4j, Qdrant, CUDA PyTorch 의존성을 묶어 이후 pipeline과 Agent가 실행될 기술적 경계를 보여 줍니다.",
+    "nodeIds": [
+      "file:main.py",
+      "config:pyproject.toml"
+    ],
+    "languageLesson": "Python 프로젝트에서 pyproject.toml은 runtime metadata, dependency, test 설정을 한곳에 선언하며, uv는 이 선언을 바탕으로 재현 가능한 환경을 구성합니다."
+  },
+  {
+    "order": 3,
+    "title": "DART 원문 진입",
+    "description": "전체 지도에서 본 첫 단계는 실제 DART XML/HTML을 안전하게 읽고 원문 위치를 추적 가능한 형태로 만드는 일입니다. document_loader가 손상된 markup을 tolerant recovery로 정규화하고, source model과 resolver가 이후 모든 section·paragraph·table evidence가 원문으로 돌아갈 수 있는 stable reference를 제공합니다.",
+    "nodeIds": [
+      "document:DOCS/README.md",
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/common/source_resolver.py"
+    ]
+  },
+  {
+    "order": 4,
+    "title": "Canonical Section 구성",
+    "description": "정규화된 source block은 section_canonicalizer에서 명시적 section과 암시적 heading을 기준으로 단일 계층에 귀속됩니다. section_models의 boundary와 block reference 계약은 뒤따르는 parser들이 동일한 문서 구조를 공유하게 하며, orphan과 recovery 상태도 숨기지 않고 보존합니다.",
+    "nodeIds": [
+      "file:converters/section_canonicalizer/section_models.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py"
+    ],
+    "languageLesson": "Python dataclass 기반 domain model은 parsing 결과와 issue를 명시적인 값 객체로 전달하여, 단계 사이의 암묵적 dictionary 계약을 줄이는 데 유용합니다."
+  },
+  {
+    "order": 5,
+    "title": "문단 의미 보존",
+    "description": "Canonical Section 내부의 P, SPAN, BR, anchor 구조는 paragraph_parser에서 문서 순서와 source attribute를 유지한 canonical paragraph로 변환됩니다. paragraph_models가 marker와 parse 상태까지 표현하므로, 단순 text extraction이 잃기 쉬운 문맥을 Evidence Fragment 조립 단계까지 전달할 수 있습니다.",
+    "nodeIds": [
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py"
+    ]
+  },
+  {
+    "order": 6,
+    "title": "표 구조와 문맥",
+    "description": "문단과 나란히 table_parser는 merged cell을 logical grid로 복원하고 표를 KV, record, layout, unknown 유형으로 분류합니다. 이어 table_context_resolver가 주변 paragraph와 layout table에서 title, unit, caption, note를 찾아 연결해, 수치만 남은 표가 아니라 검색 가능한 의미 단위로 만듭니다.",
+    "nodeIds": [
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py",
+      "file:converters/table_context_resolver/resolver_models.py",
+      "file:converters/table_context_resolver/table_context_resolver.py"
+    ]
+  },
+  {
+    "order": 7,
+    "title": "Evidence Fragment 조립",
+    "description": "앞 단계의 canonical paragraph와 table은 fragment_assembler에서 semantic evidence로 합쳐지고, 큰 R-table record는 외부화된 연결로 관리됩니다. fragment_models가 evidence type과 storage mode를 고정하며, fragment_pipeline은 disclosure별 산출물을 원자적으로 생성하거나 재사용해 downstream 저장 계층의 안정적인 입력 계약을 만듭니다.",
+    "nodeIds": [
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "document:converters/README.md"
+    ]
+  },
+  {
+    "order": 8,
+    "title": "Qdrant 검색 표현",
+    "description": "Evidence Fragment는 point_builder에서 TEXT, KV_TABLE, R_TABLE별 deterministic ID와 retrieval payload로 바뀌고, text2vector가 BGE-M3 dense vector를 계산합니다. insert_points는 schema에 맞춰 collection과 payload index를 준비해 batch upsert하며, qdrant_schema.yaml은 이 vector retrieval 계약을 code 밖에서 명시합니다.",
+    "nodeIds": [
+      "file:vector_db/point_builder.py",
+      "file:vector_db/text2vector.py",
+      "file:vector_db/insert_points.py",
+      "config:vector_db/qdrant_schema.yaml"
+    ],
+    "languageLesson": "YAML schema로 vector dimension, payload field, index 정책을 분리하면 ingestion code와 retrieval contract의 변경을 독립적으로 검토할 수 있습니다."
+  },
+  {
+    "order": 9,
+    "title": "Neo4j 추적 그래프",
+    "description": "동일한 Canonical Section과 Evidence Fragment는 insert_DSE에서 Disclosure-Section-Evidence row로 투영되어 Neo4j에 batch 삽입됩니다. Qdrant가 의미 기반 후보 검색을 담당한다면, 이 graph 표현은 disclosure에서 근거까지의 구조적 관계와 provenance를 탐색하는 축을 제공합니다.",
+    "nodeIds": [
+      "file:knowledge_graph/insert_DSE.py"
+    ]
+  },
+  {
+    "order": 10,
+    "title": "LangGraph Agent 초안",
+    "description": "검색 기반을 이해한 뒤 agent_graph를 보면, graph.py가 ChatClovaX로 질문을 분석해 QueryPlan을 만들 LangGraph node의 현재 초안임을 알 수 있습니다. state.py는 질문과 retrieval 계획을 Pydantic model로 공유하려 하지만 QueryPlan 선언 순서의 forward-reference 문제와 아직 state 갱신을 하지 않는 node가 있어, AgentState 계약을 먼저 안정화하는 것이 다음 구현의 핵심입니다.",
+    "nodeIds": [
+      "file:agent_graph/state.py",
+      "file:agent_graph/graph.py"
+    ],
+    "languageLesson": "LangGraph node는 공유 state 전체를 반환하기보다 자신이 갱신한 field의 partial update를 반환하도록 설계하면 reducer와 routing 계약이 선명해집니다. Pydantic forward reference는 type 선언 순서를 조정하거나 명시적으로 rebuild하여 해결할 수 있습니다."
+  },
+  {
+    "order": 11,
+    "title": "회귀 검증 안전망",
+    "description": "마지막으로 regression runner는 고정 DART corpus를 복원해 Canonical Section, Evidence Fragment, structural·semantic assertion을 순차 검증합니다. corpus.json이 실제 문서와 기대 결과를 연결하므로 converter, storage contract, 향후 Agent retrieval 입력이 바뀔 때 의도하지 않은 의미 손실을 조기에 발견할 수 있습니다.",
+    "nodeIds": [
+      "file:converters/regression_validation/runner.py",
+      "config:tests/fixtures/converter_pipeline/corpus.json",
+      "file:tests/test_converter_pipeline_regression.py"
+    ]
+  }
+]

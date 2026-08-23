@@ -16,8 +16,8 @@ data/canonical_section
 Paragraph / Table Parser
         ↓
 Evidence Fragment
-   ├── evidence_list → Neo4j / Embedding
-   └── records       → External Record Store
+   ├── evidence_list           → Neo4j Evidence
+   └── evidence_list + records → Qdrant Points
         ↓
 Hybrid Retrieval → Agent
 ```
@@ -57,7 +57,7 @@ Evidence에는 `section_id`를 통한 소속 관계만 저장합니다. 문서 �
 (Event)-[:SUPPORTED_BY]->(Evidence)
 ```
 
-Neo4j에는 Disclosure, Section, Evidence, Entity, Event와 그 관계를 저장합니다. 대형 row 데이터는 외부 record store에 두고 `table_id`로 R-table Evidence와 연결합니다.
+Neo4j에는 Disclosure, Section, Evidence, Entity, Event와 그 관계를 저장합니다. R-table의 row는 Evidence Fragment의 `records`에 보존한 뒤, R_TABLE 적재 전략에 따라 생성된 Qdrant Point의 `canonical.records` payload에 포함합니다. 여러 Point로 나뉜 경우에도 `table_id`와 row 범위로 같은 표의 record를 추적할 수 있습니다.
 
 ## Retrieval
 
@@ -90,9 +90,9 @@ uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-
 - [x] Paragraph·table parsing
 - [x] Semantic TEXT segmentation
 - [x] Section 단위 Evidence Fragment 생성
-- [x] R-table record 외부화
+- [x] R-table record 분리 및 보존
 - [x] 고정 공시 회귀 검증
-- [ ] Neo4j·record store 적재
+- [ ] Neo4j·Qdrant 적재
 - [ ] Embedding 및 Hybrid Retrieval
 - [ ] Event extraction과 Agent workflow
 

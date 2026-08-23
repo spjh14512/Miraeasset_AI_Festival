@@ -387,7 +387,7 @@ def validate_evidence_fragments(
         if record.get("n_evidence") != document_evidence:
             errors.append(f"evidence_count:{doc_id}")
         if record.get("n_records") != document_records:
-            errors.append(f"external_record_count:{doc_id}")
+            errors.append(f"manifest_record_count:{doc_id}")
         total_evidence += document_evidence
         total_records += document_records
         if len(errors) >= max_errors:
@@ -403,7 +403,7 @@ def validate_evidence_fragments(
         "documents": len(records),
         "fragments": len(section_ids),
         "total_evidence": total_evidence,
-        "total_external_records": total_records,
+        "total_records": total_records,
         "status_counts": dict(status_counts),
         "type_counts": [
             {

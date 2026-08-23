@@ -1,0 +1,2218 @@
+{
+  "nodes": [
+    {
+      "id": "file:vector_db/insert_points.py",
+      "type": "file",
+      "name": "insert_points.py",
+      "filePath": "vector_db/insert_points.py",
+      "summary": "Evidence Fragment를 읽어 PointInput을 만들고 local embedding을 계산한 뒤 Qdrant collection과 payload index에 batch upsert하는 CLI입니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:parse_args",
+      "type": "function",
+      "name": "parse_args",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        46,
+        65
+      ],
+      "summary": "source 구조를 분석하여 parse args canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_required_mapping",
+      "type": "function",
+      "name": "_required_mapping",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        68,
+        72
+      ],
+      "summary": "required mapping 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_required_text",
+      "type": "function",
+      "name": "_required_text",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        75,
+        79
+      ],
+      "summary": "required text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:load_qdrant_schema",
+      "type": "function",
+      "name": "load_qdrant_schema",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        82,
+        144
+      ],
+      "summary": "load qdrant schema 설정 또는 source를 읽고 유효한 runtime 객체로 변환합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:ensure_collection",
+      "type": "function",
+      "name": "ensure_collection",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        147,
+        166
+      ],
+      "summary": "ensure collection 처리 규칙을 구현하여 insert_points workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_document_manifest_rows",
+      "type": "function",
+      "name": "_document_manifest_rows",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        169,
+        175
+      ],
+      "summary": "document manifest rows 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:selected_disclosures",
+      "type": "function",
+      "name": "selected_disclosures",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        178,
+        204
+      ],
+      "summary": "selected disclosures 처리 규칙을 구현하여 insert_points workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_document_context",
+      "type": "function",
+      "name": "_document_context",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        207,
+        216
+      ],
+      "summary": "document context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:iter_fragment_point_inputs",
+      "type": "function",
+      "name": "iter_fragment_point_inputs",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        219,
+        251
+      ],
+      "summary": "iter fragment point inputs 처리 규칙을 구현하여 insert_points workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:embed_point_inputs_batch",
+      "type": "function",
+      "name": "embed_point_inputs_batch",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        254,
+        278
+      ],
+      "summary": "embed point inputs batch 처리 규칙을 구현하여 insert_points workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_chunks",
+      "type": "function",
+      "name": "_chunks",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        281,
+        285
+      ],
+      "summary": "chunks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:upsert_point_dicts",
+      "type": "function",
+      "name": "upsert_point_dicts",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        288,
+        310
+      ],
+      "summary": "upsert point dicts 처리 규칙을 구현하여 insert_points workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:_qdrant_client_from_env",
+      "type": "function",
+      "name": "_qdrant_client_from_env",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        313,
+        325
+      ],
+      "summary": "qdrant client from env 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:run",
+      "type": "function",
+      "name": "run",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        328,
+        393
+      ],
+      "summary": "insert_points.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/insert_points.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        396,
+        408
+      ],
+      "summary": "insert_points.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/insert_points.py:PayloadIndex",
+      "type": "class",
+      "name": "PayloadIndex",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        32,
+        34
+      ],
+      "summary": "PayloadIndex domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/insert_points.py:QdrantSchema",
+      "type": "class",
+      "name": "QdrantSchema",
+      "filePath": "vector_db/insert_points.py",
+      "lineRange": [
+        38,
+        43
+      ],
+      "summary": "QdrantSchema domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/point_builder.py",
+      "type": "file",
+      "name": "point_builder.py",
+      "filePath": "vector_db/point_builder.py",
+      "summary": "TEXT, KV-table, R-table evidence를 strategy별 Qdrant point payload와 deterministic ID로 조립합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_required_text",
+      "type": "function",
+      "name": "_required_text",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        46,
+        50
+      ],
+      "summary": "required text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_optional_text",
+      "type": "function",
+      "name": "_optional_text",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        53,
+        59
+      ],
+      "summary": "optional text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_optional_integer",
+      "type": "function",
+      "name": "_optional_integer",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        62,
+        68
+      ],
+      "summary": "optional integer 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_section_path",
+      "type": "function",
+      "name": "_section_path",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        71,
+        77
+      ],
+      "summary": "section path 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_table_metadata",
+      "type": "function",
+      "name": "_table_metadata",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        80,
+        102
+      ],
+      "summary": "table metadata 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_text_canonical",
+      "type": "function",
+      "name": "_text_canonical",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        105,
+        112
+      ],
+      "summary": "text canonical 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_kv_table_canonical",
+      "type": "function",
+      "name": "_kv_table_canonical",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        115,
+        159
+      ],
+      "summary": "kv table canonical 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_r_table_canonical",
+      "type": "function",
+      "name": "_r_table_canonical",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        162,
+        208
+      ],
+      "summary": "r table canonical 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_point_payload",
+      "type": "function",
+      "name": "_point_payload",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        211,
+        267
+      ],
+      "summary": "point payload 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:_point_input",
+      "type": "function",
+      "name": "_point_input",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        270,
+        296
+      ],
+      "summary": "point input 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:build_point_inputs",
+      "type": "function",
+      "name": "build_point_inputs",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        299,
+        504
+      ],
+      "summary": "검증된 입력으로 build point inputs 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:embed_point_inputs",
+      "type": "function",
+      "name": "embed_point_inputs",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        507,
+        526
+      ],
+      "summary": "embed point inputs 처리 규칙을 구현하여 point_builder workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:assemble_qdrant_points",
+      "type": "function",
+      "name": "assemble_qdrant_points",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        529,
+        553
+      ],
+      "summary": "검증된 입력으로 assemble qdrant points 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/point_builder.py:build_qdrant_points",
+      "type": "function",
+      "name": "build_qdrant_points",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        556,
+        572
+      ],
+      "summary": "검증된 입력으로 build qdrant points 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/point_builder.py:PointInput",
+      "type": "class",
+      "name": "PointInput",
+      "filePath": "vector_db/point_builder.py",
+      "lineRange": [
+        37,
+        43
+      ],
+      "summary": "PointInput domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/r_table_column_profiler.py",
+      "type": "file",
+      "name": "r_table_column_profiler.py",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "summary": "R-table column 값을 통계적으로 profile하여 dimension, measure, identifier, date, long-text role을 판정합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_string_tuple",
+      "type": "function",
+      "name": "_string_tuple",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        161,
+        166
+      ],
+      "summary": "string tuple 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:load_r_table_column_profiling_config",
+      "type": "function",
+      "name": "load_r_table_column_profiling_config",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        169,
+        244
+      ],
+      "summary": "load r table column profiling config 설정 또는 source를 읽고 유효한 runtime 객체로 변환합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_contains_keyword",
+      "type": "function",
+      "name": "_contains_keyword",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        247,
+        249
+      ],
+      "summary": "contains keyword 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_is_percent",
+      "type": "function",
+      "name": "_is_percent",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        252,
+        253
+      ],
+      "summary": "is percent 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_classify_role",
+      "type": "function",
+      "name": "_classify_role",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        256,
+        300
+      ],
+      "summary": "classify role 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_validated_columns",
+      "type": "function",
+      "name": "_validated_columns",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        303,
+        371
+      ],
+      "summary": "validated columns 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:_profile_draft",
+      "type": "function",
+      "name": "_profile_draft",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        374,
+        418
+      ],
+      "summary": "profile draft 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_column_profiler.py:profile_r_table_columns",
+      "type": "function",
+      "name": "profile_r_table_columns",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        421,
+        478
+      ],
+      "summary": "profile r table columns 처리 규칙을 구현하여 r_table_column_profiler workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:vector_db/r_table_column_profiler.py:RTableColumnRole",
+      "type": "class",
+      "name": "RTableColumnRole",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        31,
+        37
+      ],
+      "summary": "RTableColumnRole domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_column_profiler.py:RTableColumnProfilingConfig",
+      "type": "class",
+      "name": "RTableColumnProfilingConfig",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        41,
+        83
+      ],
+      "summary": "RTableColumnProfilingConfig domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_column_profiler.py:RTableColumnProfile",
+      "type": "class",
+      "name": "RTableColumnProfile",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        87,
+        110
+      ],
+      "summary": "RTableColumnProfile domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_column_profiler.py:RTableColumnAnalysis",
+      "type": "class",
+      "name": "RTableColumnAnalysis",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        114,
+        142
+      ],
+      "summary": "RTableColumnAnalysis domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_column_profiler.py:_ColumnDraft",
+      "type": "class",
+      "name": "_ColumnDraft",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "lineRange": [
+        146,
+        158
+      ],
+      "summary": "ColumnDraft domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/r_table_strategy_selector.py",
+      "type": "file",
+      "name": "r_table_strategy_selector.py",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "summary": "R-table의 token 크기와 cell 특성을 바탕으로 whole-table, descriptor, row-group embedding strategy를 선택합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:vector_db/r_table_strategy_selector.py:load_r_table_strategy_config",
+      "type": "function",
+      "name": "load_r_table_strategy_config",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        111,
+        145
+      ],
+      "summary": "load r table strategy config 설정 또는 source를 읽고 유효한 runtime 객체로 변환합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_strategy_selector.py:is_date_cell",
+      "type": "function",
+      "name": "is_date_cell",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        148,
+        149
+      ],
+      "summary": "is date cell 처리 규칙을 구현하여 r_table_strategy_selector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_strategy_selector.py:is_numeric_cell",
+      "type": "function",
+      "name": "is_numeric_cell",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        152,
+        153
+      ],
+      "summary": "is numeric cell 처리 규칙을 구현하여 r_table_strategy_selector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/r_table_strategy_selector.py:_validated_cells",
+      "type": "function",
+      "name": "_validated_cells",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        156,
+        221
+      ],
+      "summary": "validated cells 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/r_table_strategy_selector.py:calculate_r_table_features",
+      "type": "function",
+      "name": "calculate_r_table_features",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        224,
+        267
+      ],
+      "summary": "calculate r table features 처리 규칙을 구현하여 r_table_strategy_selector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategy",
+      "type": "class",
+      "name": "RTableEmbeddingStrategy",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        46,
+        49
+      ],
+      "summary": "RTableEmbeddingStrategy domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_strategy_selector.py:RTableStrategyConfig",
+      "type": "class",
+      "name": "RTableStrategyConfig",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        53,
+        75
+      ],
+      "summary": "RTableStrategyConfig domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_strategy_selector.py:RTableFeatures",
+      "type": "class",
+      "name": "RTableFeatures",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        79,
+        91
+      ],
+      "summary": "RTableFeatures domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_strategy_selector.py:RTableStrategyDecision",
+      "type": "class",
+      "name": "RTableStrategyDecision",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        95,
+        108
+      ],
+      "summary": "RTableStrategyDecision domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategySelector",
+      "type": "class",
+      "name": "RTableEmbeddingStrategySelector",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "lineRange": [
+        270,
+        316
+      ],
+      "summary": "RTableEmbeddingStrategySelector domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/text2vector.py",
+      "type": "file",
+      "name": "text2vector.py",
+      "filePath": "vector_db/text2vector.py",
+      "summary": "CUDA 기반 BGE-M3 model을 지연 로딩하고 batch text를 고정 차원 dense vector로 변환합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_required_environment",
+      "type": "function",
+      "name": "_required_environment",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        38,
+        42
+      ],
+      "summary": "required environment 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_load_settings",
+      "type": "function",
+      "name": "_load_settings",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        45,
+        73
+      ],
+      "summary": "load settings 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_torch_module",
+      "type": "function",
+      "name": "_torch_module",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        76,
+        81
+      ],
+      "summary": "torch module 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_bge_m3_model_class",
+      "type": "function",
+      "name": "_bge_m3_model_class",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        84,
+        91
+      ],
+      "summary": "bge m3 model class 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_build_model",
+      "type": "function",
+      "name": "_build_model",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        94,
+        113
+      ],
+      "summary": "build model 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_load_model",
+      "type": "function",
+      "name": "_load_model",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        117,
+        119
+      ],
+      "summary": "load model 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_validated_texts",
+      "type": "function",
+      "name": "_validated_texts",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        122,
+        131
+      ],
+      "summary": "validated texts 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:_parse_dense_vectors",
+      "type": "function",
+      "name": "_parse_dense_vectors",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        134,
+        168
+      ],
+      "summary": "parse dense vectors 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:texts_to_vectors",
+      "type": "function",
+      "name": "texts_to_vectors",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        171,
+        193
+      ],
+      "summary": "texts to vectors 처리 규칙을 구현하여 text2vector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/text2vector.py:text_to_vector",
+      "type": "function",
+      "name": "text_to_vector",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        196,
+        200
+      ],
+      "summary": "text to vector 처리 규칙을 구현하여 text2vector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/text2vector.py:LocalEmbeddingError",
+      "type": "class",
+      "name": "LocalEmbeddingError",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        27,
+        28
+      ],
+      "summary": "LocalEmbeddingError 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/text2vector.py:_EmbeddingSettings",
+      "type": "class",
+      "name": "_EmbeddingSettings",
+      "filePath": "vector_db/text2vector.py",
+      "lineRange": [
+        32,
+        35
+      ],
+      "summary": "EmbeddingSettings domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:parse_args",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:parse_args",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_required_mapping",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_required_mapping",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_required_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_required_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:load_qdrant_schema",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:load_qdrant_schema",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:ensure_collection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:ensure_collection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_document_manifest_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_document_manifest_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:selected_disclosures",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:selected_disclosures",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_document_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_document_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:iter_fragment_point_inputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:iter_fragment_point_inputs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:embed_point_inputs_batch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:embed_point_inputs_batch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_chunks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_chunks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:upsert_point_dicts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:upsert_point_dicts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_qdrant_client_from_env",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:_qdrant_client_from_env",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:run",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "function:vector_db/insert_points.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "class:vector_db/insert_points.py:PayloadIndex",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "class:vector_db/insert_points.py:PayloadIndex",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "class:vector_db/insert_points.py:QdrantSchema",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "class:vector_db/insert_points.py:QdrantSchema",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:knowledge_graph/insert_DSE.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_required_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_required_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_optional_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_optional_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_optional_integer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_optional_integer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_section_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_section_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_table_metadata",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_table_metadata",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_text_canonical",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_text_canonical",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_kv_table_canonical",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_kv_table_canonical",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_r_table_canonical",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_r_table_canonical",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_point_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_point_payload",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_point_input",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:_point_input",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:build_point_inputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:build_point_inputs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:embed_point_inputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:embed_point_inputs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:assemble_qdrant_points",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:assemble_qdrant_points",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:build_qdrant_points",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "function:vector_db/point_builder.py:build_qdrant_points",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "class:vector_db/point_builder.py:PointInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "class:vector_db/point_builder.py:PointInput",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_string_tuple",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_string_tuple",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:load_r_table_column_profiling_config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:load_r_table_column_profiling_config",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_contains_keyword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_contains_keyword",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_is_percent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_is_percent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_classify_role",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_classify_role",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_validated_columns",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_validated_columns",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_profile_draft",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:_profile_draft",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:profile_r_table_columns",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "function:vector_db/r_table_column_profiler.py:profile_r_table_columns",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnProfilingConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnProfilingConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnProfile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnProfile",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnAnalysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:RTableColumnAnalysis",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:_ColumnDraft",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "class:vector_db/r_table_column_profiler.py:_ColumnDraft",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:load_r_table_strategy_config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:load_r_table_strategy_config",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:is_date_cell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:is_date_cell",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:is_numeric_cell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:is_numeric_cell",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:_validated_cells",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:_validated_cells",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:calculate_r_table_features",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "function:vector_db/r_table_strategy_selector.py:calculate_r_table_features",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategy",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategy",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableStrategyConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableStrategyConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableFeatures",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableFeatures",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableStrategyDecision",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableStrategyDecision",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategySelector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "class:vector_db/r_table_strategy_selector.py:RTableEmbeddingStrategySelector",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_required_environment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_required_environment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_load_settings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_load_settings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_torch_module",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_torch_module",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_bge_m3_model_class",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_bge_m3_model_class",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_build_model",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_build_model",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_load_model",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_load_model",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_validated_texts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_validated_texts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_parse_dense_vectors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:_parse_dense_vectors",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:texts_to_vectors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:texts_to_vectors",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:text_to_vector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "function:vector_db/text2vector.py:text_to_vector",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "class:vector_db/text2vector.py:LocalEmbeddingError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "class:vector_db/text2vector.py:LocalEmbeddingError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "class:vector_db/text2vector.py:_EmbeddingSettings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/text2vector.py",
+      "target": "class:vector_db/text2vector.py:_EmbeddingSettings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

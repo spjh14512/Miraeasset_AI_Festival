@@ -1,0 +1,210 @@
+{
+  "projectRoot": "D:\\Users\\PC\\Desktop\\Miraeasset_repo",
+  "batchFiles": [
+    {
+      "path": "converters/common/document_loader.py",
+      "language": "python",
+      "sizeLines": 283,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/common/source_models.py",
+      "language": "python",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/common/source_resolver.py",
+      "language": "python",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/correction_extractor/correction_extractor.py",
+      "language": "python",
+      "sizeLines": 635,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/correction_extractor/correction_models.py",
+      "language": "python",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/evidence_builder/fragment_assembler.py",
+      "language": "python",
+      "sizeLines": 1029,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/evidence_builder/semantic_text_segmenter.py",
+      "language": "python",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/paragraph_parser/paragraph_models.py",
+      "language": "python",
+      "sizeLines": 149,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/paragraph_parser/paragraph_parser.py",
+      "language": "python",
+      "sizeLines": 437,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/table_context_resolver/resolver_models.py",
+      "language": "python",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/table_context_resolver/table_context_resolver.py",
+      "language": "python",
+      "sizeLines": 249,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/table_parser/table_models.py",
+      "language": "python",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/table_parser/table_parser.py",
+      "language": "python",
+      "sizeLines": 1304,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_correction_extractor.py",
+      "language": "python",
+      "sizeLines": 229,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_document_loader.py",
+      "language": "python",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_paragraph_parser.py",
+      "language": "python",
+      "sizeLines": 243,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_semantic_text_segmenter.py",
+      "language": "python",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_table_context_resolver.py",
+      "language": "python",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_table_parser.py",
+      "language": "python",
+      "sizeLines": 567,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "converters/common/document_loader.py": [
+      "converters/common/source_models.py"
+    ],
+    "converters/common/source_models.py": [],
+    "converters/common/source_resolver.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py"
+    ],
+    "converters/correction_extractor/correction_extractor.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/correction_extractor/correction_models.py",
+      "converters/table_parser/table_parser.py"
+    ],
+    "converters/correction_extractor/correction_models.py": [
+      "converters/common/source_models.py"
+    ],
+    "converters/evidence_builder/fragment_assembler.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/common/source_resolver.py",
+      "converters/evidence_builder/fragment_models.py",
+      "converters/evidence_builder/semantic_text_segmenter.py",
+      "converters/paragraph_parser/paragraph_models.py",
+      "converters/paragraph_parser/paragraph_parser.py",
+      "converters/section_canonicalizer/section_models.py",
+      "converters/table_context_resolver/table_context_resolver.py",
+      "converters/table_parser/table_models.py",
+      "converters/table_parser/table_parser.py"
+    ],
+    "converters/evidence_builder/semantic_text_segmenter.py": [
+      "converters/paragraph_parser/paragraph_models.py"
+    ],
+    "converters/paragraph_parser/paragraph_models.py": [
+      "converters/common/source_models.py"
+    ],
+    "converters/paragraph_parser/paragraph_parser.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/paragraph_parser/paragraph_models.py"
+    ],
+    "converters/table_context_resolver/resolver_models.py": [
+      "converters/common/source_models.py",
+      "converters/table_parser/table_models.py"
+    ],
+    "converters/table_context_resolver/table_context_resolver.py": [
+      "converters/common/source_models.py",
+      "converters/paragraph_parser/paragraph_models.py",
+      "converters/table_context_resolver/resolver_models.py",
+      "converters/table_parser/table_models.py"
+    ],
+    "converters/table_parser/table_models.py": [
+      "converters/common/source_models.py"
+    ],
+    "converters/table_parser/table_parser.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/table_parser/table_models.py"
+    ],
+    "tests/test_correction_extractor.py": [
+      "converters/common/source_models.py",
+      "converters/correction_extractor/correction_extractor.py",
+      "converters/correction_extractor/correction_models.py"
+    ],
+    "tests/test_document_loader.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py"
+    ],
+    "tests/test_paragraph_parser.py": [
+      "converters/common/source_models.py",
+      "converters/paragraph_parser/paragraph_models.py",
+      "converters/paragraph_parser/paragraph_parser.py"
+    ],
+    "tests/test_semantic_text_segmenter.py": [
+      "converters/common/source_models.py",
+      "converters/evidence_builder/semantic_text_segmenter.py",
+      "converters/paragraph_parser/paragraph_parser.py"
+    ],
+    "tests/test_table_context_resolver.py": [
+      "converters/common/source_models.py",
+      "converters/paragraph_parser/paragraph_parser.py",
+      "converters/table_context_resolver/table_context_resolver.py",
+      "converters/table_parser/table_parser.py"
+    ],
+    "tests/test_table_parser.py": [
+      "converters/common/source_models.py",
+      "converters/table_parser/table_models.py",
+      "converters/table_parser/table_parser.py"
+    ]
+  }
+}

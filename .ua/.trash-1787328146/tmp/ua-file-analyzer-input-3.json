@@ -1,0 +1,122 @@
+{
+  "projectRoot": "D:\\Users\\PC\\Desktop\\Miraeasset_repo",
+  "batchFiles": [
+    {
+      "path": "converters/evidence_builder/fragment_models.py",
+      "language": "python",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/evidence_builder/fragment_pipeline.py",
+      "language": "python",
+      "sizeLines": 423,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/evidence_builder/fragment_validator.py",
+      "language": "python",
+      "sizeLines": 445,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/section_canonicalizer/section_canonicalizer.py",
+      "language": "python",
+      "sizeLines": 743,
+      "fileCategory": "code"
+    },
+    {
+      "path": "converters/section_canonicalizer/section_models.py",
+      "language": "python",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/build_canonical_sections.py",
+      "language": "python",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/build_evidence_fragments.py",
+      "language": "python",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/validate_evidence_fragments.py",
+      "language": "python",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_build_canonical_sections.py",
+      "language": "python",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_evidence_fragments.py",
+      "language": "python",
+      "sizeLines": 540,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_section_canonicalizer.py",
+      "language": "python",
+      "sizeLines": 266,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "converters/evidence_builder/fragment_models.py": [],
+    "converters/evidence_builder/fragment_pipeline.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/evidence_builder/fragment_assembler.py",
+      "converters/section_canonicalizer/section_canonicalizer.py",
+      "converters/section_canonicalizer/section_models.py"
+    ],
+    "converters/evidence_builder/fragment_validator.py": [
+      "converters/evidence_builder/fragment_models.py",
+      "converters/evidence_builder/fragment_pipeline.py"
+    ],
+    "converters/section_canonicalizer/section_canonicalizer.py": [
+      "converters/common/document_loader.py",
+      "converters/common/source_models.py",
+      "converters/section_canonicalizer/section_models.py"
+    ],
+    "converters/section_canonicalizer/section_models.py": [
+      "converters/common/source_models.py"
+    ],
+    "scripts/build_canonical_sections.py": [
+      "converters/common/source_models.py",
+      "converters/section_canonicalizer/section_canonicalizer.py",
+      "converters/section_canonicalizer/section_models.py"
+    ],
+    "scripts/build_evidence_fragments.py": [
+      "converters/evidence_builder/fragment_pipeline.py"
+    ],
+    "scripts/validate_evidence_fragments.py": [
+      "converters/evidence_builder/fragment_validator.py"
+    ],
+    "tests/test_build_canonical_sections.py": [
+      "converters/common/source_models.py",
+      "converters/section_canonicalizer/section_canonicalizer.py",
+      "scripts/build_canonical_sections.py"
+    ],
+    "tests/test_evidence_fragments.py": [
+      "converters/common/source_models.py",
+      "converters/evidence_builder/fragment_assembler.py",
+      "converters/evidence_builder/fragment_pipeline.py",
+      "converters/evidence_builder/fragment_validator.py",
+      "converters/section_canonicalizer/section_canonicalizer.py",
+      "scripts/build_canonical_sections.py"
+    ],
+    "tests/test_section_canonicalizer.py": [
+      "converters/common/source_models.py",
+      "converters/section_canonicalizer/section_canonicalizer.py",
+      "converters/section_canonicalizer/section_models.py"
+    ]
+  }
+}

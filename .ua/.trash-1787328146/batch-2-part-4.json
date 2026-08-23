@@ -1,0 +1,2279 @@
+{
+  "nodes": [
+    {
+      "id": "file:converters/table_parser/table_parser.py",
+      "type": "file",
+      "name": "table_parser.py",
+      "filePath": "converters/table_parser/table_parser.py",
+      "summary": "병합 cell logical grid를 만들고 DART XML/HTML table을 KV, record, layout, unknown canonical table로 분류·파싱합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_tag",
+      "type": "function",
+      "name": "_tag",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        77,
+        78
+      ],
+      "summary": "tag 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_positive_span",
+      "type": "function",
+      "name": "_positive_span",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        81,
+        94
+      ],
+      "summary": "positive span 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        97,
+        98
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_top_level_paragraphs",
+      "type": "function",
+      "name": "_top_level_paragraphs",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        101,
+        113
+      ],
+      "summary": "top level paragraphs 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:extract_cell_text",
+      "type": "function",
+      "name": "extract_cell_text",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        116,
+        125
+      ],
+      "summary": "source 구조를 분석하여 extract cell text canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_owned_descendants",
+      "type": "function",
+      "name": "_owned_descendants",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        128,
+        141
+      ],
+      "summary": "owned descendants 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_table_rows",
+      "type": "function",
+      "name": "_table_rows",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        144,
+        145
+      ],
+      "summary": "table rows 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_row_cells",
+      "type": "function",
+      "name": "_row_cells",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        148,
+        149
+      ],
+      "summary": "row cells 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:build_logical_grid",
+      "type": "function",
+      "name": "build_logical_grid",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        152,
+        220
+      ],
+      "summary": "검증된 입력으로 build logical grid 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_strong_value",
+      "type": "function",
+      "name": "_strong_value",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        223,
+        229
+      ],
+      "summary": "strong value 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_thead_row_indexes",
+      "type": "function",
+      "name": "_thead_row_indexes",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        232,
+        239
+      ],
+      "summary": "thead row indexes 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_inferred_header_rows",
+      "type": "function",
+      "name": "_inferred_header_rows",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        242,
+        259
+      ],
+      "summary": "inferred header rows 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_plain_td_kv_value_ids",
+      "type": "function",
+      "name": "_plain_td_kv_value_ids",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        262,
+        331
+      ],
+      "summary": "plain td kv value ids 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_unique_cells",
+      "type": "function",
+      "name": "_unique_cells",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        334,
+        341
+      ],
+      "summary": "unique cells 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_layout_role",
+      "type": "function",
+      "name": "_layout_role",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        344,
+        363
+      ],
+      "summary": "layout role 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:classify_table_type",
+      "type": "function",
+      "name": "classify_table_type",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        366,
+        388
+      ],
+      "summary": "classify table type 처리 규칙을 구현하여 table_parser workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_scan_left",
+      "type": "function",
+      "name": "_scan_left",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        391,
+        413
+      ],
+      "summary": "scan left 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_scan_header_up",
+      "type": "function",
+      "name": "_scan_header_up",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        416,
+        437
+      ],
+      "summary": "scan header up 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_scan_full_width_section_up",
+      "type": "function",
+      "name": "_scan_full_width_section_up",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        440,
+        458
+      ],
+      "summary": "scan full width section up 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_deduplicate_paths",
+      "type": "function",
+      "name": "_deduplicate_paths",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        461,
+        472
+      ],
+      "summary": "deduplicate paths 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_parse_kv",
+      "type": "function",
+      "name": "_parse_kv",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        475,
+        538
+      ],
+      "summary": "parse kv 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_header_paths",
+      "type": "function",
+      "name": "_header_paths",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        541,
+        565
+      ],
+      "summary": "header paths 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_classify_row_type",
+      "type": "function",
+      "name": "_classify_row_type",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        568,
+        574
+      ],
+      "summary": "classify row type 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_parse_record",
+      "type": "function",
+      "name": "_parse_record",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        577,
+        644
+      ],
+      "summary": "parse record 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_parse_layout",
+      "type": "function",
+      "name": "_parse_layout",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        647,
+        656
+      ],
+      "summary": "parse layout 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_parse_unknown",
+      "type": "function",
+      "name": "_parse_unknown",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        659,
+        671
+      ],
+      "summary": "parse unknown 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:parse_table",
+      "type": "function",
+      "name": "parse_table",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        674,
+        753
+      ],
+      "summary": "source 구조를 분석하여 parse table canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_repair_xml",
+      "type": "function",
+      "name": "_repair_xml",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        756,
+        762
+      ],
+      "summary": "repair xml 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_first_table",
+      "type": "function",
+      "name": "_first_table",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        865,
+        871
+      ],
+      "summary": "first table 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_failed_table",
+      "type": "function",
+      "name": "_failed_table",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        874,
+        897
+      ],
+      "summary": "failed table 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:parse_table_fragment",
+      "type": "function",
+      "name": "parse_table_fragment",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        900,
+        976
+      ],
+      "summary": "source 구조를 분석하여 parse table fragment canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_direct_group_tables",
+      "type": "function",
+      "name": "_direct_group_tables",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        979,
+        990
+      ],
+      "summary": "direct group tables 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_table_source_ref",
+      "type": "function",
+      "name": "_table_source_ref",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        993,
+        1011
+      ],
+      "summary": "table source ref 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_group_context_block",
+      "type": "function",
+      "name": "_group_context_block",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        1014,
+        1026
+      ],
+      "summary": "group context block 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_compound_context_blocks",
+      "type": "function",
+      "name": "_compound_context_blocks",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        1029,
+        1073
+      ],
+      "summary": "compound context blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_split_context_blocks",
+      "type": "function",
+      "name": "_split_context_blocks",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        1076,
+        1153
+      ],
+      "summary": "split context blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:_append_context_blocks",
+      "type": "function",
+      "name": "_append_context_blocks",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        1156,
+        1169
+      ],
+      "summary": "append context blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_parser/table_parser.py:parse_table_group",
+      "type": "function",
+      "name": "parse_table_group",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        1172,
+        1294
+      ],
+      "summary": "source 구조를 분석하여 parse table group canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/table_parser/table_parser.py:_LooseTableHTMLParser",
+      "type": "class",
+      "name": "_LooseTableHTMLParser",
+      "filePath": "converters/table_parser/table_parser.py",
+      "lineRange": [
+        765,
+        862
+      ],
+      "summary": "LooseTableHTMLParser domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_correction_extractor.py",
+      "type": "file",
+      "name": "test_correction_extractor.py",
+      "filePath": "tests/test_correction_extractor.py",
+      "summary": "XML 및 거래소 HTML 정정공시 metadata 추출, recovery, false-positive 방지를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:_context",
+      "type": "function",
+      "name": "_context",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        10,
+        16
+      ],
+      "summary": "context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:_xml_correction",
+      "type": "function",
+      "name": "_xml_correction",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        19,
+        35
+      ],
+      "summary": "xml correction 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:_html_correction",
+      "type": "function",
+      "name": "_html_correction",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        38,
+        57
+      ],
+      "summary": "html correction 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context",
+      "type": "function",
+      "name": "test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        60,
+        93
+      ],
+      "summary": "test xml extracts metadata and keeps current rcept no from context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_current_rcept_no_does_not_depend_on_correction_date",
+      "type": "function",
+      "name": "test_current_rcept_no_does_not_depend_on_correction_date",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        96,
+        102
+      ],
+      "summary": "test current rcept no does not depend on correction date 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_xml_element_input_is_not_mutated",
+      "type": "function",
+      "name": "test_xml_element_input_is_not_mutated",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        105,
+        112
+      ],
+      "summary": "test xml element input is not mutated 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_xml_recovery_preserves_bare_ampersand_reason",
+      "type": "function",
+      "name": "test_xml_recovery_preserves_bare_ampersand_reason",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        115,
+        124
+      ],
+      "summary": "test xml recovery preserves bare ampersand reason 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_xml_metadata_can_be_split_across_table_cells",
+      "type": "function",
+      "name": "test_xml_metadata_can_be_split_across_table_cells",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        127,
+        145
+      ],
+      "summary": "test xml metadata can be split across table cells 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_xml_target_can_follow_label_paragraph_and_date_allows_spaces",
+      "type": "function",
+      "name": "test_xml_target_can_follow_label_paragraph_and_date_allows_spaces",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        148,
+        164
+      ],
+      "summary": "test xml target can follow label paragraph and date allows spaces 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_non_correction_phrase_is_not_a_false_positive",
+      "type": "function",
+      "name": "test_non_correction_phrase_is_not_a_false_positive",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        167,
+        179
+      ],
+      "summary": "test non correction phrase is not a false positive 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_exchange_html_uses_container_and_three_d8_tables",
+      "type": "function",
+      "name": "test_exchange_html_uses_container_and_three_d8_tables",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        182,
+        202
+      ],
+      "summary": "test exchange html uses container and three d8 tables 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_exchange_html_can_fall_back_to_d8_table_ids",
+      "type": "function",
+      "name": "test_exchange_html_can_fall_back_to_d8_table_ids",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        205,
+        216
+      ],
+      "summary": "test exchange html can fall back to d8 table ids 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_correction_extractor.py:test_html_without_correction_markers_is_not_found",
+      "type": "function",
+      "name": "test_html_without_correction_markers_is_not_found",
+      "filePath": "tests/test_correction_extractor.py",
+      "lineRange": [
+        219,
+        229
+      ],
+      "summary": "test html without correction markers is not found 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_document_loader.py",
+      "type": "file",
+      "name": "test_document_loader.py",
+      "filePath": "tests/test_document_loader.py",
+      "summary": "정상 XML, bare ampersand, malformed attribute와 loose HTML의 tolerant loading 상태를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_document_loader.py:test_load_valid_xml_without_recovery",
+      "type": "function",
+      "name": "test_load_valid_xml_without_recovery",
+      "filePath": "tests/test_document_loader.py",
+      "lineRange": [
+        7,
+        14
+      ],
+      "summary": "test load valid xml without recovery 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_document_loader.py:test_load_xml_with_bare_ampersand_records_recovery",
+      "type": "function",
+      "name": "test_load_xml_with_bare_ampersand_records_recovery",
+      "filePath": "tests/test_document_loader.py",
+      "lineRange": [
+        17,
+        23
+      ],
+      "summary": "test load xml with bare ampersand records recovery 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_document_loader.py:test_unrecoverable_xml_returns_failed_result",
+      "type": "function",
+      "name": "test_unrecoverable_xml_returns_failed_result",
+      "filePath": "tests/test_document_loader.py",
+      "lineRange": [
+        26,
+        31
+      ],
+      "summary": "test unrecoverable xml returns failed result 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_document_loader.py:test_malformed_attributes_and_html_entities_use_tolerant_xml_recovery",
+      "type": "function",
+      "name": "test_malformed_attributes_and_html_entities_use_tolerant_xml_recovery",
+      "filePath": "tests/test_document_loader.py",
+      "lineRange": [
+        34,
+        45
+      ],
+      "summary": "test malformed attributes and html entities use tolerant xml recovery 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_document_loader.py:test_loose_exchange_html_is_loaded_with_omitted_cell_end_tags",
+      "type": "function",
+      "name": "test_loose_exchange_html_is_loaded_with_omitted_cell_end_tags",
+      "filePath": "tests/test_document_loader.py",
+      "lineRange": [
+        48,
+        57
+      ],
+      "summary": "test loose exchange html is loaded with omitted cell end tags 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_paragraph_parser.py",
+      "type": "file",
+      "name": "test_paragraph_parser.py",
+      "filePath": "tests/test_paragraph_parser.py",
+      "summary": "inline span, anchor, BR, exclusion, recovery를 보존하는 canonical paragraph parsing을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:_document_context",
+      "type": "function",
+      "name": "_document_context",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        26,
+        32
+      ],
+      "summary": "document context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes",
+      "type": "function",
+      "name": "test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        35,
+        59
+      ],
+      "summary": "test inline spans form one paragraph and preserve order and attributes 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_inline_disclosure_anchor_preserves_refno_and_text",
+      "type": "function",
+      "name": "test_inline_disclosure_anchor_preserves_refno_and_text",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        62,
+        74
+      ],
+      "summary": "test inline disclosure anchor preserves refno and text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_consecutive_p_elements_stay_separate_and_empty_p_is_skipped",
+      "type": "function",
+      "name": "test_consecutive_p_elements_stay_separate_and_empty_p_is_skipped",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        77,
+        86
+      ],
+      "summary": "test consecutive p elements stay separate and empty p is skipped 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_explicit_br_is_preserved_without_inventing_screen_line_breaks",
+      "type": "function",
+      "name": "test_explicit_br_is_preserved_without_inventing_screen_line_breaks",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        89,
+        98
+      ],
+      "summary": "test explicit br is preserved without inventing screen line breaks 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_table_correction_and_title_subtrees_are_not_duplicate_paragraphs",
+      "type": "function",
+      "name": "test_table_correction_and_title_subtrees_are_not_duplicate_paragraphs",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        101,
+        111
+      ],
+      "summary": "test table correction and title subtrees are not duplicate paragraphs 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_orphan_span_siblings_become_one_span_run_but_bold_title_is_skipped",
+      "type": "function",
+      "name": "test_orphan_span_siblings_become_one_span_run_but_bold_title_is_skipped",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        114,
+        131
+      ],
+      "summary": "test orphan span siblings become one span run but bold title is skipped 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_evidence_and_document_context_are_preserved_in_output",
+      "type": "function",
+      "name": "test_evidence_and_document_context_are_preserved_in_output",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        134,
+        186
+      ],
+      "summary": "test evidence and document context are preserved in output 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_leading_marker_classification",
+      "type": "function",
+      "name": "test_leading_marker_classification",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        189,
+        201
+      ],
+      "summary": "test leading marker classification 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_parse_paragraph_element_does_not_mutate_input",
+      "type": "function",
+      "name": "test_parse_paragraph_element_does_not_mutate_input",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        204,
+        217
+      ],
+      "summary": "test parse paragraph element does not mutate input 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_recovered_document_marks_collection_and_paragraph",
+      "type": "function",
+      "name": "test_recovered_document_marks_collection_and_paragraph",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        220,
+        228
+      ],
+      "summary": "test recovered document marks collection and paragraph 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_paragraph_parser.py:test_explicit_source_ref_excludes_html_subtree",
+      "type": "function",
+      "name": "test_explicit_source_ref_excludes_html_subtree",
+      "filePath": "tests/test_paragraph_parser.py",
+      "lineRange": [
+        231,
+        243
+      ],
+      "summary": "test explicit source ref excludes html subtree 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_tag",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_tag",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_positive_span",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_positive_span",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_top_level_paragraphs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_top_level_paragraphs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:extract_cell_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:extract_cell_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_owned_descendants",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_owned_descendants",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_table_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_table_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_row_cells",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_row_cells",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:build_logical_grid",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:build_logical_grid",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_strong_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_strong_value",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_thead_row_indexes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_thead_row_indexes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_inferred_header_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_inferred_header_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_plain_td_kv_value_ids",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_plain_td_kv_value_ids",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_unique_cells",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_unique_cells",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_layout_role",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_layout_role",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:classify_table_type",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:classify_table_type",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_left",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_left",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_header_up",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_header_up",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_full_width_section_up",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_scan_full_width_section_up",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_deduplicate_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_deduplicate_paths",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_kv",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_kv",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_header_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_header_paths",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_classify_row_type",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_classify_row_type",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_layout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_layout",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_unknown",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_parse_unknown",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_repair_xml",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_repair_xml",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_first_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_first_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_failed_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_failed_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table_fragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table_fragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_direct_group_tables",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_direct_group_tables",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_table_source_ref",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_table_source_ref",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_group_context_block",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_group_context_block",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_compound_context_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_compound_context_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_split_context_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_split_context_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_append_context_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:_append_context_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table_group",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "function:converters/table_parser/table_parser.py:parse_table_group",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "class:converters/table_parser/table_parser.py:_LooseTableHTMLParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "class:converters/table_parser/table_parser.py:_LooseTableHTMLParser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_xml_correction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_xml_correction",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_html_correction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:_html_correction",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_current_rcept_no_does_not_depend_on_correction_date",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_current_rcept_no_does_not_depend_on_correction_date",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_element_input_is_not_mutated",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_element_input_is_not_mutated",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_recovery_preserves_bare_ampersand_reason",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_recovery_preserves_bare_ampersand_reason",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_metadata_can_be_split_across_table_cells",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_metadata_can_be_split_across_table_cells",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_target_can_follow_label_paragraph_and_date_allows_spaces",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_xml_target_can_follow_label_paragraph_and_date_allows_spaces",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_non_correction_phrase_is_not_a_false_positive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_non_correction_phrase_is_not_a_false_positive",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_exchange_html_uses_container_and_three_d8_tables",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_exchange_html_uses_container_and_three_d8_tables",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_exchange_html_can_fall_back_to_d8_table_ids",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_exchange_html_can_fall_back_to_d8_table_ids",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_html_without_correction_markers_is_not_found",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "function:tests/test_correction_extractor.py:test_html_without_correction_markers_is_not_found",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_extractor.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_load_valid_xml_without_recovery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_load_valid_xml_without_recovery",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_load_xml_with_bare_ampersand_records_recovery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_load_xml_with_bare_ampersand_records_recovery",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_unrecoverable_xml_returns_failed_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_unrecoverable_xml_returns_failed_result",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_malformed_attributes_and_html_entities_use_tolerant_xml_recovery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_malformed_attributes_and_html_entities_use_tolerant_xml_recovery",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_loose_exchange_html_is_loaded_with_omitted_cell_end_tags",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "function:tests/test_document_loader.py:test_loose_exchange_html_is_loaded_with_omitted_cell_end_tags",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:_document_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:_document_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_inline_disclosure_anchor_preserves_refno_and_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_inline_disclosure_anchor_preserves_refno_and_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_consecutive_p_elements_stay_separate_and_empty_p_is_skipped",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_consecutive_p_elements_stay_separate_and_empty_p_is_skipped",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_explicit_br_is_preserved_without_inventing_screen_line_breaks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_explicit_br_is_preserved_without_inventing_screen_line_breaks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_table_correction_and_title_subtrees_are_not_duplicate_paragraphs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_table_correction_and_title_subtrees_are_not_duplicate_paragraphs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_orphan_span_siblings_become_one_span_run_but_bold_title_is_skipped",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_orphan_span_siblings_become_one_span_run_but_bold_title_is_skipped",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_evidence_and_document_context_are_preserved_in_output",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_evidence_and_document_context_are_preserved_in_output",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_leading_marker_classification",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_leading_marker_classification",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_parse_paragraph_element_does_not_mutate_input",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_parse_paragraph_element_does_not_mutate_input",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_recovered_document_marks_collection_and_paragraph",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_recovered_document_marks_collection_and_paragraph",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_explicit_source_ref_excludes_html_subtree",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "function:tests/test_paragraph_parser.py:test_explicit_source_ref_excludes_html_subtree",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

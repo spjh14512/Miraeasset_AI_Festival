@@ -1,0 +1,8 @@
+{
+  "nodes": [
+    {"id":"config:.env.example","type":"config","name":".env.example","filePath":".env.example","summary":"BGE-M3 embedding model과 vector dimension, model cache, Neo4j 접속 정보를 위한 runtime 환경변수 예시를 정의합니다.","tags":["configuration","embedding","database"],"complexity":"simple"},
+    {"id":"document:README.md","type":"document","name":"README.md","filePath":"README.md","summary":"DART disclosure의 canonical section, Evidence Fragment, Knowledge Graph, Hybrid Retrieval architecture와 현재 pipeline 상태를 설명합니다.","tags":["documentation","architecture","data-pipeline"],"complexity":"moderate"},
+    {"id":"config:pyproject.toml","type":"config","name":"pyproject.toml","filePath":"pyproject.toml","summary":"Python 3.14 기반 프로젝트 metadata, LangChain·LangGraph·Neo4j·Qdrant dependency, pytest 설정과 CUDA PyTorch uv index를 관리합니다.","tags":["configuration","dependency-management","build-system"],"complexity":"simple","languageNotes":"uv source mapping으로 torch만 별도 PyTorch CUDA index에서 설치하도록 고정합니다."}
+  ],
+  "edges": []
+}

@@ -14,9 +14,9 @@ from converters.common.source_resolver import SourceResolver
 from converters.evidence_builder.fragment_models import (
     EvidenceFragment,
     EvidenceType,
-    ExternalTableRecord,
     FragmentEvidence,
     StorageMode,
+    TableRecord,
 )
 from converters.evidence_builder.semantic_text_segmenter import (
     SemanticTextRole,
@@ -572,7 +572,7 @@ def build_section_fragment(
             paragraph_references_by_ref[source_ref] = item_references
 
     evidence: list[FragmentEvidence] = []
-    records: list[ExternalTableRecord] = []
+    records: list[TableRecord] = []
     seen_tables: set[str] = set()
     previous_text: str | None = None
     r_table_index = 0
@@ -847,7 +847,7 @@ def build_section_fragment(
             stats["R_TABLE"] += 1
             for record_index, record_payload in enumerate(fallback_records):
                 records.append(
-                    ExternalTableRecord(
+                    TableRecord(
                         table_id=table_id,
                         record_index=record_index,
                         row_type=str(record_payload.get("row_type", "UNKNOWN")),
@@ -933,7 +933,7 @@ def build_section_fragment(
         stats["R_TABLE"] += 1
         for record_index, record_payload in enumerate(record_payloads):
             records.append(
-                ExternalTableRecord(
+                TableRecord(
                     table_id=table_id,
                     record_index=record_index,
                     row_type=str(record_payload.get("row_type", "UNKNOWN")),

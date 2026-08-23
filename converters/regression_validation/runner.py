@@ -305,7 +305,7 @@ def run_regression(
                     "documents",
                     "fragments",
                     "total_evidence",
-                    "total_external_records",
+                    "total_records",
                     "errors_count",
                 )
             },

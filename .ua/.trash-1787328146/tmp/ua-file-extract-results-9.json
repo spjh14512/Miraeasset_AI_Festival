@@ -1,0 +1,54 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 1
+    }
+  },
+  "results": [
+    {
+      "path": "vector_db/r_table_embedding.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 51,
+      "nonEmptyLines": 48,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "r_table_embedding",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "column_profiling",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "descriptor",
+          "level": 1,
+          "line": 49
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    }
+  ]
+}

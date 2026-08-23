@@ -1,0 +1,1147 @@
+{
+  "scriptCompleted": true,
+  "commonPathPrefix": "",
+  "directoryGroups": {
+    "knowledge_graph": [
+      "file:knowledge_graph/insert_DSE.py",
+      "config:knowledge_graph/neo4j_schema.yaml"
+    ],
+    "tests": [
+      "file:tests/test_insert_points.py",
+      "file:tests/test_kv_context_builder.py",
+      "file:tests/test_point_builder.py",
+      "file:tests/test_r_table_column_profiler.py",
+      "file:tests/test_r_table_descriptor_builder.py",
+      "file:tests/test_r_table_record_context_builder.py",
+      "file:tests/test_r_table_row_group_builder.py",
+      "file:tests/test_r_table_strategy_selector.py",
+      "file:tests/test_text2vector.py",
+      "file:tests/test_text_contextual_builder.py",
+      "file:tests/test_correction_extractor.py",
+      "file:tests/test_document_loader.py",
+      "file:tests/test_paragraph_parser.py",
+      "file:tests/test_semantic_text_segmenter.py",
+      "file:tests/test_table_context_resolver.py",
+      "file:tests/test_table_parser.py",
+      "file:tests/test_build_canonical_sections.py",
+      "file:tests/test_evidence_fragments.py",
+      "file:tests/test_section_canonicalizer.py",
+      "file:tests/test_converter_pipeline_regression.py",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+      "config:tests/fixtures/converter_pipeline/corpus.json",
+      "file:tests/test_bgem3_token_counter.py"
+    ],
+    "vector_db": [
+      "file:vector_db/bgem3_token_counter.py",
+      "file:vector_db/contextual_text_builders/__init__.py",
+      "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "file:vector_db/insert_points.py",
+      "file:vector_db/point_builder.py",
+      "file:vector_db/r_table_column_profiler.py",
+      "file:vector_db/r_table_strategy_selector.py",
+      "file:vector_db/text2vector.py",
+      "config:vector_db/qdrant_schema.yaml",
+      "config:vector_db/r_table_embedding.yaml"
+    ],
+    "converters": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/common/source_resolver.py",
+      "file:converters/correction_extractor/correction_extractor.py",
+      "file:converters/correction_extractor/correction_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py",
+      "file:converters/table_context_resolver/resolver_models.py",
+      "file:converters/table_context_resolver/table_context_resolver.py",
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py",
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "file:converters/evidence_builder/fragment_validator.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py",
+      "file:converters/regression_validation/__init__.py",
+      "file:converters/regression_validation/assertions.py",
+      "file:converters/regression_validation/normalizer.py",
+      "file:converters/regression_validation/runner.py",
+      "document:converters/README.md"
+    ],
+    "scripts": [
+      "file:scripts/build_canonical_sections.py",
+      "file:scripts/build_evidence_fragments.py",
+      "file:scripts/validate_evidence_fragments.py",
+      "file:scripts/validate_converter_pipeline.py",
+      "file:scripts/approve_converter_golden.py"
+    ],
+    "root": [
+      "config:.env.example",
+      "document:README.md",
+      "config:pyproject.toml",
+      "file:.python-version",
+      "file:main.py"
+    ],
+    "tmp": [
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html",
+      "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json"
+    ],
+    ".agents": [
+      "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md"
+    ],
+    ".ua": [
+      "file:.ua/.understandignore",
+      "config:.ua/config.json"
+    ],
+    "DOCS": [
+      "document:DOCS/README.md",
+      "document:DOCS/data_filter.md",
+      "file:DOCS/universe.xlsx",
+      "file:DOCS/온톨로지.xlsx"
+    ],
+    "agent_graph": [
+      "file:agent_graph/graph.py",
+      "file:agent_graph/state.py"
+    ]
+  },
+  "nodeTypeGroups": {
+    "file": [
+      "file:knowledge_graph/insert_DSE.py",
+      "file:tests/test_insert_points.py",
+      "file:tests/test_kv_context_builder.py",
+      "file:tests/test_point_builder.py",
+      "file:tests/test_r_table_column_profiler.py",
+      "file:tests/test_r_table_descriptor_builder.py",
+      "file:tests/test_r_table_record_context_builder.py",
+      "file:tests/test_r_table_row_group_builder.py",
+      "file:tests/test_r_table_strategy_selector.py",
+      "file:tests/test_text2vector.py",
+      "file:tests/test_text_contextual_builder.py",
+      "file:vector_db/bgem3_token_counter.py",
+      "file:vector_db/contextual_text_builders/__init__.py",
+      "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "file:vector_db/insert_points.py",
+      "file:vector_db/point_builder.py",
+      "file:vector_db/r_table_column_profiler.py",
+      "file:vector_db/r_table_strategy_selector.py",
+      "file:vector_db/text2vector.py",
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/common/source_resolver.py",
+      "file:converters/correction_extractor/correction_extractor.py",
+      "file:converters/correction_extractor/correction_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py",
+      "file:converters/table_context_resolver/resolver_models.py",
+      "file:converters/table_context_resolver/table_context_resolver.py",
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py",
+      "file:tests/test_correction_extractor.py",
+      "file:tests/test_document_loader.py",
+      "file:tests/test_paragraph_parser.py",
+      "file:tests/test_semantic_text_segmenter.py",
+      "file:tests/test_table_context_resolver.py",
+      "file:tests/test_table_parser.py",
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "file:converters/evidence_builder/fragment_validator.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py",
+      "file:scripts/build_canonical_sections.py",
+      "file:scripts/build_evidence_fragments.py",
+      "file:scripts/validate_evidence_fragments.py",
+      "file:tests/test_build_canonical_sections.py",
+      "file:tests/test_evidence_fragments.py",
+      "file:tests/test_section_canonicalizer.py",
+      "file:converters/regression_validation/__init__.py",
+      "file:converters/regression_validation/assertions.py",
+      "file:converters/regression_validation/normalizer.py",
+      "file:converters/regression_validation/runner.py",
+      "file:scripts/validate_converter_pipeline.py",
+      "file:tests/test_converter_pipeline_regression.py",
+      "file:.python-version",
+      "file:.ua/.understandignore",
+      "file:DOCS/universe.xlsx",
+      "file:DOCS/온톨로지.xlsx",
+      "file:agent_graph/graph.py",
+      "file:agent_graph/state.py",
+      "file:main.py",
+      "file:scripts/approve_converter_golden.py",
+      "file:tests/test_bgem3_token_counter.py",
+      "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html"
+    ],
+    "config": [
+      "config:.env.example",
+      "config:pyproject.toml",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "config:.ua/config.json",
+      "config:knowledge_graph/neo4j_schema.yaml",
+      "config:tests/fixtures/converter_pipeline/corpus.json",
+      "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "config:vector_db/qdrant_schema.yaml",
+      "config:vector_db/r_table_embedding.yaml"
+    ],
+    "document": [
+      "document:README.md",
+      "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "document:DOCS/README.md",
+      "document:DOCS/data_filter.md",
+      "document:converters/README.md"
+    ]
+  },
+  "importAdjacency": {
+    "file:knowledge_graph/insert_DSE.py": [],
+    "file:tests/test_insert_points.py": [
+      "file:vector_db/insert_points.py",
+      "file:vector_db/point_builder.py"
+    ],
+    "file:tests/test_kv_context_builder.py": [
+      "file:vector_db/contextual_text_builders/__init__.py"
+    ],
+    "file:tests/test_point_builder.py": [
+      "file:vector_db/point_builder.py",
+      "file:vector_db/r_table_strategy_selector.py"
+    ],
+    "file:tests/test_r_table_column_profiler.py": [
+      "file:vector_db/r_table_column_profiler.py"
+    ],
+    "file:tests/test_r_table_descriptor_builder.py": [
+      "file:vector_db/contextual_text_builders/__init__.py",
+      "file:vector_db/r_table_column_profiler.py"
+    ],
+    "file:tests/test_r_table_record_context_builder.py": [
+      "file:vector_db/contextual_text_builders/__init__.py"
+    ],
+    "file:tests/test_r_table_row_group_builder.py": [
+      "file:vector_db/contextual_text_builders/r_table_row_group_builder.py"
+    ],
+    "file:tests/test_r_table_strategy_selector.py": [
+      "file:vector_db/r_table_strategy_selector.py"
+    ],
+    "file:tests/test_text2vector.py": [
+      "file:vector_db/text2vector.py"
+    ],
+    "file:tests/test_text_contextual_builder.py": [
+      "file:vector_db/contextual_text_builders/__init__.py"
+    ],
+    "file:vector_db/bgem3_token_counter.py": [],
+    "file:vector_db/contextual_text_builders/__init__.py": [
+      "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "file:vector_db/contextual_text_builders/text_context_builder.py"
+    ],
+    "file:vector_db/contextual_text_builders/kv_table_context_builder.py": [],
+    "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py": [
+      "file:vector_db/r_table_column_profiler.py"
+    ],
+    "file:vector_db/contextual_text_builders/r_table_record_context_builder.py": [],
+    "file:vector_db/contextual_text_builders/r_table_row_group_builder.py": [
+      "file:vector_db/bgem3_token_counter.py",
+      "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "file:vector_db/r_table_strategy_selector.py"
+    ],
+    "file:vector_db/contextual_text_builders/text_context_builder.py": [],
+    "file:vector_db/insert_points.py": [
+      "file:knowledge_graph/insert_DSE.py",
+      "file:vector_db/point_builder.py",
+      "file:vector_db/text2vector.py"
+    ],
+    "file:vector_db/point_builder.py": [
+      "file:vector_db/contextual_text_builders/__init__.py",
+      "file:vector_db/r_table_column_profiler.py",
+      "file:vector_db/r_table_strategy_selector.py",
+      "file:vector_db/text2vector.py"
+    ],
+    "file:vector_db/r_table_column_profiler.py": [
+      "file:vector_db/r_table_strategy_selector.py"
+    ],
+    "file:vector_db/r_table_strategy_selector.py": [
+      "file:vector_db/bgem3_token_counter.py"
+    ],
+    "file:vector_db/text2vector.py": [],
+    "file:converters/common/document_loader.py": [
+      "file:converters/common/source_models.py"
+    ],
+    "file:converters/common/source_models.py": [],
+    "file:converters/common/source_resolver.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py"
+    ],
+    "file:converters/correction_extractor/correction_extractor.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/correction_extractor/correction_models.py",
+      "file:converters/table_parser/table_parser.py"
+    ],
+    "file:converters/correction_extractor/correction_models.py": [
+      "file:converters/common/source_models.py"
+    ],
+    "file:converters/evidence_builder/fragment_assembler.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/common/source_resolver.py",
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py",
+      "file:converters/section_canonicalizer/section_models.py",
+      "file:converters/table_context_resolver/table_context_resolver.py",
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py"
+    ],
+    "file:converters/evidence_builder/semantic_text_segmenter.py": [
+      "file:converters/paragraph_parser/paragraph_models.py"
+    ],
+    "file:converters/paragraph_parser/paragraph_models.py": [
+      "file:converters/common/source_models.py"
+    ],
+    "file:converters/paragraph_parser/paragraph_parser.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/paragraph_parser/paragraph_models.py"
+    ],
+    "file:converters/table_context_resolver/resolver_models.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/table_parser/table_models.py"
+    ],
+    "file:converters/table_context_resolver/table_context_resolver.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/table_context_resolver/resolver_models.py",
+      "file:converters/table_parser/table_models.py"
+    ],
+    "file:converters/table_parser/table_models.py": [
+      "file:converters/common/source_models.py"
+    ],
+    "file:converters/table_parser/table_parser.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/table_parser/table_models.py"
+    ],
+    "file:tests/test_correction_extractor.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/correction_extractor/correction_extractor.py",
+      "file:converters/correction_extractor/correction_models.py"
+    ],
+    "file:tests/test_document_loader.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py"
+    ],
+    "file:tests/test_paragraph_parser.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py"
+    ],
+    "file:tests/test_semantic_text_segmenter.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "file:converters/paragraph_parser/paragraph_parser.py"
+    ],
+    "file:tests/test_table_context_resolver.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py",
+      "file:converters/table_context_resolver/table_context_resolver.py",
+      "file:converters/table_parser/table_parser.py"
+    ],
+    "file:tests/test_table_parser.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py"
+    ],
+    "file:converters/evidence_builder/fragment_models.py": [],
+    "file:converters/evidence_builder/fragment_pipeline.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py"
+    ],
+    "file:converters/evidence_builder/fragment_validator.py": [
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/fragment_pipeline.py"
+    ],
+    "file:converters/section_canonicalizer/section_canonicalizer.py": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/section_canonicalizer/section_models.py"
+    ],
+    "file:converters/section_canonicalizer/section_models.py": [
+      "file:converters/common/source_models.py"
+    ],
+    "file:scripts/build_canonical_sections.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py"
+    ],
+    "file:scripts/build_evidence_fragments.py": [
+      "file:converters/evidence_builder/fragment_pipeline.py"
+    ],
+    "file:scripts/validate_evidence_fragments.py": [
+      "file:converters/evidence_builder/fragment_validator.py"
+    ],
+    "file:tests/test_build_canonical_sections.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:scripts/build_canonical_sections.py"
+    ],
+    "file:tests/test_evidence_fragments.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "file:converters/evidence_builder/fragment_validator.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:scripts/build_canonical_sections.py"
+    ],
+    "file:tests/test_section_canonicalizer.py": [
+      "file:converters/common/source_models.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py"
+    ],
+    "file:converters/regression_validation/__init__.py": [
+      "file:converters/regression_validation/runner.py"
+    ],
+    "file:converters/regression_validation/assertions.py": [
+      "file:converters/regression_validation/normalizer.py"
+    ],
+    "file:converters/regression_validation/normalizer.py": [],
+    "file:converters/regression_validation/runner.py": [
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "file:converters/evidence_builder/fragment_validator.py",
+      "file:converters/regression_validation/assertions.py",
+      "file:converters/regression_validation/normalizer.py",
+      "file:scripts/build_canonical_sections.py"
+    ],
+    "file:scripts/validate_converter_pipeline.py": [
+      "file:converters/regression_validation/runner.py"
+    ],
+    "file:tests/test_converter_pipeline_regression.py": [
+      "file:converters/regression_validation/assertions.py",
+      "file:converters/regression_validation/normalizer.py",
+      "file:converters/regression_validation/runner.py"
+    ],
+    "config:.env.example": [],
+    "document:README.md": [],
+    "config:pyproject.toml": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json": [],
+    "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json": [],
+    "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json": [],
+    "document:.agents/skills/validate-converter-pipeline/SKILL.md": [],
+    "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml": [],
+    "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md": [],
+    "file:.python-version": [],
+    "file:.ua/.understandignore": [],
+    "config:.ua/config.json": [],
+    "document:DOCS/README.md": [],
+    "document:DOCS/data_filter.md": [],
+    "file:DOCS/universe.xlsx": [],
+    "file:DOCS/온톨로지.xlsx": [],
+    "file:agent_graph/graph.py": [
+      "file:agent_graph/state.py"
+    ],
+    "file:agent_graph/state.py": [],
+    "document:converters/README.md": [],
+    "config:knowledge_graph/neo4j_schema.yaml": [],
+    "file:main.py": [],
+    "file:scripts/approve_converter_golden.py": [],
+    "config:tests/fixtures/converter_pipeline/corpus.json": [],
+    "file:tests/test_bgem3_token_counter.py": [],
+    "file:tmp/excluded_pdf_html_corrections/manifest.jsonl": [],
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html": [],
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html": [],
+    "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json": [],
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json": [],
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json": [],
+    "config:vector_db/qdrant_schema.yaml": [],
+    "config:vector_db/r_table_embedding.yaml": []
+  },
+  "crossCategoryEdges": [
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "imports",
+      "count": 123
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "tested_by",
+      "count": 3
+    },
+    {
+      "fromType": "document",
+      "toType": "file",
+      "edgeType": "documents",
+      "count": 3
+    },
+    {
+      "fromType": "document",
+      "toType": "document",
+      "edgeType": "documents",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "document",
+      "edgeType": "configures",
+      "count": 1
+    },
+    {
+      "fromType": "document",
+      "toType": "config",
+      "edgeType": "related",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "config",
+      "edgeType": "related",
+      "count": 1
+    }
+  ],
+  "nonCodeConnections": [
+    {
+      "source": "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "target": "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "target": "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:DOCS/README.md",
+      "target": "file:DOCS/universe.xlsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:DOCS/README.md",
+      "target": "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:DOCS/data_filter.md",
+      "target": "file:DOCS/universe.xlsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:converters/README.md",
+      "target": "config:tests/fixtures/converter_pipeline/corpus.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "target": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "interGroupImports": [
+    {
+      "from": "tests",
+      "to": "converters",
+      "count": 31
+    },
+    {
+      "from": "tests",
+      "to": "vector_db",
+      "count": 13
+    },
+    {
+      "from": "scripts",
+      "to": "converters",
+      "count": 6
+    },
+    {
+      "from": "tests",
+      "to": "scripts",
+      "count": 2
+    },
+    {
+      "from": "converters",
+      "to": "scripts",
+      "count": 1
+    },
+    {
+      "from": "vector_db",
+      "to": "knowledge_graph",
+      "count": 1
+    }
+  ],
+  "intraGroupDensity": {
+    "knowledge_graph": {
+      "internalEdges": 0,
+      "totalEdges": 1,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": [
+        "vector_db"
+      ]
+    },
+    "tests": {
+      "internalEdges": 0,
+      "totalEdges": 46,
+      "density": 0,
+      "importsFromGroups": [
+        "converters",
+        "scripts",
+        "vector_db"
+      ],
+      "importedByGroups": []
+    },
+    "vector_db": {
+      "internalEdges": 17,
+      "totalEdges": 31,
+      "density": 0.5483870967741935,
+      "importsFromGroups": [
+        "knowledge_graph"
+      ],
+      "importedByGroups": [
+        "tests"
+      ]
+    },
+    "converters": {
+      "internalEdges": 51,
+      "totalEdges": 89,
+      "density": 0.5730337078651685,
+      "importsFromGroups": [
+        "scripts"
+      ],
+      "importedByGroups": [
+        "scripts",
+        "tests"
+      ]
+    },
+    "scripts": {
+      "internalEdges": 0,
+      "totalEdges": 9,
+      "density": 0,
+      "importsFromGroups": [
+        "converters"
+      ],
+      "importedByGroups": [
+        "converters",
+        "tests"
+      ]
+    },
+    "root": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    },
+    "tmp": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    },
+    ".agents": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    },
+    ".ua": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    },
+    "DOCS": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    },
+    "agent_graph": {
+      "internalEdges": 1,
+      "totalEdges": 1,
+      "density": 1,
+      "importsFromGroups": [],
+      "importedByGroups": []
+    }
+  },
+  "patternMatches": {
+    "tests": "test",
+    "DOCS": "documentation"
+  },
+  "filePatternMatches": {
+    "file:tests/test_insert_points.py": "test",
+    "file:tests/test_kv_context_builder.py": "test",
+    "file:tests/test_point_builder.py": "test",
+    "file:tests/test_r_table_column_profiler.py": "test",
+    "file:tests/test_r_table_descriptor_builder.py": "test",
+    "file:tests/test_r_table_record_context_builder.py": "test",
+    "file:tests/test_r_table_row_group_builder.py": "test",
+    "file:tests/test_r_table_strategy_selector.py": "test",
+    "file:tests/test_text2vector.py": "test",
+    "file:tests/test_text_contextual_builder.py": "test",
+    "file:vector_db/contextual_text_builders/__init__.py": "entry",
+    "file:tests/test_correction_extractor.py": "test",
+    "file:tests/test_document_loader.py": "test",
+    "file:tests/test_paragraph_parser.py": "test",
+    "file:tests/test_semantic_text_segmenter.py": "test",
+    "file:tests/test_table_context_resolver.py": "test",
+    "file:tests/test_table_parser.py": "test",
+    "file:tests/test_build_canonical_sections.py": "test",
+    "file:tests/test_evidence_fragments.py": "test",
+    "file:tests/test_section_canonicalizer.py": "test",
+    "file:converters/regression_validation/__init__.py": "entry",
+    "file:tests/test_converter_pipeline_regression.py": "test",
+    "document:README.md": "documentation",
+    "config:pyproject.toml": "config",
+    "document:.agents/skills/validate-converter-pipeline/SKILL.md": "documentation",
+    "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md": "documentation",
+    "document:DOCS/README.md": "documentation",
+    "document:DOCS/data_filter.md": "documentation",
+    "document:converters/README.md": "documentation",
+    "file:tests/test_bgem3_token_counter.py": "test"
+  },
+  "deploymentTopology": {
+    "hasDockerfile": false,
+    "hasCompose": false,
+    "hasK8s": false,
+    "hasTerraform": false,
+    "hasCI": false,
+    "infraFiles": []
+  },
+  "dataPipeline": {
+    "schemaFiles": [
+      "knowledge_graph/neo4j_schema.yaml",
+      "vector_db/qdrant_schema.yaml"
+    ],
+    "migrationFiles": [],
+    "dataModelFiles": [
+      "converters/common/source_models.py",
+      "converters/correction_extractor/correction_models.py",
+      "converters/paragraph_parser/paragraph_models.py",
+      "converters/table_context_resolver/resolver_models.py",
+      "converters/table_parser/table_models.py",
+      "converters/evidence_builder/fragment_models.py",
+      "converters/evidence_builder/fragment_validator.py",
+      "converters/section_canonicalizer/section_models.py",
+      "DOCS/universe.xlsx",
+      "DOCS/온톨로지.xlsx",
+      "agent_graph/state.py",
+      "knowledge_graph/neo4j_schema.yaml",
+      "tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "vector_db/qdrant_schema.yaml"
+    ],
+    "apiHandlerFiles": []
+  },
+  "docCoverage": {
+    "groupsWithDocs": 4,
+    "totalGroups": 11,
+    "coverageRatio": 0.36363636363636365,
+    "undocumentedGroups": [
+      "knowledge_graph",
+      "tests",
+      "vector_db",
+      "scripts",
+      "tmp",
+      ".ua",
+      "agent_graph"
+    ]
+  },
+  "dependencyDirection": [
+    {
+      "dependent": "tests",
+      "dependsOn": "converters",
+      "count": 31,
+      "reverseCount": 0
+    },
+    {
+      "dependent": "tests",
+      "dependsOn": "vector_db",
+      "count": 13,
+      "reverseCount": 0
+    },
+    {
+      "dependent": "scripts",
+      "dependsOn": "converters",
+      "count": 6,
+      "reverseCount": 1
+    },
+    {
+      "dependent": "tests",
+      "dependsOn": "scripts",
+      "count": 2,
+      "reverseCount": 0
+    },
+    {
+      "dependent": "vector_db",
+      "dependsOn": "knowledge_graph",
+      "count": 1,
+      "reverseCount": 0
+    }
+  ],
+  "fileStats": {
+    "totalFileNodes": 114,
+    "filesPerGroup": {
+      "knowledge_graph": 2,
+      "tests": 35,
+      "vector_db": 14,
+      "converters": 23,
+      "scripts": 5,
+      "root": 5,
+      "tmp": 19,
+      ".agents": 3,
+      ".ua": 2,
+      "DOCS": 4,
+      "agent_graph": 2
+    },
+    "nodeTypeCounts": {
+      "file": 71,
+      "config": 37,
+      "document": 6
+    }
+  },
+  "fileFanIn": {
+    "file:knowledge_graph/insert_DSE.py": 1,
+    "file:tests/test_insert_points.py": 0,
+    "file:tests/test_kv_context_builder.py": 0,
+    "file:tests/test_point_builder.py": 0,
+    "file:tests/test_r_table_column_profiler.py": 0,
+    "file:tests/test_r_table_descriptor_builder.py": 0,
+    "file:tests/test_r_table_record_context_builder.py": 0,
+    "file:tests/test_r_table_row_group_builder.py": 0,
+    "file:tests/test_r_table_strategy_selector.py": 0,
+    "file:tests/test_text2vector.py": 0,
+    "file:tests/test_text_contextual_builder.py": 0,
+    "file:vector_db/bgem3_token_counter.py": 2,
+    "file:vector_db/contextual_text_builders/__init__.py": 5,
+    "file:vector_db/contextual_text_builders/kv_table_context_builder.py": 1,
+    "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py": 1,
+    "file:vector_db/contextual_text_builders/r_table_record_context_builder.py": 2,
+    "file:vector_db/contextual_text_builders/r_table_row_group_builder.py": 2,
+    "file:vector_db/contextual_text_builders/text_context_builder.py": 1,
+    "file:vector_db/insert_points.py": 1,
+    "file:vector_db/point_builder.py": 3,
+    "file:vector_db/r_table_column_profiler.py": 4,
+    "file:vector_db/r_table_strategy_selector.py": 5,
+    "file:vector_db/text2vector.py": 3,
+    "file:converters/common/document_loader.py": 8,
+    "file:converters/common/source_models.py": 24,
+    "file:converters/common/source_resolver.py": 1,
+    "file:converters/correction_extractor/correction_extractor.py": 1,
+    "file:converters/correction_extractor/correction_models.py": 2,
+    "file:converters/evidence_builder/fragment_assembler.py": 2,
+    "file:converters/evidence_builder/semantic_text_segmenter.py": 2,
+    "file:converters/paragraph_parser/paragraph_models.py": 5,
+    "file:converters/paragraph_parser/paragraph_parser.py": 4,
+    "file:converters/table_context_resolver/resolver_models.py": 1,
+    "file:converters/table_context_resolver/table_context_resolver.py": 2,
+    "file:converters/table_parser/table_models.py": 5,
+    "file:converters/table_parser/table_parser.py": 4,
+    "file:tests/test_correction_extractor.py": 0,
+    "file:tests/test_document_loader.py": 0,
+    "file:tests/test_paragraph_parser.py": 0,
+    "file:tests/test_semantic_text_segmenter.py": 0,
+    "file:tests/test_table_context_resolver.py": 0,
+    "file:tests/test_table_parser.py": 0,
+    "file:converters/evidence_builder/fragment_models.py": 2,
+    "file:converters/evidence_builder/fragment_pipeline.py": 4,
+    "file:converters/evidence_builder/fragment_validator.py": 3,
+    "file:converters/section_canonicalizer/section_canonicalizer.py": 5,
+    "file:converters/section_canonicalizer/section_models.py": 5,
+    "file:scripts/build_canonical_sections.py": 3,
+    "file:scripts/build_evidence_fragments.py": 0,
+    "file:scripts/validate_evidence_fragments.py": 0,
+    "file:tests/test_build_canonical_sections.py": 0,
+    "file:tests/test_evidence_fragments.py": 0,
+    "file:tests/test_section_canonicalizer.py": 0,
+    "file:converters/regression_validation/__init__.py": 0,
+    "file:converters/regression_validation/assertions.py": 2,
+    "file:converters/regression_validation/normalizer.py": 3,
+    "file:converters/regression_validation/runner.py": 3,
+    "file:scripts/validate_converter_pipeline.py": 0,
+    "file:tests/test_converter_pipeline_regression.py": 0,
+    "config:.env.example": 0,
+    "document:README.md": 0,
+    "config:pyproject.toml": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json": 0,
+    "document:.agents/skills/validate-converter-pipeline/SKILL.md": 0,
+    "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml": 0,
+    "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md": 0,
+    "file:.python-version": 0,
+    "file:.ua/.understandignore": 0,
+    "config:.ua/config.json": 0,
+    "document:DOCS/README.md": 0,
+    "document:DOCS/data_filter.md": 0,
+    "file:DOCS/universe.xlsx": 0,
+    "file:DOCS/온톨로지.xlsx": 0,
+    "file:agent_graph/graph.py": 0,
+    "file:agent_graph/state.py": 1,
+    "document:converters/README.md": 0,
+    "config:knowledge_graph/neo4j_schema.yaml": 0,
+    "file:main.py": 0,
+    "file:scripts/approve_converter_golden.py": 0,
+    "config:tests/fixtures/converter_pipeline/corpus.json": 0,
+    "file:tests/test_bgem3_token_counter.py": 0,
+    "file:tmp/excluded_pdf_html_corrections/manifest.jsonl": 0,
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html": 0,
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html": 0,
+    "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json": 0,
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json": 0,
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json": 0,
+    "config:vector_db/qdrant_schema.yaml": 0,
+    "config:vector_db/r_table_embedding.yaml": 0
+  },
+  "fileFanOut": {
+    "file:knowledge_graph/insert_DSE.py": 0,
+    "file:tests/test_insert_points.py": 2,
+    "file:tests/test_kv_context_builder.py": 1,
+    "file:tests/test_point_builder.py": 2,
+    "file:tests/test_r_table_column_profiler.py": 1,
+    "file:tests/test_r_table_descriptor_builder.py": 2,
+    "file:tests/test_r_table_record_context_builder.py": 1,
+    "file:tests/test_r_table_row_group_builder.py": 1,
+    "file:tests/test_r_table_strategy_selector.py": 1,
+    "file:tests/test_text2vector.py": 1,
+    "file:tests/test_text_contextual_builder.py": 1,
+    "file:vector_db/bgem3_token_counter.py": 0,
+    "file:vector_db/contextual_text_builders/__init__.py": 5,
+    "file:vector_db/contextual_text_builders/kv_table_context_builder.py": 0,
+    "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py": 1,
+    "file:vector_db/contextual_text_builders/r_table_record_context_builder.py": 0,
+    "file:vector_db/contextual_text_builders/r_table_row_group_builder.py": 3,
+    "file:vector_db/contextual_text_builders/text_context_builder.py": 0,
+    "file:vector_db/insert_points.py": 3,
+    "file:vector_db/point_builder.py": 4,
+    "file:vector_db/r_table_column_profiler.py": 1,
+    "file:vector_db/r_table_strategy_selector.py": 1,
+    "file:vector_db/text2vector.py": 0,
+    "file:converters/common/document_loader.py": 1,
+    "file:converters/common/source_models.py": 0,
+    "file:converters/common/source_resolver.py": 2,
+    "file:converters/correction_extractor/correction_extractor.py": 4,
+    "file:converters/correction_extractor/correction_models.py": 1,
+    "file:converters/evidence_builder/fragment_assembler.py": 11,
+    "file:converters/evidence_builder/semantic_text_segmenter.py": 1,
+    "file:converters/paragraph_parser/paragraph_models.py": 1,
+    "file:converters/paragraph_parser/paragraph_parser.py": 3,
+    "file:converters/table_context_resolver/resolver_models.py": 2,
+    "file:converters/table_context_resolver/table_context_resolver.py": 4,
+    "file:converters/table_parser/table_models.py": 1,
+    "file:converters/table_parser/table_parser.py": 3,
+    "file:tests/test_correction_extractor.py": 3,
+    "file:tests/test_document_loader.py": 2,
+    "file:tests/test_paragraph_parser.py": 3,
+    "file:tests/test_semantic_text_segmenter.py": 3,
+    "file:tests/test_table_context_resolver.py": 4,
+    "file:tests/test_table_parser.py": 3,
+    "file:converters/evidence_builder/fragment_models.py": 0,
+    "file:converters/evidence_builder/fragment_pipeline.py": 5,
+    "file:converters/evidence_builder/fragment_validator.py": 2,
+    "file:converters/section_canonicalizer/section_canonicalizer.py": 3,
+    "file:converters/section_canonicalizer/section_models.py": 1,
+    "file:scripts/build_canonical_sections.py": 3,
+    "file:scripts/build_evidence_fragments.py": 1,
+    "file:scripts/validate_evidence_fragments.py": 1,
+    "file:tests/test_build_canonical_sections.py": 3,
+    "file:tests/test_evidence_fragments.py": 6,
+    "file:tests/test_section_canonicalizer.py": 3,
+    "file:converters/regression_validation/__init__.py": 1,
+    "file:converters/regression_validation/assertions.py": 1,
+    "file:converters/regression_validation/normalizer.py": 0,
+    "file:converters/regression_validation/runner.py": 5,
+    "file:scripts/validate_converter_pipeline.py": 1,
+    "file:tests/test_converter_pipeline_regression.py": 3,
+    "config:.env.example": 0,
+    "document:README.md": 0,
+    "config:pyproject.toml": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json": 0,
+    "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json": 0,
+    "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json": 0,
+    "document:.agents/skills/validate-converter-pipeline/SKILL.md": 0,
+    "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml": 0,
+    "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md": 0,
+    "file:.python-version": 0,
+    "file:.ua/.understandignore": 0,
+    "config:.ua/config.json": 0,
+    "document:DOCS/README.md": 0,
+    "document:DOCS/data_filter.md": 0,
+    "file:DOCS/universe.xlsx": 0,
+    "file:DOCS/온톨로지.xlsx": 0,
+    "file:agent_graph/graph.py": 1,
+    "file:agent_graph/state.py": 0,
+    "document:converters/README.md": 0,
+    "config:knowledge_graph/neo4j_schema.yaml": 0,
+    "file:main.py": 0,
+    "file:scripts/approve_converter_golden.py": 0,
+    "config:tests/fixtures/converter_pipeline/corpus.json": 0,
+    "file:tests/test_bgem3_token_counter.py": 0,
+    "file:tmp/excluded_pdf_html_corrections/manifest.jsonl": 0,
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html": 0,
+    "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html": 0,
+    "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json": 0,
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json": 0,
+    "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json": 0,
+    "config:vector_db/qdrant_schema.yaml": 0,
+    "config:vector_db/r_table_embedding.yaml": 0
+  }
+}

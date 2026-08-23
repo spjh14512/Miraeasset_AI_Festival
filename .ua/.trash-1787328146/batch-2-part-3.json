@@ -1,0 +1,1248 @@
+{
+  "nodes": [
+    {
+      "id": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "file",
+      "name": "paragraph_parser.py",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "summary": "XML/HTML의 P, SPAN, BR, anchor 구조를 순서와 source attribute를 보존한 canonical paragraph로 변환합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_tag",
+      "type": "function",
+      "name": "_tag",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        50,
+        51
+      ],
+      "summary": "tag 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        54,
+        55
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_source_attributes",
+      "type": "function",
+      "name": "_source_attributes",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        58,
+        63
+      ],
+      "summary": "source attributes 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_leading_marker",
+      "type": "function",
+      "name": "_leading_marker",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        66,
+        76
+      ],
+      "summary": "leading marker 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_child_paths",
+      "type": "function",
+      "name": "_child_paths",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        79,
+        86
+      ],
+      "summary": "child paths 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_append_fragment",
+      "type": "function",
+      "name": "_append_fragment",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        89,
+        108
+      ],
+      "summary": "append fragment 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_raw_text_with_breaks",
+      "type": "function",
+      "name": "_raw_text_with_breaks",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        111,
+        119
+      ],
+      "summary": "raw text with breaks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_p_fragments",
+      "type": "function",
+      "name": "_p_fragments",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        122,
+        172
+      ],
+      "summary": "p fragments 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraph_element",
+      "type": "function",
+      "name": "parse_paragraph_element",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        175,
+        206
+      ],
+      "summary": "source 구조를 분석하여 parse paragraph element canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_span_run_paragraph",
+      "type": "function",
+      "name": "_span_run_paragraph",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        209,
+        255
+      ],
+      "summary": "span run paragraph 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:parse_span_run_elements",
+      "type": "function",
+      "name": "parse_span_run_elements",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        258,
+        284
+      ],
+      "summary": "source 구조를 분석하여 parse span run elements canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_is_layout_title_span",
+      "type": "function",
+      "name": "_is_layout_title_span",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        287,
+        289
+      ],
+      "summary": "is layout title span 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:_is_excluded",
+      "type": "function",
+      "name": "_is_excluded",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        292,
+        301
+      ],
+      "summary": "is excluded 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraphs",
+      "type": "function",
+      "name": "parse_paragraphs",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "lineRange": [
+        304,
+        430
+      ],
+      "summary": "source 구조를 분석하여 parse paragraphs canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/table_context_resolver/resolver_models.py",
+      "type": "file",
+      "name": "resolver_models.py",
+      "filePath": "converters/table_context_resolver/resolver_models.py",
+      "summary": "table evidence bundle과 table context resolution 결과를 표현하는 dataclass model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_context_resolver/resolver_models.py:TableEvidenceBundle",
+      "type": "class",
+      "name": "TableEvidenceBundle",
+      "filePath": "converters/table_context_resolver/resolver_models.py",
+      "lineRange": [
+        13,
+        26
+      ],
+      "summary": "TableEvidenceBundle domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_context_resolver/resolver_models.py:TableContextResolution",
+      "type": "class",
+      "name": "TableContextResolution",
+      "filePath": "converters/table_context_resolver/resolver_models.py",
+      "lineRange": [
+        30,
+        41
+      ],
+      "summary": "TableContextResolution domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "file",
+      "name": "table_context_resolver.py",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "summary": "주변 paragraph와 layout table에서 title, unit, caption, note를 찾아 각 canonical table에 안전하게 연결합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_paragraph_role",
+      "type": "function",
+      "name": "_paragraph_role",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        38,
+        52
+      ],
+      "summary": "paragraph role 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_context_block",
+      "type": "function",
+      "name": "_context_block",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        55,
+        65
+      ],
+      "summary": "context block 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_table_source_ref",
+      "type": "function",
+      "name": "_table_source_ref",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        68,
+        82
+      ],
+      "summary": "table source ref 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_layout_context_block",
+      "type": "function",
+      "name": "_layout_context_block",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        85,
+        98
+      ],
+      "summary": "layout context block 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_merge_context",
+      "type": "function",
+      "name": "_merge_context",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        101,
+        126
+      ],
+      "summary": "merge context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:_unique_source_refs",
+      "type": "function",
+      "name": "_unique_source_refs",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        129,
+        139
+      ],
+      "summary": "unique source refs 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/table_context_resolver/table_context_resolver.py:resolve_table_contexts",
+      "type": "function",
+      "name": "resolve_table_contexts",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "lineRange": [
+        142,
+        246
+      ],
+      "summary": "resolve table contexts 처리 규칙을 구현하여 table_context_resolver workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/table_parser/table_models.py",
+      "type": "file",
+      "name": "table_models.py",
+      "filePath": "converters/table_parser/table_models.py",
+      "summary": "table type, cell/row role, logical grid, canonical table/group을 표현하는 parser domain model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:TableType",
+      "type": "class",
+      "name": "TableType",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        16,
+        20
+      ],
+      "summary": "TableType domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:ParseStatus",
+      "type": "class",
+      "name": "ParseStatus",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        23,
+        27
+      ],
+      "summary": "ParseStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:CellRole",
+      "type": "class",
+      "name": "CellRole",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        30,
+        36
+      ],
+      "summary": "CellRole domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:ContextStatus",
+      "type": "class",
+      "name": "ContextStatus",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        39,
+        42
+      ],
+      "summary": "ContextStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:RowType",
+      "type": "class",
+      "name": "RowType",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        45,
+        49
+      ],
+      "summary": "RowType domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:LayoutRole",
+      "type": "class",
+      "name": "LayoutRole",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        52,
+        56
+      ],
+      "summary": "LayoutRole domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:SourceSyntax",
+      "type": "class",
+      "name": "SourceSyntax",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        59,
+        62
+      ],
+      "summary": "SourceSyntax domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:ParseIssue",
+      "type": "class",
+      "name": "ParseIssue",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        66,
+        76
+      ],
+      "summary": "ParseIssue 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:TableContext",
+      "type": "class",
+      "name": "TableContext",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        80,
+        84
+      ],
+      "summary": "TableContext domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:SourceCell",
+      "type": "class",
+      "name": "SourceCell",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        88,
+        111
+      ],
+      "summary": "SourceCell domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:LogicalGrid",
+      "type": "class",
+      "name": "LogicalGrid",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        115,
+        126
+      ],
+      "summary": "LogicalGrid domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:CanonicalTable",
+      "type": "class",
+      "name": "CanonicalTable",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        130,
+        171
+      ],
+      "summary": "CanonicalTable domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/table_parser/table_models.py:CanonicalTableGroup",
+      "type": "class",
+      "name": "CanonicalTableGroup",
+      "filePath": "converters/table_parser/table_models.py",
+      "lineRange": [
+        175,
+        187
+      ],
+      "summary": "CanonicalTableGroup domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_tag",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_tag",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_source_attributes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_source_attributes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_leading_marker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_leading_marker",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_child_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_child_paths",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_append_fragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_append_fragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_raw_text_with_breaks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_raw_text_with_breaks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_p_fragments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_p_fragments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraph_element",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraph_element",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_span_run_paragraph",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_span_run_paragraph",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_span_run_elements",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_span_run_elements",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_is_layout_title_span",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_is_layout_title_span",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_is_excluded",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:_is_excluded",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraphs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "function:converters/paragraph_parser/paragraph_parser.py:parse_paragraphs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "class:converters/table_context_resolver/resolver_models.py:TableEvidenceBundle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "class:converters/table_context_resolver/resolver_models.py:TableEvidenceBundle",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "class:converters/table_context_resolver/resolver_models.py:TableContextResolution",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "class:converters/table_context_resolver/resolver_models.py:TableContextResolution",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_paragraph_role",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_paragraph_role",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_context_block",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_context_block",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_table_source_ref",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_table_source_ref",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_layout_context_block",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_layout_context_block",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_merge_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_merge_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_unique_source_refs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:_unique_source_refs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:resolve_table_contexts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "function:converters/table_context_resolver/table_context_resolver.py:resolve_table_contexts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/resolver_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:TableType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:TableType",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ParseStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ParseStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CellRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CellRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ContextStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ContextStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:RowType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:RowType",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:LayoutRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:LayoutRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:SourceSyntax",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:SourceSyntax",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ParseIssue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:ParseIssue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:TableContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:TableContext",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:SourceCell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:SourceCell",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:LogicalGrid",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:LogicalGrid",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CanonicalTable",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CanonicalTable",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CanonicalTableGroup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "class:converters/table_parser/table_models.py:CanonicalTableGroup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

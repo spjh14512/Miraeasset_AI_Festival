@@ -1,0 +1,2347 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 114,
+  "totalBatches": 9,
+  "exportsByPath": {
+    ".python-version": [],
+    ".ua/.understandignore": [],
+    "DOCS/universe.xlsx": [],
+    "DOCS/온톨로지.xlsx": [],
+    "agent_graph/graph.py": [
+      "analyze_question"
+    ],
+    "agent_graph/state.py": [
+      "AgentState",
+      "QueryPlan"
+    ],
+    "converters/common/document_loader.py": [
+      "DocumentLoadStatus",
+      "DocumentLoadIssue",
+      "LoadedDocument",
+      "repair_xml_text",
+      "_decode_source",
+      "_LooseHTMLTreeBuilder",
+      "load_document"
+    ],
+    "converters/common/source_models.py": [
+      "DocumentSyntax",
+      "ContextRole",
+      "ContextPosition",
+      "DocumentContext",
+      "SourceRef",
+      "EvidenceContextBlock",
+      "EvidenceContext"
+    ],
+    "converters/common/source_resolver.py": [
+      "_tag",
+      "ResolvedElement",
+      "SourceResolver"
+    ],
+    "converters/correction_extractor/correction_extractor.py": [
+      "_tag",
+      "_clean_text",
+      "_compact_text",
+      "_element_text",
+      "_decode_source",
+      "_normalize_date",
+      "_first_matching_text",
+      "_value_after_paragraph_label",
+      "_reason_from_tables",
+      "_value_after_table_label",
+      "_xml_metadata",
+      "_xml_blocks",
+      "_find_correction_element",
+      "_not_found",
+      "_failed",
+      "_extract_xml_element",
+      "_extract_xml_source",
+      "_HTMLTable",
+      "_CorrectionHTMLParser",
+      "_html_label_value",
+      "_extract_html_source",
+      "extract_correction"
+    ],
+    "converters/correction_extractor/correction_models.py": [
+      "CorrectionStatus",
+      "CorrectionBlockType",
+      "CorrectionIssue",
+      "CorrectionBlockRef",
+      "CorrectionMetadata",
+      "CorrectionExtraction"
+    ],
+    "converters/evidence_builder/fragment_assembler.py": [
+      "_ParsedBlock",
+      "_SemanticBlock",
+      "_clean_text",
+      "_paragraph_references",
+      "_unique_references",
+      "_first_table_index",
+      "_context_payload",
+      "_kv_payload",
+      "_record_payloads",
+      "_headers",
+      "_unknown_rows",
+      "_looks_like_layout_unknown",
+      "_fallback_row_type",
+      "_fallback_unknown",
+      "_semantic_json",
+      "_with_semantic_context",
+      "_semantic_blocks",
+      "_captions_by_table",
+      "_parse_blocks",
+      "build_section_fragment",
+      "build_source_fragments"
+    ],
+    "converters/evidence_builder/fragment_models.py": [
+      "EvidenceType",
+      "StorageMode",
+      "FragmentEvidence",
+      "ExternalTableRecord",
+      "EvidenceFragment"
+    ],
+    "converters/evidence_builder/fragment_pipeline.py": [
+      "_json_lines",
+      "_sha256",
+      "_atomic_write",
+      "_combined_source_hash",
+      "_kept_sections",
+      "project_graph_sections",
+      "_fragment_filename",
+      "_overall_status",
+      "_failed_record",
+      "_build_one",
+      "build_evidence_fragments",
+      "main"
+    ],
+    "converters/evidence_builder/fragment_validator.py": [
+      "_json_lines",
+      "_sha256",
+      "_find_forbidden",
+      "validate_fragment",
+      "validate_evidence_fragments",
+      "main"
+    ],
+    "converters/evidence_builder/semantic_text_segmenter.py": [
+      "SemanticTextRole",
+      "SemanticTextSegment",
+      "_clean_text",
+      "_fragment_references",
+      "_references_for_text",
+      "_marker",
+      "_looks_like_heading",
+      "_is_bold_heading",
+      "_marker_kind_at",
+      "_inside_quote",
+      "_split_marker_chunks",
+      "_split_heading_body",
+      "_split_caption_prefix",
+      "_classify",
+      "_segments_from_text",
+      "segment_paragraph"
+    ],
+    "converters/paragraph_parser/paragraph_models.py": [
+      "ParagraphParseStatus",
+      "ParagraphSourceKind",
+      "FragmentKind",
+      "MarkerKind",
+      "ParagraphIssue",
+      "LeadingMarker",
+      "ParagraphFragment",
+      "CanonicalParagraph",
+      "CanonicalParagraphCollection"
+    ],
+    "converters/paragraph_parser/paragraph_parser.py": [
+      "_tag",
+      "_clean_text",
+      "_source_attributes",
+      "_leading_marker",
+      "_child_paths",
+      "_append_fragment",
+      "_raw_text_with_breaks",
+      "_p_fragments",
+      "parse_paragraph_element",
+      "_span_run_paragraph",
+      "parse_span_run_elements",
+      "_is_layout_title_span",
+      "_is_excluded",
+      "parse_paragraphs"
+    ],
+    "converters/regression_validation/__init__.py": [],
+    "converters/regression_validation/assertions.py": [
+      "AssertionFailure",
+      "_evidence",
+      "_table",
+      "_record",
+      "_path",
+      "evaluate_case"
+    ],
+    "converters/regression_validation/normalizer.py": [
+      "normalize_text",
+      "normalize_value",
+      "normalize_duplicate_value",
+      "stable_sha256",
+      "fragment_summary",
+      "case_snapshot"
+    ],
+    "converters/regression_validation/runner.py": [
+      "_sha256_bytes",
+      "_read_json",
+      "_tree_signature",
+      "_selected_cases",
+      "_hydrate_sources",
+      "_load_fragments",
+      "_write_candidate",
+      "_compare_golden",
+      "run_regression",
+      "_arguments",
+      "main"
+    ],
+    "converters/section_canonicalizer/section_canonicalizer.py": [
+      "_tag",
+      "_clean_text",
+      "_element_text",
+      "_child_paths",
+      "_source_ref",
+      "_Exclusions",
+      "_exclusions",
+      "_is_section",
+      "_section_level",
+      "_find_section_title",
+      "_scan_blocks",
+      "_HeadingCandidate",
+      "_numbered_heading",
+      "_styled_heading",
+      "_single_cell_table_text",
+      "_implicit_headings",
+      "_document_title",
+      "_SectionBuilder",
+      "_explicit_sections",
+      "_implicit_sections",
+      "chunk_sections"
+    ],
+    "converters/section_canonicalizer/section_models.py": [
+      "SectionParseStatus",
+      "SectionBoundaryKind",
+      "SectionBlockType",
+      "SectionIssue",
+      "SectionBlockRef",
+      "CanonicalSection",
+      "CanonicalSectionCollection"
+    ],
+    "converters/table_context_resolver/resolver_models.py": [
+      "TableEvidenceBundle",
+      "TableContextResolution"
+    ],
+    "converters/table_context_resolver/table_context_resolver.py": [
+      "_paragraph_role",
+      "_context_block",
+      "_table_source_ref",
+      "_layout_context_block",
+      "_merge_context",
+      "_unique_source_refs",
+      "resolve_table_contexts"
+    ],
+    "converters/table_parser/table_models.py": [
+      "TableType",
+      "ParseStatus",
+      "CellRole",
+      "ContextStatus",
+      "RowType",
+      "LayoutRole",
+      "SourceSyntax",
+      "ParseIssue",
+      "TableContext",
+      "SourceCell",
+      "LogicalGrid",
+      "CanonicalTable",
+      "CanonicalTableGroup"
+    ],
+    "converters/table_parser/table_parser.py": [
+      "_tag",
+      "_positive_span",
+      "_clean_text",
+      "_top_level_paragraphs",
+      "extract_cell_text",
+      "_owned_descendants",
+      "_table_rows",
+      "_row_cells",
+      "build_logical_grid",
+      "_strong_value",
+      "_thead_row_indexes",
+      "_inferred_header_rows",
+      "_plain_td_kv_value_ids",
+      "_unique_cells",
+      "_layout_role",
+      "classify_table_type",
+      "_scan_left",
+      "_scan_header_up",
+      "_scan_full_width_section_up",
+      "_deduplicate_paths",
+      "_parse_kv",
+      "_header_paths",
+      "_classify_row_type",
+      "_parse_record",
+      "_parse_layout",
+      "_parse_unknown",
+      "parse_table",
+      "_repair_xml",
+      "_LooseTableHTMLParser",
+      "_first_table",
+      "_failed_table",
+      "parse_table_fragment",
+      "_direct_group_tables",
+      "_table_source_ref",
+      "_group_context_block",
+      "_compound_context_blocks",
+      "_split_context_blocks",
+      "_append_context_blocks",
+      "parse_table_group"
+    ],
+    "knowledge_graph/insert_DSE.py": [
+      "parse_args",
+      "load_schema",
+      "schema_properties",
+      "filter_properties",
+      "read_jsonl",
+      "valid_manifest_rows",
+      "allocation_by_group",
+      "select_disclosures",
+      "graph_id",
+      "flattened_headers",
+      "flattened_keys",
+      "joined_caption",
+      "build_rows",
+      "chunks",
+      "run_batched",
+      "insert_rows",
+      "summary",
+      "main"
+    ],
+    "main.py": [
+      "main"
+    ],
+    "scripts/approve_converter_golden.py": [
+      "_arguments",
+      "main"
+    ],
+    "scripts/build_canonical_sections.py": [
+      "_json_lines",
+      "_atomic_write_text",
+      "_sha256",
+      "_source_files",
+      "_combined_source_hash",
+      "_overall_status",
+      "_append_section_outputs",
+      "_failed_record",
+      "_completed_record",
+      "_build_one",
+      "build_canonical_sections",
+      "_arguments",
+      "main"
+    ],
+    "scripts/build_evidence_fragments.py": [],
+    "scripts/validate_converter_pipeline.py": [],
+    "scripts/validate_evidence_fragments.py": [],
+    "tests/test_bgem3_token_counter.py": [
+      "_clear_tokenizer_cache",
+      "_FakeTokenizer",
+      "test_counts_special_tokens_without_truncation_and_reuses_tokenizer",
+      "test_uses_the_requested_huggingface_model_id",
+      "test_rejects_invalid_text",
+      "test_rejects_invalid_model_name",
+      "test_rejects_invalid_token_ids"
+    ],
+    "tests/test_build_canonical_sections.py": [
+      "_write_manifest",
+      "test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+      "test_builder_records_missing_processable_source_as_failure",
+      "test_graph_output_omits_structural_root_and_keeps_standalone_synthetic"
+    ],
+    "tests/test_converter_pipeline_regression.py": [
+      "_fragment",
+      "test_semantic_mutation_is_detected",
+      "test_duplicate_normalizer_ignores_source_copy_whitespace",
+      "test_candidate_generation_never_overwrites",
+      "test_snapshot_mutation_is_detected",
+      "test_quick_profile_is_isolated"
+    ],
+    "tests/test_correction_extractor.py": [
+      "_context",
+      "_xml_correction",
+      "_html_correction",
+      "test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context",
+      "test_current_rcept_no_does_not_depend_on_correction_date",
+      "test_xml_element_input_is_not_mutated",
+      "test_xml_recovery_preserves_bare_ampersand_reason",
+      "test_xml_metadata_can_be_split_across_table_cells",
+      "test_xml_target_can_follow_label_paragraph_and_date_allows_spaces",
+      "test_non_correction_phrase_is_not_a_false_positive",
+      "test_exchange_html_uses_container_and_three_d8_tables",
+      "test_exchange_html_can_fall_back_to_d8_table_ids",
+      "test_html_without_correction_markers_is_not_found"
+    ],
+    "tests/test_document_loader.py": [
+      "test_load_valid_xml_without_recovery",
+      "test_load_xml_with_bare_ampersand_records_recovery",
+      "test_unrecoverable_xml_returns_failed_result",
+      "test_malformed_attributes_and_html_entities_use_tolerant_xml_recovery",
+      "test_loose_exchange_html_is_loaded_with_omitted_cell_end_tags"
+    ],
+    "tests/test_evidence_fragments.py": [
+      "_context",
+      "test_section_fragment_has_minimal_top_level_and_r_table_records",
+      "test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+      "test_navigation_layout_does_not_become_table_title",
+      "test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+      "test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+      "test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+      "test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+      "test_kv_payload_omits_provenance_fields",
+      "test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+      "test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+      "test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+      "test_compound_base_date_and_unit_strip_becomes_r_table_context",
+      "test_split_xbrl_context_tables_become_r_table_context",
+      "test_pipeline_writes_one_fragment_per_graph_section_and_validates"
+    ],
+    "tests/test_insert_points.py": [
+      "_schema",
+      "_Client",
+      "test_loads_current_qdrant_schema",
+      "test_ensure_collection_creates_named_vector_and_payload_indexes",
+      "test_existing_collection_is_not_recreated",
+      "test_selected_disclosures_reuses_insert_dse_selection",
+      "_assert_selected_disclosures_reuses_insert_dse_selection",
+      "test_batch_embedding_deduplicates_contextual_text",
+      "test_upsert_uses_named_vectors_and_requested_batch_size",
+      "test_upsert_rejects_invalid_batch_size"
+    ],
+    "tests/test_kv_context_builder.py": [
+      "test_builds_complete_kv_table_contextual_text",
+      "test_omits_missing_table_context_and_preserves_each_key_path",
+      "test_rejects_invalid_kv_evidence"
+    ],
+    "tests/test_paragraph_parser.py": [
+      "_document_context",
+      "test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes",
+      "test_inline_disclosure_anchor_preserves_refno_and_text",
+      "test_consecutive_p_elements_stay_separate_and_empty_p_is_skipped",
+      "test_explicit_br_is_preserved_without_inventing_screen_line_breaks",
+      "test_table_correction_and_title_subtrees_are_not_duplicate_paragraphs",
+      "test_orphan_span_siblings_become_one_span_run_but_bold_title_is_skipped",
+      "test_evidence_and_document_context_are_preserved_in_output",
+      "test_leading_marker_classification",
+      "test_parse_paragraph_element_does_not_mutate_input",
+      "test_recovered_document_marks_collection_and_paragraph",
+      "test_explicit_source_ref_excludes_html_subtree"
+    ],
+    "tests/test_point_builder.py": [
+      "_fragment",
+      "_selector",
+      "_whole_table_selector",
+      "test_builds_text_kv_and_one_point_for_a_small_r_table",
+      "test_payload_has_nested_retrieval_text_and_minimal_canonical_data",
+      "test_kv_canonical_preserves_key_value_pairs_and_omits_empty_metadata",
+      "test_r_table_metadata_omits_fields_without_values",
+      "test_structured_oversized_r_table_builds_descriptor_with_all_records",
+      "test_semantic_oversized_r_table_stores_only_each_row_group_records",
+      "test_point_ids_are_deterministic_and_evidence_specific",
+      "test_embedding_and_point_assembly_are_separate_and_cache_ready",
+      "test_rejects_mismatched_section_context",
+      "test_rejects_orphan_records"
+    ],
+    "tests/test_r_table_column_profiler.py": [
+      "_evidence",
+      "_records",
+      "test_profiles_dimension_and_measure_columns",
+      "test_profiles_identifier_date_and_long_text_columns",
+      "test_empty_cells_are_excluded_and_explicit_values_are_profiled",
+      "test_high_cardinality_dimension_omits_values",
+      "test_total_dimension_value_limit_preserves_record_index_order",
+      "test_config_threshold_changes_column_role",
+      "test_header_keywords_only_adjust_roles_when_values_support_them",
+      "test_year_and_numeric_identifier_headers_correct_numeric_profiles",
+      "test_analysis_to_dict_preserves_multi_level_headers_and_roles",
+      "test_loads_default_column_profiling_config",
+      "test_rejects_invalid_table_structure"
+    ],
+    "tests/test_r_table_descriptor_builder.py": [
+      "_evidence",
+      "_records",
+      "test_builds_descriptor_from_context_headers_and_dimension_values",
+      "test_omits_high_cardinality_and_non_dimension_values",
+      "test_omits_missing_optional_table_context_lines",
+      "test_rejects_mismatched_column_analysis"
+    ],
+    "tests/test_r_table_record_context_builder.py": [
+      "_evidence",
+      "test_builds_one_contextual_text_per_r_table_record",
+      "test_builds_one_contextual_text_for_the_complete_r_table",
+      "test_complete_r_table_rejects_cross_table_records",
+      "test_omits_empty_values_but_preserves_explicit_source_values",
+      "test_renders_non_data_row_type_and_row_context",
+      "test_rejects_invalid_r_table_input"
+    ],
+    "tests/test_r_table_row_group_builder.py": [
+      "_evidence",
+      "_records",
+      "_row_weighted_token_counter",
+      "test_groups_records_greedily_without_overlap_or_omission",
+      "test_uses_configured_default_row_group_limit",
+      "test_keeps_one_oversized_record_as_a_singleton_group",
+      "test_empty_table_produces_no_groups_without_counting_tokens",
+      "test_rejects_invalid_table_structure",
+      "test_rejects_invalid_token_counter_result"
+    ],
+    "tests/test_r_table_strategy_selector.py": [
+      "_evidence",
+      "_records",
+      "_config",
+      "test_short_numeric_table_selects_whole_table",
+      "test_short_long_text_table_still_selects_whole_table",
+      "test_oversized_numeric_table_selects_descriptor",
+      "test_oversized_long_text_table_selects_row_group",
+      "test_empty_cells_are_excluded_but_explicit_values_are_preserved",
+      "test_config_threshold_changes_the_selected_strategy",
+      "test_decision_can_be_serialized_for_future_analysis",
+      "test_loads_default_thresholds_from_yaml",
+      "test_rejects_invalid_table_structure",
+      "test_rejects_invalid_token_counter_result"
+    ],
+    "tests/test_section_canonicalizer.py": [
+      "_document_context",
+      "test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+      "test_every_source_block_belongs_to_only_one_deepest_section",
+      "test_title_is_metadata_and_not_a_paragraph_block",
+      "test_correction_subtree_is_skipped_without_mutating_input",
+      "test_explicit_html_exclusion_skips_entire_container",
+      "test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+      "test_repeated_numbered_paragraphs_are_implicit_sections",
+      "test_single_numbered_paragraph_does_not_create_implicit_boundary",
+      "test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+      "test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+      "test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+      "test_recovered_and_failed_document_statuses_are_traceable"
+    ],
+    "tests/test_semantic_text_segmenter.py": [
+      "_context",
+      "_segments",
+      "test_bold_inline_headings_split_one_p_into_semantic_units",
+      "test_concatenated_marker_chain_is_split_without_rewriting_text",
+      "test_br_is_a_semantic_boundary_and_reference_stays_with_notice",
+      "test_substantive_prefix_is_separated_from_final_table_caption_sentence",
+      "test_sentence_wrapping_and_substring_do_not_create_false_headings",
+      "test_numbered_section_name_inside_reference_sentence_is_not_a_heading",
+      "test_concatenated_numeric_heading_and_korean_caption_are_split",
+      "test_concatenated_numbered_items_split_after_sentence_end",
+      "test_parenthesized_heading_is_split_from_consolidated_entity_body"
+    ],
+    "tests/test_table_context_resolver.py": [
+      "_document_context",
+      "test_resolver_bundles_photo_style_title_unit_and_trailing_notes",
+      "test_resolver_does_not_attach_ambiguous_narrative_or_cross_table_boundary"
+    ],
+    "tests/test_table_parser.py": [
+      "_field_by_value",
+      "test_table_preserves_shared_evidence_context_in_canonical_output",
+      "test_logical_grid_shares_merged_cell_identity",
+      "test_simple_kv_keeps_only_final_key_paths_and_source_attributes",
+      "test_hierarchical_kv_context_and_colspan_do_not_leak_previous_labels",
+      "test_merged_value_retains_multiple_contexts",
+      "test_nested_p_and_span_keep_paragraph_boundaries",
+      "test_aupdatecont_is_metadata_not_a_role_rule",
+      "test_tu_preserves_aunit_and_aunitvalue_without_dedicated_code_fields",
+      "test_simple_record_table_extracts_columns_and_records",
+      "test_record_without_thead_is_inferred_from_repeated_rows",
+      "test_plain_td_key_value_matrix_is_not_mistaken_for_record_header",
+      "test_multilevel_record_header_row_context_and_totals",
+      "test_layout_and_table_group_attach_title_and_unit",
+      "test_table_group_attaches_compound_base_date_and_unit_strip",
+      "test_table_group_keeps_non_context_single_row_kv_table",
+      "test_table_group_attaches_split_date_caption_and_unit_strip",
+      "test_table_group_attaches_split_context_title_period_and_unit",
+      "test_table_group_keeps_split_context_candidate_with_real_kv_value",
+      "test_navigation_layout_is_ignored_but_anchor_title_is_preserved",
+      "test_explicit_html_caption_is_kept_as_context",
+      "test_unknown_table_is_not_forced_into_kv_or_record",
+      "test_empty_and_dash_values_are_distinct",
+      "test_exchange_html_fragment_uses_xforms_input_as_value",
+      "test_recovery_and_input_non_mutation"
+    ],
+    "tests/test_text2vector.py": [
+      "embedding_environment",
+      "_Model",
+      "test_texts_to_vectors_uses_requested_local_batch_settings",
+      "test_text_to_vector_preserves_single_text_api",
+      "test_build_model_requires_cuda",
+      "test_build_model_uses_cuda_zero_and_fp16",
+      "test_rejects_empty_or_non_string_text",
+      "test_rejects_invalid_text_batches",
+      "test_rejects_wrong_embedding_dimension",
+      "test_rejects_invalid_configured_dimension",
+      "test_wraps_model_inference_error"
+    ],
+    "tests/test_text_contextual_builder.py": [
+      "test_builds_document_section_context_and_original_text",
+      "test_appends_heading_path_and_removes_adjacent_duplicates",
+      "test_rejects_invalid_text_evidence"
+    ],
+    "tmp/excluded_pdf_html_corrections/manifest.jsonl": [],
+    "vector_db/bgem3_token_counter.py": [
+      "_load_tokenizer",
+      "count_bge_m3_tokens"
+    ],
+    "vector_db/contextual_text_builders/__init__.py": [],
+    "vector_db/contextual_text_builders/kv_table_context_builder.py": [
+      "_clean_path",
+      "_optional_text",
+      "_optional_text_list",
+      "_entry_lines",
+      "build_kv_contextual_text"
+    ],
+    "vector_db/contextual_text_builders/r_table_descriptor_builder.py": [
+      "_clean_path",
+      "_optional_text",
+      "_optional_text_list",
+      "_validated_payload",
+      "build_r_table_descriptor_contextual_text"
+    ],
+    "vector_db/contextual_text_builders/r_table_record_context_builder.py": [
+      "_clean_path",
+      "_optional_text",
+      "_optional_text_list",
+      "_column_lines",
+      "_header_paths",
+      "_validated_payload",
+      "_context_blocks",
+      "_record_lines",
+      "build_r_table_record_contextual_text",
+      "build_r_table_contextual_text"
+    ],
+    "vector_db/contextual_text_builders/r_table_row_group_builder.py": [
+      "RowGroupRecordTooLargeError",
+      "RTableRowGroup",
+      "_validated_records",
+      "_group_evidence",
+      "_render_group",
+      "build_r_table_row_groups"
+    ],
+    "vector_db/contextual_text_builders/text_context_builder.py": [
+      "_context_values",
+      "build_text_contextual_text"
+    ],
+    "vector_db/insert_points.py": [
+      "PayloadIndex",
+      "QdrantSchema",
+      "parse_args",
+      "_required_mapping",
+      "_required_text",
+      "load_qdrant_schema",
+      "ensure_collection",
+      "_document_manifest_rows",
+      "selected_disclosures",
+      "_document_context",
+      "iter_fragment_point_inputs",
+      "embed_point_inputs_batch",
+      "_chunks",
+      "upsert_point_dicts",
+      "_qdrant_client_from_env",
+      "run",
+      "main"
+    ],
+    "vector_db/point_builder.py": [
+      "PointInput",
+      "_required_text",
+      "_optional_text",
+      "_optional_integer",
+      "_section_path",
+      "_table_metadata",
+      "_text_canonical",
+      "_kv_table_canonical",
+      "_r_table_canonical",
+      "_point_payload",
+      "_point_input",
+      "build_point_inputs",
+      "embed_point_inputs",
+      "assemble_qdrant_points",
+      "build_qdrant_points"
+    ],
+    "vector_db/r_table_column_profiler.py": [
+      "RTableColumnRole",
+      "RTableColumnProfilingConfig",
+      "RTableColumnProfile",
+      "RTableColumnAnalysis",
+      "_ColumnDraft",
+      "_string_tuple",
+      "load_r_table_column_profiling_config",
+      "_contains_keyword",
+      "_is_percent",
+      "_classify_role",
+      "_validated_columns",
+      "_profile_draft",
+      "profile_r_table_columns"
+    ],
+    "vector_db/r_table_strategy_selector.py": [
+      "RTableEmbeddingStrategy",
+      "RTableStrategyConfig",
+      "RTableFeatures",
+      "RTableStrategyDecision",
+      "load_r_table_strategy_config",
+      "is_date_cell",
+      "is_numeric_cell",
+      "_validated_cells",
+      "calculate_r_table_features",
+      "RTableEmbeddingStrategySelector"
+    ],
+    "vector_db/text2vector.py": [
+      "LocalEmbeddingError",
+      "_EmbeddingSettings",
+      "_required_environment",
+      "_load_settings",
+      "_torch_module",
+      "_bge_m3_model_class",
+      "_build_model",
+      "_load_model",
+      "_validated_texts",
+      "_parse_dense_vectors",
+      "texts_to_vectors",
+      "text_to_vector"
+    ]
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "knowledge_graph/insert_DSE.py",
+          "language": "python",
+          "sizeLines": 486,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_insert_points.py",
+          "language": "python",
+          "sizeLines": 196,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_kv_context_builder.py",
+          "language": "python",
+          "sizeLines": 106,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_point_builder.py",
+          "language": "python",
+          "sizeLines": 393,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_r_table_column_profiler.py",
+          "language": "python",
+          "sizeLines": 248,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_r_table_descriptor_builder.py",
+          "language": "python",
+          "sizeLines": 200,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_r_table_record_context_builder.py",
+          "language": "python",
+          "sizeLines": 238,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_r_table_row_group_builder.py",
+          "language": "python",
+          "sizeLines": 206,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_r_table_strategy_selector.py",
+          "language": "python",
+          "sizeLines": 254,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_text2vector.py",
+          "language": "python",
+          "sizeLines": 154,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_text_contextual_builder.py",
+          "language": "python",
+          "sizeLines": 76,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/bgem3_token_counter.py",
+          "language": "python",
+          "sizeLines": 49,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/__init__.py",
+          "language": "python",
+          "sizeLines": 31,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+          "language": "python",
+          "sizeLines": 132,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+          "language": "python",
+          "sizeLines": 171,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+          "language": "python",
+          "sizeLines": 259,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+          "language": "python",
+          "sizeLines": 262,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/contextual_text_builders/text_context_builder.py",
+          "language": "python",
+          "sizeLines": 67,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/insert_points.py",
+          "language": "python",
+          "sizeLines": 412,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/point_builder.py",
+          "language": "python",
+          "sizeLines": 584,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/r_table_column_profiler.py",
+          "language": "python",
+          "sizeLines": 488,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/r_table_strategy_selector.py",
+          "language": "python",
+          "sizeLines": 331,
+          "fileCategory": "code"
+        },
+        {
+          "path": "vector_db/text2vector.py",
+          "language": "python",
+          "sizeLines": 210,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "knowledge_graph/insert_DSE.py": [],
+        "tests/test_insert_points.py": [
+          "vector_db/insert_points.py",
+          "vector_db/point_builder.py"
+        ],
+        "tests/test_kv_context_builder.py": [
+          "vector_db/contextual_text_builders/__init__.py"
+        ],
+        "tests/test_point_builder.py": [
+          "vector_db/point_builder.py",
+          "vector_db/r_table_strategy_selector.py"
+        ],
+        "tests/test_r_table_column_profiler.py": [
+          "vector_db/r_table_column_profiler.py"
+        ],
+        "tests/test_r_table_descriptor_builder.py": [
+          "vector_db/contextual_text_builders/__init__.py",
+          "vector_db/r_table_column_profiler.py"
+        ],
+        "tests/test_r_table_record_context_builder.py": [
+          "vector_db/contextual_text_builders/__init__.py"
+        ],
+        "tests/test_r_table_row_group_builder.py": [
+          "vector_db/contextual_text_builders/r_table_row_group_builder.py"
+        ],
+        "tests/test_r_table_strategy_selector.py": [
+          "vector_db/r_table_strategy_selector.py"
+        ],
+        "tests/test_text2vector.py": [
+          "vector_db/text2vector.py"
+        ],
+        "tests/test_text_contextual_builder.py": [
+          "vector_db/contextual_text_builders/__init__.py"
+        ],
+        "vector_db/bgem3_token_counter.py": [],
+        "vector_db/contextual_text_builders/__init__.py": [
+          "vector_db/contextual_text_builders/kv_table_context_builder.py",
+          "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+          "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+          "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+          "vector_db/contextual_text_builders/text_context_builder.py"
+        ],
+        "vector_db/contextual_text_builders/kv_table_context_builder.py": [],
+        "vector_db/contextual_text_builders/r_table_descriptor_builder.py": [
+          "vector_db/r_table_column_profiler.py"
+        ],
+        "vector_db/contextual_text_builders/r_table_record_context_builder.py": [],
+        "vector_db/contextual_text_builders/r_table_row_group_builder.py": [
+          "vector_db/bgem3_token_counter.py",
+          "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+          "vector_db/r_table_strategy_selector.py"
+        ],
+        "vector_db/contextual_text_builders/text_context_builder.py": [],
+        "vector_db/insert_points.py": [
+          "knowledge_graph/insert_DSE.py",
+          "vector_db/point_builder.py",
+          "vector_db/text2vector.py"
+        ],
+        "vector_db/point_builder.py": [
+          "vector_db/contextual_text_builders/__init__.py",
+          "vector_db/r_table_column_profiler.py",
+          "vector_db/r_table_strategy_selector.py",
+          "vector_db/text2vector.py"
+        ],
+        "vector_db/r_table_column_profiler.py": [
+          "vector_db/r_table_strategy_selector.py"
+        ],
+        "vector_db/r_table_strategy_selector.py": [
+          "vector_db/bgem3_token_counter.py"
+        ],
+        "vector_db/text2vector.py": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "converters/common/document_loader.py",
+          "language": "python",
+          "sizeLines": 283,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/common/source_models.py",
+          "language": "python",
+          "sizeLines": 130,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/common/source_resolver.py",
+          "language": "python",
+          "sizeLines": 82,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/correction_extractor/correction_extractor.py",
+          "language": "python",
+          "sizeLines": 635,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/correction_extractor/correction_models.py",
+          "language": "python",
+          "sizeLines": 116,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/evidence_builder/fragment_assembler.py",
+          "language": "python",
+          "sizeLines": 1029,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/evidence_builder/semantic_text_segmenter.py",
+          "language": "python",
+          "sizeLines": 359,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/paragraph_parser/paragraph_models.py",
+          "language": "python",
+          "sizeLines": 149,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/paragraph_parser/paragraph_parser.py",
+          "language": "python",
+          "sizeLines": 437,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/table_context_resolver/resolver_models.py",
+          "language": "python",
+          "sizeLines": 44,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/table_context_resolver/table_context_resolver.py",
+          "language": "python",
+          "sizeLines": 249,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/table_parser/table_models.py",
+          "language": "python",
+          "sizeLines": 187,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/table_parser/table_parser.py",
+          "language": "python",
+          "sizeLines": 1304,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_correction_extractor.py",
+          "language": "python",
+          "sizeLines": 229,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_document_loader.py",
+          "language": "python",
+          "sizeLines": 57,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_paragraph_parser.py",
+          "language": "python",
+          "sizeLines": 243,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_semantic_text_segmenter.py",
+          "language": "python",
+          "sizeLines": 155,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_table_context_resolver.py",
+          "language": "python",
+          "sizeLines": 89,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_table_parser.py",
+          "language": "python",
+          "sizeLines": 567,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "converters/common/document_loader.py": [
+          "converters/common/source_models.py"
+        ],
+        "converters/common/source_models.py": [],
+        "converters/common/source_resolver.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py"
+        ],
+        "converters/correction_extractor/correction_extractor.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/correction_extractor/correction_models.py",
+          "converters/table_parser/table_parser.py"
+        ],
+        "converters/correction_extractor/correction_models.py": [
+          "converters/common/source_models.py"
+        ],
+        "converters/evidence_builder/fragment_assembler.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/common/source_resolver.py",
+          "converters/evidence_builder/fragment_models.py",
+          "converters/evidence_builder/semantic_text_segmenter.py",
+          "converters/paragraph_parser/paragraph_models.py",
+          "converters/paragraph_parser/paragraph_parser.py",
+          "converters/section_canonicalizer/section_models.py",
+          "converters/table_context_resolver/table_context_resolver.py",
+          "converters/table_parser/table_models.py",
+          "converters/table_parser/table_parser.py"
+        ],
+        "converters/evidence_builder/semantic_text_segmenter.py": [
+          "converters/paragraph_parser/paragraph_models.py"
+        ],
+        "converters/paragraph_parser/paragraph_models.py": [
+          "converters/common/source_models.py"
+        ],
+        "converters/paragraph_parser/paragraph_parser.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/paragraph_parser/paragraph_models.py"
+        ],
+        "converters/table_context_resolver/resolver_models.py": [
+          "converters/common/source_models.py",
+          "converters/table_parser/table_models.py"
+        ],
+        "converters/table_context_resolver/table_context_resolver.py": [
+          "converters/common/source_models.py",
+          "converters/paragraph_parser/paragraph_models.py",
+          "converters/table_context_resolver/resolver_models.py",
+          "converters/table_parser/table_models.py"
+        ],
+        "converters/table_parser/table_models.py": [
+          "converters/common/source_models.py"
+        ],
+        "converters/table_parser/table_parser.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/table_parser/table_models.py"
+        ],
+        "tests/test_correction_extractor.py": [
+          "converters/common/source_models.py",
+          "converters/correction_extractor/correction_extractor.py",
+          "converters/correction_extractor/correction_models.py"
+        ],
+        "tests/test_document_loader.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py"
+        ],
+        "tests/test_paragraph_parser.py": [
+          "converters/common/source_models.py",
+          "converters/paragraph_parser/paragraph_models.py",
+          "converters/paragraph_parser/paragraph_parser.py"
+        ],
+        "tests/test_semantic_text_segmenter.py": [
+          "converters/common/source_models.py",
+          "converters/evidence_builder/semantic_text_segmenter.py",
+          "converters/paragraph_parser/paragraph_parser.py"
+        ],
+        "tests/test_table_context_resolver.py": [
+          "converters/common/source_models.py",
+          "converters/paragraph_parser/paragraph_parser.py",
+          "converters/table_context_resolver/table_context_resolver.py",
+          "converters/table_parser/table_parser.py"
+        ],
+        "tests/test_table_parser.py": [
+          "converters/common/source_models.py",
+          "converters/table_parser/table_models.py",
+          "converters/table_parser/table_parser.py"
+        ]
+      },
+      "neighborMap": {
+        "converters/common/document_loader.py": [
+          {
+            "path": "converters/evidence_builder/fragment_pipeline.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_sha256",
+              "_atomic_write",
+              "_combined_source_hash",
+              "_kept_sections",
+              "project_graph_sections",
+              "_fragment_filename",
+              "_overall_status",
+              "_failed_record",
+              "_build_one",
+              "build_evidence_fragments",
+              "main"
+            ]
+          },
+          {
+            "path": "converters/section_canonicalizer/section_canonicalizer.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_tag",
+              "_clean_text",
+              "_element_text",
+              "_child_paths",
+              "_source_ref",
+              "_Exclusions",
+              "_exclusions",
+              "_is_section",
+              "_section_level",
+              "_find_section_title",
+              "_scan_blocks",
+              "_HeadingCandidate",
+              "_numbered_heading",
+              "_styled_heading",
+              "_single_cell_table_text",
+              "_implicit_headings",
+              "_document_title",
+              "_SectionBuilder",
+              "_explicit_sections",
+              "_implicit_sections",
+              "chunk_sections"
+            ]
+          }
+        ],
+        "converters/common/source_models.py": [
+          {
+            "path": "converters/evidence_builder/fragment_pipeline.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_sha256",
+              "_atomic_write",
+              "_combined_source_hash",
+              "_kept_sections",
+              "project_graph_sections",
+              "_fragment_filename",
+              "_overall_status",
+              "_failed_record",
+              "_build_one",
+              "build_evidence_fragments",
+              "main"
+            ]
+          },
+          {
+            "path": "converters/section_canonicalizer/section_canonicalizer.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_tag",
+              "_clean_text",
+              "_element_text",
+              "_child_paths",
+              "_source_ref",
+              "_Exclusions",
+              "_exclusions",
+              "_is_section",
+              "_section_level",
+              "_find_section_title",
+              "_scan_blocks",
+              "_HeadingCandidate",
+              "_numbered_heading",
+              "_styled_heading",
+              "_single_cell_table_text",
+              "_implicit_headings",
+              "_document_title",
+              "_SectionBuilder",
+              "_explicit_sections",
+              "_implicit_sections",
+              "chunk_sections"
+            ]
+          },
+          {
+            "path": "converters/section_canonicalizer/section_models.py",
+            "batchIndex": 3,
+            "symbols": [
+              "SectionParseStatus",
+              "SectionBoundaryKind",
+              "SectionBlockType",
+              "SectionIssue",
+              "SectionBlockRef",
+              "CanonicalSection",
+              "CanonicalSectionCollection"
+            ]
+          },
+          {
+            "path": "scripts/build_canonical_sections.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_atomic_write_text",
+              "_sha256",
+              "_source_files",
+              "_combined_source_hash",
+              "_overall_status",
+              "_append_section_outputs",
+              "_failed_record",
+              "_completed_record",
+              "_build_one",
+              "build_canonical_sections",
+              "_arguments",
+              "main"
+            ]
+          },
+          {
+            "path": "tests/test_build_canonical_sections.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_write_manifest",
+              "test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+              "test_builder_records_missing_processable_source_as_failure",
+              "test_graph_output_omits_structural_root_and_keeps_standalone_synthetic"
+            ]
+          },
+          {
+            "path": "tests/test_evidence_fragments.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_context",
+              "test_section_fragment_has_minimal_top_level_and_r_table_records",
+              "test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+              "test_navigation_layout_does_not_become_table_title",
+              "test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+              "test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+              "test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+              "test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+              "test_kv_payload_omits_provenance_fields",
+              "test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+              "test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+              "test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+              "test_compound_base_date_and_unit_strip_becomes_r_table_context",
+              "test_split_xbrl_context_tables_become_r_table_context",
+              "test_pipeline_writes_one_fragment_per_graph_section_and_validates"
+            ]
+          },
+          {
+            "path": "tests/test_section_canonicalizer.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_document_context",
+              "test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+              "test_every_source_block_belongs_to_only_one_deepest_section",
+              "test_title_is_metadata_and_not_a_paragraph_block",
+              "test_correction_subtree_is_skipped_without_mutating_input",
+              "test_explicit_html_exclusion_skips_entire_container",
+              "test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+              "test_repeated_numbered_paragraphs_are_implicit_sections",
+              "test_single_numbered_paragraph_does_not_create_implicit_boundary",
+              "test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+              "test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+              "test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+              "test_recovered_and_failed_document_statuses_are_traceable"
+            ]
+          }
+        ],
+        "converters/evidence_builder/fragment_assembler.py": [
+          {
+            "path": "converters/evidence_builder/fragment_models.py",
+            "batchIndex": 3,
+            "symbols": [
+              "EvidenceType",
+              "StorageMode",
+              "FragmentEvidence",
+              "ExternalTableRecord",
+              "EvidenceFragment"
+            ]
+          },
+          {
+            "path": "converters/section_canonicalizer/section_models.py",
+            "batchIndex": 3,
+            "symbols": [
+              "SectionParseStatus",
+              "SectionBoundaryKind",
+              "SectionBlockType",
+              "SectionIssue",
+              "SectionBlockRef",
+              "CanonicalSection",
+              "CanonicalSectionCollection"
+            ]
+          },
+          {
+            "path": "converters/evidence_builder/fragment_pipeline.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_sha256",
+              "_atomic_write",
+              "_combined_source_hash",
+              "_kept_sections",
+              "project_graph_sections",
+              "_fragment_filename",
+              "_overall_status",
+              "_failed_record",
+              "_build_one",
+              "build_evidence_fragments",
+              "main"
+            ]
+          },
+          {
+            "path": "tests/test_evidence_fragments.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_context",
+              "test_section_fragment_has_minimal_top_level_and_r_table_records",
+              "test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+              "test_navigation_layout_does_not_become_table_title",
+              "test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+              "test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+              "test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+              "test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+              "test_kv_payload_omits_provenance_fields",
+              "test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+              "test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+              "test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+              "test_compound_base_date_and_unit_strip_becomes_r_table_context",
+              "test_split_xbrl_context_tables_become_r_table_context",
+              "test_pipeline_writes_one_fragment_per_graph_section_and_validates"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "converters/evidence_builder/fragment_models.py",
+          "language": "python",
+          "sizeLines": 88,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/evidence_builder/fragment_pipeline.py",
+          "language": "python",
+          "sizeLines": 423,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/evidence_builder/fragment_validator.py",
+          "language": "python",
+          "sizeLines": 445,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/section_canonicalizer/section_canonicalizer.py",
+          "language": "python",
+          "sizeLines": 743,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/section_canonicalizer/section_models.py",
+          "language": "python",
+          "sizeLines": 127,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/build_canonical_sections.py",
+          "language": "python",
+          "sizeLines": 404,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/build_evidence_fragments.py",
+          "language": "python",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/validate_evidence_fragments.py",
+          "language": "python",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_build_canonical_sections.py",
+          "language": "python",
+          "sizeLines": 180,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_evidence_fragments.py",
+          "language": "python",
+          "sizeLines": 540,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_section_canonicalizer.py",
+          "language": "python",
+          "sizeLines": 266,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "converters/evidence_builder/fragment_models.py": [],
+        "converters/evidence_builder/fragment_pipeline.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/evidence_builder/fragment_assembler.py",
+          "converters/section_canonicalizer/section_canonicalizer.py",
+          "converters/section_canonicalizer/section_models.py"
+        ],
+        "converters/evidence_builder/fragment_validator.py": [
+          "converters/evidence_builder/fragment_models.py",
+          "converters/evidence_builder/fragment_pipeline.py"
+        ],
+        "converters/section_canonicalizer/section_canonicalizer.py": [
+          "converters/common/document_loader.py",
+          "converters/common/source_models.py",
+          "converters/section_canonicalizer/section_models.py"
+        ],
+        "converters/section_canonicalizer/section_models.py": [
+          "converters/common/source_models.py"
+        ],
+        "scripts/build_canonical_sections.py": [
+          "converters/common/source_models.py",
+          "converters/section_canonicalizer/section_canonicalizer.py",
+          "converters/section_canonicalizer/section_models.py"
+        ],
+        "scripts/build_evidence_fragments.py": [
+          "converters/evidence_builder/fragment_pipeline.py"
+        ],
+        "scripts/validate_evidence_fragments.py": [
+          "converters/evidence_builder/fragment_validator.py"
+        ],
+        "tests/test_build_canonical_sections.py": [
+          "converters/common/source_models.py",
+          "converters/section_canonicalizer/section_canonicalizer.py",
+          "scripts/build_canonical_sections.py"
+        ],
+        "tests/test_evidence_fragments.py": [
+          "converters/common/source_models.py",
+          "converters/evidence_builder/fragment_assembler.py",
+          "converters/evidence_builder/fragment_pipeline.py",
+          "converters/evidence_builder/fragment_validator.py",
+          "converters/section_canonicalizer/section_canonicalizer.py",
+          "scripts/build_canonical_sections.py"
+        ],
+        "tests/test_section_canonicalizer.py": [
+          "converters/common/source_models.py",
+          "converters/section_canonicalizer/section_canonicalizer.py",
+          "converters/section_canonicalizer/section_models.py"
+        ]
+      },
+      "neighborMap": {
+        "converters/evidence_builder/fragment_models.py": [
+          {
+            "path": "converters/evidence_builder/fragment_assembler.py",
+            "batchIndex": 2,
+            "symbols": [
+              "_ParsedBlock",
+              "_SemanticBlock",
+              "_clean_text",
+              "_paragraph_references",
+              "_unique_references",
+              "_first_table_index",
+              "_context_payload",
+              "_kv_payload",
+              "_record_payloads",
+              "_headers",
+              "_unknown_rows",
+              "_looks_like_layout_unknown",
+              "_fallback_row_type",
+              "_fallback_unknown",
+              "_semantic_json",
+              "_with_semantic_context",
+              "_semantic_blocks",
+              "_captions_by_table",
+              "_parse_blocks",
+              "build_section_fragment",
+              "build_source_fragments"
+            ]
+          }
+        ],
+        "converters/evidence_builder/fragment_pipeline.py": [
+          {
+            "path": "converters/common/document_loader.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentLoadStatus",
+              "DocumentLoadIssue",
+              "LoadedDocument",
+              "repair_xml_text",
+              "_decode_source",
+              "_LooseHTMLTreeBuilder",
+              "load_document"
+            ]
+          },
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          },
+          {
+            "path": "converters/evidence_builder/fragment_assembler.py",
+            "batchIndex": 2,
+            "symbols": [
+              "_ParsedBlock",
+              "_SemanticBlock",
+              "_clean_text",
+              "_paragraph_references",
+              "_unique_references",
+              "_first_table_index",
+              "_context_payload",
+              "_kv_payload",
+              "_record_payloads",
+              "_headers",
+              "_unknown_rows",
+              "_looks_like_layout_unknown",
+              "_fallback_row_type",
+              "_fallback_unknown",
+              "_semantic_json",
+              "_with_semantic_context",
+              "_semantic_blocks",
+              "_captions_by_table",
+              "_parse_blocks",
+              "build_section_fragment",
+              "build_source_fragments"
+            ]
+          },
+          {
+            "path": "converters/regression_validation/runner.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_sha256_bytes",
+              "_read_json",
+              "_tree_signature",
+              "_selected_cases",
+              "_hydrate_sources",
+              "_load_fragments",
+              "_write_candidate",
+              "_compare_golden",
+              "run_regression",
+              "_arguments",
+              "main"
+            ]
+          }
+        ],
+        "converters/evidence_builder/fragment_validator.py": [
+          {
+            "path": "converters/regression_validation/runner.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_sha256_bytes",
+              "_read_json",
+              "_tree_signature",
+              "_selected_cases",
+              "_hydrate_sources",
+              "_load_fragments",
+              "_write_candidate",
+              "_compare_golden",
+              "run_regression",
+              "_arguments",
+              "main"
+            ]
+          }
+        ],
+        "converters/section_canonicalizer/section_canonicalizer.py": [
+          {
+            "path": "converters/common/document_loader.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentLoadStatus",
+              "DocumentLoadIssue",
+              "LoadedDocument",
+              "repair_xml_text",
+              "_decode_source",
+              "_LooseHTMLTreeBuilder",
+              "load_document"
+            ]
+          },
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          }
+        ],
+        "converters/section_canonicalizer/section_models.py": [
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          },
+          {
+            "path": "converters/evidence_builder/fragment_assembler.py",
+            "batchIndex": 2,
+            "symbols": [
+              "_ParsedBlock",
+              "_SemanticBlock",
+              "_clean_text",
+              "_paragraph_references",
+              "_unique_references",
+              "_first_table_index",
+              "_context_payload",
+              "_kv_payload",
+              "_record_payloads",
+              "_headers",
+              "_unknown_rows",
+              "_looks_like_layout_unknown",
+              "_fallback_row_type",
+              "_fallback_unknown",
+              "_semantic_json",
+              "_with_semantic_context",
+              "_semantic_blocks",
+              "_captions_by_table",
+              "_parse_blocks",
+              "build_section_fragment",
+              "build_source_fragments"
+            ]
+          }
+        ],
+        "scripts/build_canonical_sections.py": [
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          },
+          {
+            "path": "converters/regression_validation/runner.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_sha256_bytes",
+              "_read_json",
+              "_tree_signature",
+              "_selected_cases",
+              "_hydrate_sources",
+              "_load_fragments",
+              "_write_candidate",
+              "_compare_golden",
+              "run_regression",
+              "_arguments",
+              "main"
+            ]
+          }
+        ],
+        "tests/test_build_canonical_sections.py": [
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          }
+        ],
+        "tests/test_evidence_fragments.py": [
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          },
+          {
+            "path": "converters/evidence_builder/fragment_assembler.py",
+            "batchIndex": 2,
+            "symbols": [
+              "_ParsedBlock",
+              "_SemanticBlock",
+              "_clean_text",
+              "_paragraph_references",
+              "_unique_references",
+              "_first_table_index",
+              "_context_payload",
+              "_kv_payload",
+              "_record_payloads",
+              "_headers",
+              "_unknown_rows",
+              "_looks_like_layout_unknown",
+              "_fallback_row_type",
+              "_fallback_unknown",
+              "_semantic_json",
+              "_with_semantic_context",
+              "_semantic_blocks",
+              "_captions_by_table",
+              "_parse_blocks",
+              "build_section_fragment",
+              "build_source_fragments"
+            ]
+          }
+        ],
+        "tests/test_section_canonicalizer.py": [
+          {
+            "path": "converters/common/source_models.py",
+            "batchIndex": 2,
+            "symbols": [
+              "DocumentSyntax",
+              "ContextRole",
+              "ContextPosition",
+              "DocumentContext",
+              "SourceRef",
+              "EvidenceContextBlock",
+              "EvidenceContext"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 4,
+      "files": [
+        {
+          "path": "converters/regression_validation/__init__.py",
+          "language": "python",
+          "sizeLines": 5,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/regression_validation/assertions.py",
+          "language": "python",
+          "sizeLines": 146,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/regression_validation/normalizer.py",
+          "language": "python",
+          "sizeLines": 147,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/regression_validation/runner.py",
+          "language": "python",
+          "sizeLines": 372,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/validate_converter_pipeline.py",
+          "language": "python",
+          "sizeLines": 15,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_converter_pipeline_regression.py",
+          "language": "python",
+          "sizeLines": 79,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "converters/regression_validation/__init__.py": [
+          "converters/regression_validation/runner.py"
+        ],
+        "converters/regression_validation/assertions.py": [
+          "converters/regression_validation/normalizer.py"
+        ],
+        "converters/regression_validation/normalizer.py": [],
+        "converters/regression_validation/runner.py": [
+          "converters/evidence_builder/fragment_pipeline.py",
+          "converters/evidence_builder/fragment_validator.py",
+          "converters/regression_validation/assertions.py",
+          "converters/regression_validation/normalizer.py",
+          "scripts/build_canonical_sections.py"
+        ],
+        "scripts/validate_converter_pipeline.py": [
+          "converters/regression_validation/runner.py"
+        ],
+        "tests/test_converter_pipeline_regression.py": [
+          "converters/regression_validation/assertions.py",
+          "converters/regression_validation/normalizer.py",
+          "converters/regression_validation/runner.py"
+        ]
+      },
+      "neighborMap": {
+        "converters/regression_validation/runner.py": [
+          {
+            "path": "converters/evidence_builder/fragment_pipeline.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_sha256",
+              "_atomic_write",
+              "_combined_source_hash",
+              "_kept_sections",
+              "project_graph_sections",
+              "_fragment_filename",
+              "_overall_status",
+              "_failed_record",
+              "_build_one",
+              "build_evidence_fragments",
+              "main"
+            ]
+          },
+          {
+            "path": "converters/evidence_builder/fragment_validator.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_sha256",
+              "_find_forbidden",
+              "validate_fragment",
+              "validate_evidence_fragments",
+              "main"
+            ]
+          },
+          {
+            "path": "scripts/build_canonical_sections.py",
+            "batchIndex": 3,
+            "symbols": [
+              "_json_lines",
+              "_atomic_write_text",
+              "_sha256",
+              "_source_files",
+              "_combined_source_hash",
+              "_overall_status",
+              "_append_section_outputs",
+              "_failed_record",
+              "_completed_record",
+              "_build_one",
+              "build_canonical_sections",
+              "_arguments",
+              "main"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 5,
+      "files": [
+        {
+          "path": ".env.example",
+          "language": "config",
+          "sizeLines": 10,
+          "fileCategory": "config"
+        },
+        {
+          "path": "README.md",
+          "language": "markdown",
+          "sizeLines": 104,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "pyproject.toml",
+          "language": "toml",
+          "sizeLines": 35,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        ".env.example": [],
+        "README.md": [],
+        "pyproject.toml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 6,
+      "files": [
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+          "language": "json",
+          "sizeLines": 847,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+          "language": "json",
+          "sizeLines": 784,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+          "language": "json",
+          "sizeLines": 829,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+          "language": "json",
+          "sizeLines": 187,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+          "language": "json",
+          "sizeLines": 968,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+          "language": "json",
+          "sizeLines": 114,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+          "language": "json",
+          "sizeLines": 18935,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+          "language": "json",
+          "sizeLines": 138,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+          "language": "json",
+          "sizeLines": 846,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+          "language": "json",
+          "sizeLines": 37855,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+          "language": "json",
+          "sizeLines": 38231,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+          "language": "json",
+          "sizeLines": 48,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+          "language": "json",
+          "sizeLines": 5423,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "tests/fixtures/converter_pipeline/golden/CVP-A01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-A02.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-B01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-C01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-E01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-F01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-G01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-H01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-I01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-J01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-J02.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-REF01.json": [],
+        "tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 7,
+      "files": [
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+          "language": "json",
+          "sizeLines": 847,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+          "language": "json",
+          "sizeLines": 784,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+          "language": "json",
+          "sizeLines": 829,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+          "language": "json",
+          "sizeLines": 187,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+          "language": "json",
+          "sizeLines": 968,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+          "language": "json",
+          "sizeLines": 114,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+          "language": "json",
+          "sizeLines": 18935,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+          "language": "json",
+          "sizeLines": 138,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+          "language": "json",
+          "sizeLines": 846,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+          "language": "json",
+          "sizeLines": 37855,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+          "language": "json",
+          "sizeLines": 38231,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+          "language": "json",
+          "sizeLines": 48,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+          "language": "json",
+          "sizeLines": 5423,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "tmp/converter-golden-candidate-context-v4/CVP-A01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-A02.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-B01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-C01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-E01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-F01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-G01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-H01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-I01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-J01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-J02.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-REF01.json": [],
+        "tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 8,
+      "files": [
+        {
+          "path": ".agents/skills/validate-converter-pipeline/SKILL.md",
+          "language": "markdown",
+          "sizeLines": 48,
+          "fileCategory": "docs"
+        },
+        {
+          "path": ".agents/skills/validate-converter-pipeline/agents/openai.yaml",
+          "language": "yaml",
+          "sizeLines": 4,
+          "fileCategory": "config"
+        },
+        {
+          "path": ".agents/skills/validate-converter-pipeline/references/failure-codes.md",
+          "language": "markdown",
+          "sizeLines": 10,
+          "fileCategory": "docs"
+        },
+        {
+          "path": ".python-version",
+          "language": "unknown",
+          "sizeLines": 1,
+          "fileCategory": "code"
+        },
+        {
+          "path": ".ua/.understandignore",
+          "language": "unknown",
+          "sizeLines": 90,
+          "fileCategory": "code"
+        },
+        {
+          "path": ".ua/config.json",
+          "language": "json",
+          "sizeLines": 3,
+          "fileCategory": "config"
+        },
+        {
+          "path": "DOCS/README.md",
+          "language": "markdown",
+          "sizeLines": 102,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "DOCS/data_filter.md",
+          "language": "markdown",
+          "sizeLines": 54,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "DOCS/universe.xlsx",
+          "language": "xlsx",
+          "sizeLines": 56,
+          "fileCategory": "code"
+        },
+        {
+          "path": "DOCS/온톨로지.xlsx",
+          "language": "xlsx",
+          "sizeLines": 51,
+          "fileCategory": "code"
+        },
+        {
+          "path": "agent_graph/graph.py",
+          "language": "python",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "agent_graph/state.py",
+          "language": "python",
+          "sizeLines": 18,
+          "fileCategory": "code"
+        },
+        {
+          "path": "converters/README.md",
+          "language": "markdown",
+          "sizeLines": 1355,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "knowledge_graph/neo4j_schema.yaml",
+          "language": "yaml",
+          "sizeLines": 64,
+          "fileCategory": "config"
+        },
+        {
+          "path": "main.py",
+          "language": "python",
+          "sizeLines": 11,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/approve_converter_golden.py",
+          "language": "python",
+          "sizeLines": 65,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/fixtures/converter_pipeline/corpus.json",
+          "language": "json",
+          "sizeLines": 333,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/test_bgem3_token_counter.py",
+          "language": "python",
+          "sizeLines": 110,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tmp/excluded_pdf_html_corrections/manifest.jsonl",
+          "language": "jsonl",
+          "sizeLines": 2,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+          "language": "html",
+          "sizeLines": 4387,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html",
+          "language": "html",
+          "sizeLines": 3698,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+          "language": "json",
+          "sizeLines": 0,
+          "fileCategory": "config"
+        },
+        {
+          "path": "vector_db/qdrant_schema.yaml",
+          "language": "yaml",
+          "sizeLines": 244,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        ".agents/skills/validate-converter-pipeline/SKILL.md": [],
+        ".agents/skills/validate-converter-pipeline/agents/openai.yaml": [],
+        ".agents/skills/validate-converter-pipeline/references/failure-codes.md": [],
+        ".python-version": [],
+        ".ua/.understandignore": [],
+        ".ua/config.json": [],
+        "DOCS/README.md": [],
+        "DOCS/data_filter.md": [],
+        "DOCS/universe.xlsx": [],
+        "DOCS/온톨로지.xlsx": [],
+        "agent_graph/graph.py": [
+          "agent_graph/state.py"
+        ],
+        "agent_graph/state.py": [],
+        "converters/README.md": [],
+        "knowledge_graph/neo4j_schema.yaml": [],
+        "main.py": [],
+        "scripts/approve_converter_golden.py": [],
+        "tests/fixtures/converter_pipeline/corpus.json": [],
+        "tests/test_bgem3_token_counter.py": [],
+        "tmp/excluded_pdf_html_corrections/manifest.jsonl": [],
+        "tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html": [],
+        "tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html": [],
+        "tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json": [],
+        "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json": [],
+        "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json": [],
+        "vector_db/qdrant_schema.yaml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 9,
+      "files": [
+        {
+          "path": "vector_db/r_table_embedding.yaml",
+          "language": "yaml",
+          "sizeLines": 51,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "vector_db/r_table_embedding.yaml": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}
