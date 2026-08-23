@@ -105,25 +105,30 @@ uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-
 
 
 ## Quick Commands
-### run at root directory
-### DB insert는 --dry-run 가능
+#### run at root directory
+#### DB insert는 --dry-run 옵션 가능
 
-- Section canonicalize
+### Section canonicalize
 ```powershell
 uv run python -m scripts.build_canonical_sections --force --workers 4 --progress-every 100
 ```
 
-- Evidence builder
+### Evidence builder
 ```powershell
 uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 100
 ```
 
-- Neo4j insert
+### Neo4j insert
+#### Disclosure, Section, Evidence insert
 ```powershell
 uv run python -m knowledge_graph.insert_DSE --limit 100 --random-seed 42
 ```
+#### Company nodes insert (from universe.csv)
+```powershell
+uv run python -m knowledge_graph.insertUniverse
+```
 
-- Qdrant insert
+### Qdrant insert
 ```powershell
 uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
 ```
