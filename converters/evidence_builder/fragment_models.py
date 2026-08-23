@@ -46,7 +46,7 @@ class FragmentEvidence:
 
 
 @dataclass(frozen=True, slots=True)
-class ExternalTableRecord:
+class TableRecord:
     table_id: str
     record_index: int
     row_type: str
@@ -67,7 +67,7 @@ class ExternalTableRecord:
 class EvidenceFragment:
     section_id: str
     evidence_list: tuple[FragmentEvidence, ...]
-    records: tuple[ExternalTableRecord, ...] = ()
+    records: tuple[TableRecord, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -81,8 +81,8 @@ class EvidenceFragment:
 __all__ = [
     "EvidenceFragment",
     "EvidenceType",
-    "ExternalTableRecord",
     "FRAGMENT_SCHEMA_VERSION",
     "FragmentEvidence",
     "StorageMode",
+    "TableRecord",
 ]

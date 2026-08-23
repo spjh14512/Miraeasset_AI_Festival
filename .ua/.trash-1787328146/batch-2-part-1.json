@@ -1,0 +1,1321 @@
+{
+  "nodes": [
+    {
+      "id": "file:converters/common/document_loader.py",
+      "type": "file",
+      "name": "document_loader.py",
+      "filePath": "converters/common/document_loader.py",
+      "summary": "DART XML/HTML source를 decode하고 tolerant recovery를 적용하여 추적 가능한 LoadedDocument로 정규화합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/common/document_loader.py:repair_xml_text",
+      "type": "function",
+      "name": "repair_xml_text",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        79,
+        84
+      ],
+      "summary": "repair xml text 처리 규칙을 구현하여 document_loader workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/common/document_loader.py:_decode_source",
+      "type": "function",
+      "name": "_decode_source",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        87,
+        93
+      ],
+      "summary": "decode source 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/common/document_loader.py:load_document",
+      "type": "function",
+      "name": "load_document",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        158,
+        274
+      ],
+      "summary": "load document 설정 또는 source를 읽고 유효한 runtime 객체로 변환합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/common/document_loader.py:DocumentLoadStatus",
+      "type": "class",
+      "name": "DocumentLoadStatus",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        43,
+        46
+      ],
+      "summary": "DocumentLoadStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/document_loader.py:DocumentLoadIssue",
+      "type": "class",
+      "name": "DocumentLoadIssue",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        50,
+        60
+      ],
+      "summary": "DocumentLoadIssue 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/document_loader.py:LoadedDocument",
+      "type": "class",
+      "name": "LoadedDocument",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        64,
+        76
+      ],
+      "summary": "LoadedDocument domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/document_loader.py:_LooseHTMLTreeBuilder",
+      "type": "class",
+      "name": "_LooseHTMLTreeBuilder",
+      "filePath": "converters/common/document_loader.py",
+      "lineRange": [
+        96,
+        155
+      ],
+      "summary": "LooseHTMLTreeBuilder domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/common/source_models.py",
+      "type": "file",
+      "name": "source_models.py",
+      "filePath": "converters/common/source_models.py",
+      "summary": "document syntax, source reference, evidence context를 표현하는 공통 Enum과 dataclass model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/common/source_models.py:DocumentSyntax",
+      "type": "class",
+      "name": "DocumentSyntax",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        10,
+        13
+      ],
+      "summary": "DocumentSyntax domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:ContextRole",
+      "type": "class",
+      "name": "ContextRole",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        16,
+        20
+      ],
+      "summary": "ContextRole domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:ContextPosition",
+      "type": "class",
+      "name": "ContextPosition",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        23,
+        25
+      ],
+      "summary": "ContextPosition domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:DocumentContext",
+      "type": "class",
+      "name": "DocumentContext",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        29,
+        43
+      ],
+      "summary": "DocumentContext domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:SourceRef",
+      "type": "class",
+      "name": "SourceRef",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        47,
+        63
+      ],
+      "summary": "SourceRef domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:EvidenceContextBlock",
+      "type": "class",
+      "name": "EvidenceContextBlock",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        67,
+        85
+      ],
+      "summary": "EvidenceContextBlock domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_models.py:EvidenceContext",
+      "type": "class",
+      "name": "EvidenceContext",
+      "filePath": "converters/common/source_models.py",
+      "lineRange": [
+        89,
+        119
+      ],
+      "summary": "EvidenceContext domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/common/source_resolver.py",
+      "type": "file",
+      "name": "source_resolver.py",
+      "filePath": "converters/common/source_resolver.py",
+      "summary": "LoadedDocument element를 stable path로 index하고 SourceRef에서 원본 element와 table 위치를 역참조합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/common/source_resolver.py:_tag",
+      "type": "function",
+      "name": "_tag",
+      "filePath": "converters/common/source_resolver.py",
+      "lineRange": [
+        12,
+        13
+      ],
+      "summary": "tag 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_resolver.py:ResolvedElement",
+      "type": "class",
+      "name": "ResolvedElement",
+      "filePath": "converters/common/source_resolver.py",
+      "lineRange": [
+        17,
+        20
+      ],
+      "summary": "ResolvedElement domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/common/source_resolver.py:SourceResolver",
+      "type": "class",
+      "name": "SourceResolver",
+      "filePath": "converters/common/source_resolver.py",
+      "lineRange": [
+        23,
+        79
+      ],
+      "summary": "SourceResolver domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/correction_extractor/correction_extractor.py",
+      "type": "file",
+      "name": "correction_extractor.py",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "summary": "XML과 거래소 HTML에서 정정공시 metadata, 대상 접수번호, 정정 사유 및 block reference를 복원·추출합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_tag",
+      "type": "function",
+      "name": "_tag",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        53,
+        54
+      ],
+      "summary": "tag 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        57,
+        58
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_compact_text",
+      "type": "function",
+      "name": "_compact_text",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        61,
+        62
+      ],
+      "summary": "compact text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_element_text",
+      "type": "function",
+      "name": "_element_text",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        65,
+        66
+      ],
+      "summary": "element text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_decode_source",
+      "type": "function",
+      "name": "_decode_source",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        69,
+        75
+      ],
+      "summary": "decode source 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_normalize_date",
+      "type": "function",
+      "name": "_normalize_date",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        78,
+        89
+      ],
+      "summary": "normalize date 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_first_matching_text",
+      "type": "function",
+      "name": "_first_matching_text",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        92,
+        101
+      ],
+      "summary": "first matching text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_value_after_paragraph_label",
+      "type": "function",
+      "name": "_value_after_paragraph_label",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        104,
+        123
+      ],
+      "summary": "value after paragraph label 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_reason_from_tables",
+      "type": "function",
+      "name": "_reason_from_tables",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        126,
+        139
+      ],
+      "summary": "reason from tables 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_value_after_table_label",
+      "type": "function",
+      "name": "_value_after_table_label",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        142,
+        165
+      ],
+      "summary": "value after table label 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_xml_metadata",
+      "type": "function",
+      "name": "_xml_metadata",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        168,
+        238
+      ],
+      "summary": "xml metadata 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_xml_blocks",
+      "type": "function",
+      "name": "_xml_blocks",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        241,
+        274
+      ],
+      "summary": "xml blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_find_correction_element",
+      "type": "function",
+      "name": "_find_correction_element",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        277,
+        283
+      ],
+      "summary": "find correction element 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_not_found",
+      "type": "function",
+      "name": "_not_found",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        286,
+        295
+      ],
+      "summary": "not found 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_failed",
+      "type": "function",
+      "name": "_failed",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        298,
+        316
+      ],
+      "summary": "failed 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_element",
+      "type": "function",
+      "name": "_extract_xml_element",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        319,
+        340
+      ],
+      "summary": "extract xml element 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_source",
+      "type": "function",
+      "name": "_extract_xml_source",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        343,
+        385
+      ],
+      "summary": "extract xml source 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_html_label_value",
+      "type": "function",
+      "name": "_html_label_value",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        469,
+        483
+      ],
+      "summary": "html label value 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:_extract_html_source",
+      "type": "function",
+      "name": "_extract_html_source",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        486,
+        594
+      ],
+      "summary": "extract html source 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/correction_extractor/correction_extractor.py:extract_correction",
+      "type": "function",
+      "name": "extract_correction",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        597,
+        632
+      ],
+      "summary": "source 구조를 분석하여 extract correction canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_extractor.py:_HTMLTable",
+      "type": "class",
+      "name": "_HTMLTable",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        389,
+        392
+      ],
+      "summary": "HTMLTable domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/correction_extractor/correction_extractor.py:_CorrectionHTMLParser",
+      "type": "class",
+      "name": "_CorrectionHTMLParser",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "lineRange": [
+        395,
+        466
+      ],
+      "summary": "CorrectionHTMLParser domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:repair_xml_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:repair_xml_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:_decode_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:_decode_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:load_document",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "function:converters/common/document_loader.py:load_document",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:DocumentLoadStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:DocumentLoadStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:DocumentLoadIssue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:DocumentLoadIssue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:LoadedDocument",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:LoadedDocument",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:_LooseHTMLTreeBuilder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "class:converters/common/document_loader.py:_LooseHTMLTreeBuilder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:DocumentSyntax",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:DocumentSyntax",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:ContextRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:ContextRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:ContextPosition",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:ContextPosition",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:DocumentContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:DocumentContext",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:SourceRef",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:SourceRef",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:EvidenceContextBlock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:EvidenceContextBlock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:EvidenceContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_models.py",
+      "target": "class:converters/common/source_models.py:EvidenceContext",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "function:converters/common/source_resolver.py:_tag",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "function:converters/common/source_resolver.py:_tag",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "class:converters/common/source_resolver.py:ResolvedElement",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "class:converters/common/source_resolver.py:ResolvedElement",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "class:converters/common/source_resolver.py:SourceResolver",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "class:converters/common/source_resolver.py:SourceResolver",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_tag",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_tag",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_compact_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_compact_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_element_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_element_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_decode_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_decode_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_normalize_date",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_normalize_date",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_first_matching_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_first_matching_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_value_after_paragraph_label",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_value_after_paragraph_label",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_reason_from_tables",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_reason_from_tables",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_value_after_table_label",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_value_after_table_label",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_xml_metadata",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_xml_metadata",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_xml_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_xml_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_find_correction_element",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_find_correction_element",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_not_found",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_not_found",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_failed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_failed",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_element",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_element",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_xml_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_html_label_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_html_label_value",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_html_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:_extract_html_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:extract_correction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "function:converters/correction_extractor/correction_extractor.py:extract_correction",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "class:converters/correction_extractor/correction_extractor.py:_HTMLTable",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "class:converters/correction_extractor/correction_extractor.py:_HTMLTable",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "class:converters/correction_extractor/correction_extractor.py:_CorrectionHTMLParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "class:converters/correction_extractor/correction_extractor.py:_CorrectionHTMLParser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

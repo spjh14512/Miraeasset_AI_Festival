@@ -1,0 +1,178 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 3,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 3
+    }
+  },
+  "results": [
+    {
+      "path": ".env.example",
+      "language": "config",
+      "fileCategory": "config",
+      "totalLines": 10,
+      "nonEmptyLines": 8,
+      "definitions": [
+        {
+          "name": "MODEL_NAME",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 3,
+          "endLine": 3
+        },
+        {
+          "name": "VECTOR_DIMENSION",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 4,
+          "endLine": 4
+        },
+        {
+          "name": "EMBEDDING_MODEL_CACHE_DIR",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "NEO4J_URI",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "name": "NEO4J_USERNAME",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 9,
+          "endLine": 9
+        },
+        {
+          "name": "NEO4J_PASSWORD",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 10,
+          "endLine": 10
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 6
+      }
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 104,
+      "nonEmptyLines": 80,
+      "sections": [
+        {
+          "heading": "미래에셋 AI 페스티벌 / Team Sortie",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "DART Disclosure Analyst",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Architecture",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Evidence Fragment",
+          "level": 2,
+          "line": 27
+        },
+        {
+          "heading": "Knowledge Graph",
+          "level": 2,
+          "line": 49
+        },
+        {
+          "heading": "Retrieval",
+          "level": 2,
+          "line": 62
+        },
+        {
+          "heading": "Pipeline Commands",
+          "level": 2,
+          "line": 77
+        },
+        {
+          "heading": "Current Status",
+          "level": 2,
+          "line": 86
+        },
+        {
+          "heading": "Design Principles",
+          "level": 2,
+          "line": 99
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "pyproject.toml",
+      "language": "toml",
+      "fileCategory": "config",
+      "totalLines": 35,
+      "nonEmptyLines": 31,
+      "sections": [
+        {
+          "heading": "project",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "dependency-groups",
+          "level": 1,
+          "line": 20
+        },
+        {
+          "heading": "tool.pytest.ini_options",
+          "level": 3,
+          "line": 25
+        },
+        {
+          "heading": "[[tool.uv.index]]",
+          "level": 3,
+          "line": 29
+        },
+        {
+          "heading": "tool.uv.sources",
+          "level": 3,
+          "line": 34
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    }
+  ]
+}

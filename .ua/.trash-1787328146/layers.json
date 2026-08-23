@@ -1,0 +1,172 @@
+[
+  {
+    "id": "layer:agent-workflow",
+    "name": "Agent Workflow 레이어",
+    "description": "LangGraph 기반 agent graph와 공유 AgentState를 정의하고 workflow 실행 상태를 조율합니다.",
+    "nodeIds": [
+      "file:agent_graph/graph.py",
+      "file:agent_graph/state.py"
+    ]
+  },
+  {
+    "id": "layer:conversion-pipeline",
+    "name": "문서 변환 파이프라인",
+    "description": "DART 원문을 파싱·정규화하여 Canonical Section과 Evidence Fragment로 조립하고 검증하는 핵심 변환 로직입니다.",
+    "nodeIds": [
+      "file:converters/common/document_loader.py",
+      "file:converters/common/source_models.py",
+      "file:converters/common/source_resolver.py",
+      "file:converters/correction_extractor/correction_extractor.py",
+      "file:converters/correction_extractor/correction_models.py",
+      "file:converters/evidence_builder/fragment_assembler.py",
+      "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "file:converters/paragraph_parser/paragraph_models.py",
+      "file:converters/paragraph_parser/paragraph_parser.py",
+      "file:converters/table_context_resolver/resolver_models.py",
+      "file:converters/table_context_resolver/table_context_resolver.py",
+      "file:converters/table_parser/table_models.py",
+      "file:converters/table_parser/table_parser.py",
+      "file:converters/evidence_builder/fragment_models.py",
+      "file:converters/evidence_builder/fragment_pipeline.py",
+      "file:converters/evidence_builder/fragment_validator.py",
+      "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "file:converters/section_canonicalizer/section_models.py",
+      "file:converters/regression_validation/__init__.py",
+      "file:converters/regression_validation/assertions.py",
+      "file:converters/regression_validation/normalizer.py",
+      "file:converters/regression_validation/runner.py"
+    ]
+  },
+  {
+    "id": "layer:vector-retrieval",
+    "name": "Vector Retrieval 레이어",
+    "description": "Evidence Fragment의 contextual text와 embedding point를 구성하여 Qdrant 적재 및 Hybrid Retrieval 입력을 준비합니다.",
+    "nodeIds": [
+      "file:vector_db/bgem3_token_counter.py",
+      "file:vector_db/contextual_text_builders/__init__.py",
+      "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "file:vector_db/insert_points.py",
+      "file:vector_db/point_builder.py",
+      "file:vector_db/r_table_column_profiler.py",
+      "file:vector_db/r_table_strategy_selector.py",
+      "file:vector_db/text2vector.py",
+      "config:vector_db/qdrant_schema.yaml",
+      "config:vector_db/r_table_embedding.yaml"
+    ]
+  },
+  {
+    "id": "layer:knowledge-graph",
+    "name": "Knowledge Graph 레이어",
+    "description": "Canonical Section과 Evidence Fragment를 Neo4j의 Disclosure-Section-Evidence 구조로 변환하고 schema에 맞춰 적재합니다.",
+    "nodeIds": [
+      "file:knowledge_graph/insert_DSE.py",
+      "config:knowledge_graph/neo4j_schema.yaml"
+    ]
+  },
+  {
+    "id": "layer:pipeline-cli",
+    "name": "Pipeline CLI 레이어",
+    "description": "Canonical Section 생성, Evidence Fragment 생성·검증, golden 승인 작업을 실행하는 운영 entry-point를 제공합니다.",
+    "nodeIds": [
+      "file:scripts/build_canonical_sections.py",
+      "file:scripts/build_evidence_fragments.py",
+      "file:scripts/validate_evidence_fragments.py",
+      "file:scripts/validate_converter_pipeline.py",
+      "file:scripts/approve_converter_golden.py",
+      "file:main.py"
+    ]
+  },
+  {
+    "id": "layer:regression-validation",
+    "name": "회귀 검증 레이어",
+    "description": "converter·vector·storage 동작을 pytest와 golden corpus로 검증하고 후보 snapshot 및 원문 보정 fixture를 관리합니다.",
+    "nodeIds": [
+      "file:tests/test_insert_points.py",
+      "file:tests/test_kv_context_builder.py",
+      "file:tests/test_point_builder.py",
+      "file:tests/test_r_table_column_profiler.py",
+      "file:tests/test_r_table_descriptor_builder.py",
+      "file:tests/test_r_table_record_context_builder.py",
+      "file:tests/test_r_table_row_group_builder.py",
+      "file:tests/test_r_table_strategy_selector.py",
+      "file:tests/test_text2vector.py",
+      "file:tests/test_text_contextual_builder.py",
+      "file:tests/test_correction_extractor.py",
+      "file:tests/test_document_loader.py",
+      "file:tests/test_paragraph_parser.py",
+      "file:tests/test_semantic_text_segmenter.py",
+      "file:tests/test_table_context_resolver.py",
+      "file:tests/test_table_parser.py",
+      "file:tests/test_build_canonical_sections.py",
+      "file:tests/test_evidence_fragments.py",
+      "file:tests/test_section_canonicalizer.py",
+      "file:tests/test_converter_pipeline_regression.py",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+      "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+      "config:tests/fixtures/converter_pipeline/corpus.json",
+      "file:tests/test_bgem3_token_counter.py",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+      "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html",
+      "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json"
+    ]
+  },
+  {
+    "id": "layer:documentation",
+    "name": "문서 레이어",
+    "description": "프로젝트 사용법, converter 구조, 데이터 필터링 기준, ontology 자료와 검증 skill 운용 지침을 설명합니다.",
+    "nodeIds": [
+      "document:DOCS/README.md",
+      "document:DOCS/data_filter.md",
+      "file:DOCS/universe.xlsx",
+      "file:DOCS/온톨로지.xlsx",
+      "document:README.md",
+      "document:converters/README.md",
+      "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md"
+    ]
+  },
+  {
+    "id": "layer:project-configuration",
+    "name": "프로젝트 설정",
+    "description": "Python runtime과 dependency, 환경 변수 예시, Codex 분석 설정 및 converter 검증 agent 구성을 관리합니다.",
+    "nodeIds": [
+      "config:.env.example",
+      "config:pyproject.toml",
+      "file:.python-version",
+      "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "file:.ua/.understandignore",
+      "config:.ua/config.json"
+    ]
+  }
+]

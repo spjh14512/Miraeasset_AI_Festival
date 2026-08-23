@@ -1,0 +1,51 @@
+schema_version: "r-table-embedding.v1"
+
+r_table_embedding:
+  whole_table_max_tokens: 1500
+  row_group_max_tokens: 1500
+  long_text_min_characters: 40
+  semantic_text_ratio_threshold: 0.2
+
+column_profiling:
+  measure_numeric_ratio_threshold: 0.8
+  date_ratio_threshold: 0.8
+  long_text_avg_length_threshold: 50
+  identifier_unique_ratio_threshold: 0.9
+  identifier_min_unique_count: 50
+  measure_header_keywords:
+    - "금액"
+    - "매출"
+    - "수량"
+    - "비중"
+    - "율"
+    - "단가"
+    - "장부금액"
+    - "취득가액"
+    - "증감"
+  dimension_header_keywords:
+    - "구분"
+    - "사업부문"
+    - "제품"
+    - "품목"
+    - "지역"
+    - "종류"
+    - "회사"
+    - "법인"
+    - "계정과목"
+  date_header_keywords:
+    - "일자"
+    - "날짜"
+    - "기준일"
+    - "변동일"
+    - "연도"
+    - "년월"
+  identifier_header_keywords:
+    - "성명"
+    - "이름"
+    - "코드"
+    - "번호"
+    - "ID"
+
+descriptor:
+  max_distinct_values_per_column: 20
+  max_total_distinct_values: 50

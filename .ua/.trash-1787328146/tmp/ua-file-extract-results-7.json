@@ -1,0 +1,616 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 13,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 13,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 13
+    }
+  },
+  "results": [
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 847,
+      "nonEmptyLines": 847,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 12
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 784,
+      "nonEmptyLines": 784,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 829,
+      "nonEmptyLines": 829,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 11
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 187,
+      "nonEmptyLines": 187,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 968,
+      "nonEmptyLines": 968,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 114,
+      "nonEmptyLines": 114,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 18935,
+      "nonEmptyLines": 18935,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 138,
+      "nonEmptyLines": 138,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 846,
+      "nonEmptyLines": 846,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 37855,
+      "nonEmptyLines": 37855,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 38231,
+      "nonEmptyLines": 38231,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 48,
+      "nonEmptyLines": 48,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 5423,
+      "nonEmptyLines": 5423,
+      "sections": [
+        {
+          "heading": "schema_version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "case_id",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "tags",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "normalizer_version",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "source_sha256",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "sections",
+          "level": 1,
+          "line": 12
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    }
+  ]
+}

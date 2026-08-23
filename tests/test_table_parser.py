@@ -247,6 +247,44 @@ def test_record_without_thead_is_inferred_from_repeated_rows():
     assert len(result.content["records"]) == 2
 
 
+def test_plain_td_key_value_matrix_is_not_mistaken_for_record_header():
+    table = ET.fromstring(
+        """<TABLE><TBODY>
+        <TR><TD>정관상신주인수권 내용</TD><TD COLSPAN="3">제9조 신주 발행 및 배정</TD></TR>
+        <TR><TD>결산일</TD><TD>12월 31일</TD><TD>정기주주총회개최</TD><TD>3개월 이내</TD></TR>
+        <TR><TD>기준일</TD><TD COLSPAN="3">매년 이사회 결의로 정함</TD></TR>
+        <TR><TD>주권의 종류</TD><TD COLSPAN="3">전자등록</TD></TR>
+        <TR><TD>명의개서대리인</TD><TD COLSPAN="3">KB국민은행</TD></TR>
+        <TR><TD>주주의 특전</TD><TD>해당사항 없음</TD><TD>공고방법</TD><TD>회사 홈페이지</TD></TR>
+        </TBODY></TABLE>"""
+    )
+    result = parse_table(table)
+
+    assert result.table_type.value == "KV_TABLE"
+    assert [field["raw_value"] for field in result.content["fields"]] == [
+        "제9조 신주 발행 및 배정",
+        "12월 31일",
+        "3개월 이내",
+        "매년 이사회 결의로 정함",
+        "전자등록",
+        "KB국민은행",
+        "해당사항 없음",
+        "회사 홈페이지",
+    ]
+    assert [
+        field["key_paths"][0]["path"] for field in result.content["fields"]
+    ] == [
+        ["정관상신주인수권 내용"],
+        ["결산일"],
+        ["정기주주총회개최"],
+        ["기준일"],
+        ["주권의 종류"],
+        ["명의개서대리인"],
+        ["주주의 특전"],
+        ["공고방법"],
+    ]
+
+
 def test_multilevel_record_header_row_context_and_totals():
     table = ET.fromstring(
         """<TABLE><THEAD><TR>

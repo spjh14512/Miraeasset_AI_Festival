@@ -1,0 +1,1022 @@
+{
+  "nodes": [
+    {
+      "id": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "vector_db/contextual_text_builders/__init__.py",
+      "summary": "TEXT, KV-table, R-table evidence용 contextual text builder의 공개 API를 모아 재노출합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Python package barrel로 public builder API를 명시적으로 re-export합니다."
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "type": "file",
+      "name": "kv_table_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "summary": "KV-table의 문서·section·table 문맥과 key path/value를 결합해 embedding용 contextual text를 만듭니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_clean_path",
+      "type": "function",
+      "name": "_clean_path",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "lineRange": [
+        13,
+        22
+      ],
+      "summary": "clean path 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text",
+      "type": "function",
+      "name": "_optional_text",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "lineRange": [
+        25,
+        31
+      ],
+      "summary": "optional text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text_list",
+      "type": "function",
+      "name": "_optional_text_list",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "lineRange": [
+        34,
+        42
+      ],
+      "summary": "optional text list 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_entry_lines",
+      "type": "function",
+      "name": "_entry_lines",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "lineRange": [
+        45,
+        75
+      ],
+      "summary": "entry lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:build_kv_contextual_text",
+      "type": "function",
+      "name": "build_kv_contextual_text",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "lineRange": [
+        78,
+        129
+      ],
+      "summary": "검증된 입력으로 build kv contextual text 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "type": "file",
+      "name": "r_table_descriptor_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "summary": "대형 R-table의 header, dimension value, 문맥을 압축한 descriptor embedding text를 생성합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_clean_path",
+      "type": "function",
+      "name": "_clean_path",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "lineRange": [
+        18,
+        27
+      ],
+      "summary": "clean path 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text",
+      "type": "function",
+      "name": "_optional_text",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "lineRange": [
+        30,
+        36
+      ],
+      "summary": "optional text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text_list",
+      "type": "function",
+      "name": "_optional_text_list",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "lineRange": [
+        39,
+        47
+      ],
+      "summary": "optional text list 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_validated_payload",
+      "type": "function",
+      "name": "_validated_payload",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "lineRange": [
+        50,
+        103
+      ],
+      "summary": "validated payload 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:build_r_table_descriptor_contextual_text",
+      "type": "function",
+      "name": "build_r_table_descriptor_contextual_text",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "lineRange": [
+        106,
+        168
+      ],
+      "summary": "검증된 입력으로 build r table descriptor contextual text 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "file",
+      "name": "r_table_record_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "summary": "R-table 전체 또는 개별 record를 column header와 table 문맥에 연결한 embedding text로 렌더링합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_clean_path",
+      "type": "function",
+      "name": "_clean_path",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        14,
+        23
+      ],
+      "summary": "clean path 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text",
+      "type": "function",
+      "name": "_optional_text",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        26,
+        32
+      ],
+      "summary": "optional text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text_list",
+      "type": "function",
+      "name": "_optional_text_list",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        35,
+        43
+      ],
+      "summary": "optional text list 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_column_lines",
+      "type": "function",
+      "name": "_column_lines",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        46,
+        66
+      ],
+      "summary": "column lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_header_paths",
+      "type": "function",
+      "name": "_header_paths",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        69,
+        79
+      ],
+      "summary": "header paths 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_validated_payload",
+      "type": "function",
+      "name": "_validated_payload",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        82,
+        94
+      ],
+      "summary": "validated payload 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_context_blocks",
+      "type": "function",
+      "name": "_context_blocks",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        97,
+        135
+      ],
+      "summary": "context blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_record_lines",
+      "type": "function",
+      "name": "_record_lines",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        138,
+        162
+      ],
+      "summary": "record lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_record_contextual_text",
+      "type": "function",
+      "name": "build_r_table_record_contextual_text",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        165,
+        192
+      ],
+      "summary": "검증된 입력으로 build r table record contextual text 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_contextual_text",
+      "type": "function",
+      "name": "build_r_table_contextual_text",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "lineRange": [
+        195,
+        253
+      ],
+      "summary": "검증된 입력으로 build r table contextual text 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "file",
+      "name": "r_table_row_group_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "summary": "token 제한을 지키면서 R-table record를 누락·중복 없이 greedy row group으로 분할하고 렌더링합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_validated_records",
+      "type": "function",
+      "name": "_validated_records",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        54,
+        122
+      ],
+      "summary": "validated records 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_group_evidence",
+      "type": "function",
+      "name": "_group_evidence",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        125,
+        139
+      ],
+      "summary": "group evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_render_group",
+      "type": "function",
+      "name": "_render_group",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        142,
+        165
+      ],
+      "summary": "render group 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:build_r_table_row_groups",
+      "type": "function",
+      "name": "build_r_table_row_groups",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        168,
+        255
+      ],
+      "summary": "검증된 입력으로 build r table row groups 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RowGroupRecordTooLargeError",
+      "type": "class",
+      "name": "RowGroupRecordTooLargeError",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        19,
+        38
+      ],
+      "summary": "RowGroupRecordTooLargeError 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RTableRowGroup",
+      "type": "class",
+      "name": "RTableRowGroup",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "lineRange": [
+        42,
+        51
+      ],
+      "summary": "RTableRowGroup domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "type": "file",
+      "name": "text_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/text_context_builder.py",
+      "summary": "일반 TEXT evidence에 disclosure, section, heading 문맥을 덧붙인 embedding text를 생성합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/text_context_builder.py:_context_values",
+      "type": "function",
+      "name": "_context_values",
+      "filePath": "vector_db/contextual_text_builders/text_context_builder.py",
+      "lineRange": [
+        13,
+        22
+      ],
+      "summary": "context values 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/contextual_text_builders/text_context_builder.py:build_text_contextual_text",
+      "type": "function",
+      "name": "build_text_contextual_text",
+      "filePath": "vector_db/contextual_text_builders/text_context_builder.py",
+      "lineRange": [
+        25,
+        64
+      ],
+      "summary": "검증된 입력으로 build text contextual text 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_clean_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_clean_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text_list",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_optional_text_list",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_entry_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:_entry_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:build_kv_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/kv_table_context_builder.py:build_kv_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_clean_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_clean_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text_list",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_optional_text_list",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_validated_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:_validated_payload",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:build_r_table_descriptor_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_descriptor_builder.py:build_r_table_descriptor_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_clean_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_clean_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text_list",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_optional_text_list",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_column_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_column_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_header_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_header_paths",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_validated_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_validated_payload",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_context_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_context_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_record_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:_record_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_record_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_record_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_record_context_builder.py:build_r_table_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_validated_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_validated_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_group_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_group_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_render_group",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:_render_group",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:build_r_table_row_groups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "function:vector_db/contextual_text_builders/r_table_row_group_builder.py:build_r_table_row_groups",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RowGroupRecordTooLargeError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RowGroupRecordTooLargeError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RTableRowGroup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "class:vector_db/contextual_text_builders/r_table_row_group_builder.py:RTableRowGroup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/text_context_builder.py:_context_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/text_context_builder.py:_context_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/text_context_builder.py:build_text_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "target": "function:vector_db/contextual_text_builders/text_context_builder.py:build_text_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

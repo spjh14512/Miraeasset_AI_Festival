@@ -1,0 +1,1520 @@
+{
+  "nodes": [
+    {
+      "id": "file:tests/test_r_table_record_context_builder.py",
+      "type": "file",
+      "name": "test_r_table_record_context_builder.py",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "summary": "R-table record/whole-table contextual text 렌더링과 입력 정합성 검사를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:_evidence",
+      "type": "function",
+      "name": "_evidence",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        11,
+        33
+      ],
+      "summary": "evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_per_r_table_record",
+      "type": "function",
+      "name": "test_builds_one_contextual_text_per_r_table_record",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        36,
+        66
+      ],
+      "summary": "test builds one contextual text per r table record 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_for_the_complete_r_table",
+      "type": "function",
+      "name": "test_builds_one_contextual_text_for_the_complete_r_table",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        69,
+        113
+      ],
+      "summary": "test builds one contextual text for the complete r table 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_complete_r_table_rejects_cross_table_records",
+      "type": "function",
+      "name": "test_complete_r_table_rejects_cross_table_records",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        116,
+        148
+      ],
+      "summary": "test complete r table rejects cross table records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_omits_empty_values_but_preserves_explicit_source_values",
+      "type": "function",
+      "name": "test_omits_empty_values_but_preserves_explicit_source_values",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        150,
+        170
+      ],
+      "summary": "test omits empty values but preserves explicit source values 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_renders_non_data_row_type_and_row_context",
+      "type": "function",
+      "name": "test_renders_non_data_row_type_and_row_context",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        173,
+        192
+      ],
+      "summary": "test renders non data row type and row context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_record_context_builder.py:test_rejects_invalid_r_table_input",
+      "type": "function",
+      "name": "test_rejects_invalid_r_table_input",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "lineRange": [
+        230,
+        238
+      ],
+      "summary": "test rejects invalid r table input 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_r_table_row_group_builder.py",
+      "type": "file",
+      "name": "test_r_table_row_group_builder.py",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "summary": "token 제한 기반 greedy row grouping이 누락·중복 없이 oversized record와 오류를 처리하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:_evidence",
+      "type": "function",
+      "name": "_evidence",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        15,
+        31
+      ],
+      "summary": "evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:_records",
+      "type": "function",
+      "name": "_records",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        34,
+        44
+      ],
+      "summary": "records 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:_row_weighted_token_counter",
+      "type": "function",
+      "name": "_row_weighted_token_counter",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        47,
+        48
+      ],
+      "summary": "row weighted token counter 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_groups_records_greedily_without_overlap_or_omission",
+      "type": "function",
+      "name": "test_groups_records_greedily_without_overlap_or_omission",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        51,
+        102
+      ],
+      "summary": "test groups records greedily without overlap or omission 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_uses_configured_default_row_group_limit",
+      "type": "function",
+      "name": "test_uses_configured_default_row_group_limit",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        105,
+        117
+      ],
+      "summary": "test uses configured default row group limit 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_keeps_one_oversized_record_as_a_singleton_group",
+      "type": "function",
+      "name": "test_keeps_one_oversized_record_as_a_singleton_group",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        120,
+        134
+      ],
+      "summary": "test keeps one oversized record as a singleton group 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_empty_table_produces_no_groups_without_counting_tokens",
+      "type": "function",
+      "name": "test_empty_table_produces_no_groups_without_counting_tokens",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        137,
+        148
+      ],
+      "summary": "test empty table produces no groups without counting tokens 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_table_structure",
+      "type": "function",
+      "name": "test_rejects_invalid_table_structure",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        176,
+        192
+      ],
+      "summary": "test rejects invalid table structure 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_token_counter_result",
+      "type": "function",
+      "name": "test_rejects_invalid_token_counter_result",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "lineRange": [
+        196,
+        206
+      ],
+      "summary": "test rejects invalid token counter result 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_r_table_strategy_selector.py",
+      "type": "file",
+      "name": "test_r_table_strategy_selector.py",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "summary": "table 크기와 content 특성에 따른 embedding strategy 선택 및 설정 threshold를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:_evidence",
+      "type": "function",
+      "name": "_evidence",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        19,
+        30
+      ],
+      "summary": "evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:_records",
+      "type": "function",
+      "name": "_records",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        33,
+        43
+      ],
+      "summary": "records 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:_config",
+      "type": "function",
+      "name": "_config",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        46,
+        58
+      ],
+      "summary": "config 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_short_numeric_table_selects_whole_table",
+      "type": "function",
+      "name": "test_short_numeric_table_selects_whole_table",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        61,
+        83
+      ],
+      "summary": "test short numeric table selects whole table 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_short_long_text_table_still_selects_whole_table",
+      "type": "function",
+      "name": "test_short_long_text_table_still_selects_whole_table",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        86,
+        98
+      ],
+      "summary": "test short long text table still selects whole table 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_oversized_numeric_table_selects_descriptor",
+      "type": "function",
+      "name": "test_oversized_numeric_table_selects_descriptor",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        101,
+        112
+      ],
+      "summary": "test oversized numeric table selects descriptor 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_oversized_long_text_table_selects_row_group",
+      "type": "function",
+      "name": "test_oversized_long_text_table_selects_row_group",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        115,
+        130
+      ],
+      "summary": "test oversized long text table selects row group 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_empty_cells_are_excluded_but_explicit_values_are_preserved",
+      "type": "function",
+      "name": "test_empty_cells_are_excluded_but_explicit_values_are_preserved",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        133,
+        159
+      ],
+      "summary": "test empty cells are excluded but explicit values are preserved 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_config_threshold_changes_the_selected_strategy",
+      "type": "function",
+      "name": "test_config_threshold_changes_the_selected_strategy",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        162,
+        176
+      ],
+      "summary": "test config threshold changes the selected strategy 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_decision_can_be_serialized_for_future_analysis",
+      "type": "function",
+      "name": "test_decision_can_be_serialized_for_future_analysis",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        179,
+        195
+      ],
+      "summary": "test decision can be serialized for future analysis 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_loads_default_thresholds_from_yaml",
+      "type": "function",
+      "name": "test_loads_default_thresholds_from_yaml",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        198,
+        201
+      ],
+      "summary": "test loads default thresholds from yaml 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_table_structure",
+      "type": "function",
+      "name": "test_rejects_invalid_table_structure",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        225,
+        239
+      ],
+      "summary": "test rejects invalid table structure 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_token_counter_result",
+      "type": "function",
+      "name": "test_rejects_invalid_token_counter_result",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "lineRange": [
+        243,
+        254
+      ],
+      "summary": "test rejects invalid token counter result 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_text2vector.py",
+      "type": "file",
+      "name": "test_text2vector.py",
+      "filePath": "tests/test_text2vector.py",
+      "summary": "BGE-M3 local model 설정, CUDA/FP16 사용, batch API와 embedding dimension 오류 처리를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:embedding_environment",
+      "type": "function",
+      "name": "embedding_environment",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        11,
+        16
+      ],
+      "summary": "embedding environment 처리 규칙을 구현하여 test_text2vector workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_texts_to_vectors_uses_requested_local_batch_settings",
+      "type": "function",
+      "name": "test_texts_to_vectors_uses_requested_local_batch_settings",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        33,
+        61
+      ],
+      "summary": "test texts to vectors uses requested local batch settings 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_text_to_vector_preserves_single_text_api",
+      "type": "function",
+      "name": "test_text_to_vector_preserves_single_text_api",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        64,
+        75
+      ],
+      "summary": "test text to vector preserves single text api 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_build_model_requires_cuda",
+      "type": "function",
+      "name": "test_build_model_requires_cuda",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        78,
+        83
+      ],
+      "summary": "test build model requires cuda 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_build_model_uses_cuda_zero_and_fp16",
+      "type": "function",
+      "name": "test_build_model_uses_cuda_zero_and_fp16",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        86,
+        108
+      ],
+      "summary": "test build model uses cuda zero and fp16 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_rejects_empty_or_non_string_text",
+      "type": "function",
+      "name": "test_rejects_empty_or_non_string_text",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        112,
+        114
+      ],
+      "summary": "test rejects empty or non string text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_rejects_invalid_text_batches",
+      "type": "function",
+      "name": "test_rejects_invalid_text_batches",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        118,
+        120
+      ],
+      "summary": "test rejects invalid text batches 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_rejects_wrong_embedding_dimension",
+      "type": "function",
+      "name": "test_rejects_wrong_embedding_dimension",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        123,
+        131
+      ],
+      "summary": "test rejects wrong embedding dimension 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_rejects_invalid_configured_dimension",
+      "type": "function",
+      "name": "test_rejects_invalid_configured_dimension",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        135,
+        139
+      ],
+      "summary": "test rejects invalid configured dimension 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text2vector.py:test_wraps_model_inference_error",
+      "type": "function",
+      "name": "test_wraps_model_inference_error",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        142,
+        154
+      ],
+      "summary": "test wraps model inference error 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_text2vector.py:_Model",
+      "type": "class",
+      "name": "_Model",
+      "filePath": "tests/test_text2vector.py",
+      "lineRange": [
+        19,
+        30
+      ],
+      "summary": "Model domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_text_contextual_builder.py",
+      "type": "file",
+      "name": "test_text_contextual_builder.py",
+      "filePath": "tests/test_text_contextual_builder.py",
+      "summary": "TEXT evidence contextual text의 document/section/heading 결합과 중복 제거를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_text_contextual_builder.py:test_builds_document_section_context_and_original_text",
+      "type": "function",
+      "name": "test_builds_document_section_context_and_original_text",
+      "filePath": "tests/test_text_contextual_builder.py",
+      "lineRange": [
+        8,
+        29
+      ],
+      "summary": "test builds document section context and original text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text_contextual_builder.py:test_appends_heading_path_and_removes_adjacent_duplicates",
+      "type": "function",
+      "name": "test_appends_heading_path_and_removes_adjacent_duplicates",
+      "filePath": "tests/test_text_contextual_builder.py",
+      "lineRange": [
+        32,
+        52
+      ],
+      "summary": "test appends heading path and removes adjacent duplicates 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_text_contextual_builder.py:test_rejects_invalid_text_evidence",
+      "type": "function",
+      "name": "test_rejects_invalid_text_evidence",
+      "filePath": "tests/test_text_contextual_builder.py",
+      "lineRange": [
+        69,
+        76
+      ],
+      "summary": "test rejects invalid text evidence 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/bgem3_token_counter.py",
+      "type": "file",
+      "name": "bgem3_token_counter.py",
+      "filePath": "vector_db/bgem3_token_counter.py",
+      "summary": "BGE-M3 tokenizer를 지연 로딩하여 contextual text의 token 수를 계산합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/bgem3_token_counter.py:_load_tokenizer",
+      "type": "function",
+      "name": "_load_tokenizer",
+      "filePath": "vector_db/bgem3_token_counter.py",
+      "lineRange": [
+        15,
+        17
+      ],
+      "summary": "load tokenizer 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:vector_db/bgem3_token_counter.py:count_bge_m3_tokens",
+      "type": "function",
+      "name": "count_bge_m3_tokens",
+      "filePath": "vector_db/bgem3_token_counter.py",
+      "lineRange": [
+        20,
+        43
+      ],
+      "summary": "count bge m3 tokens 처리 규칙을 구현하여 bgem3_token_counter workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_per_r_table_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_per_r_table_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_for_the_complete_r_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_builds_one_contextual_text_for_the_complete_r_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_complete_r_table_rejects_cross_table_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_complete_r_table_rejects_cross_table_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_omits_empty_values_but_preserves_explicit_source_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_omits_empty_values_but_preserves_explicit_source_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_renders_non_data_row_type_and_row_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_renders_non_data_row_type_and_row_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_rejects_invalid_r_table_input",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "function:tests/test_r_table_record_context_builder.py:test_rejects_invalid_r_table_input",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_row_weighted_token_counter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:_row_weighted_token_counter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_groups_records_greedily_without_overlap_or_omission",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_groups_records_greedily_without_overlap_or_omission",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_uses_configured_default_row_group_limit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_uses_configured_default_row_group_limit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_keeps_one_oversized_record_as_a_singleton_group",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_keeps_one_oversized_record_as_a_singleton_group",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_empty_table_produces_no_groups_without_counting_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_empty_table_produces_no_groups_without_counting_tokens",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_table_structure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_table_structure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_token_counter_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "function:tests/test_r_table_row_group_builder.py:test_rejects_invalid_token_counter_result",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:_config",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_short_numeric_table_selects_whole_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_short_numeric_table_selects_whole_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_short_long_text_table_still_selects_whole_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_short_long_text_table_still_selects_whole_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_oversized_numeric_table_selects_descriptor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_oversized_numeric_table_selects_descriptor",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_oversized_long_text_table_selects_row_group",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_oversized_long_text_table_selects_row_group",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_empty_cells_are_excluded_but_explicit_values_are_preserved",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_empty_cells_are_excluded_but_explicit_values_are_preserved",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_config_threshold_changes_the_selected_strategy",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_config_threshold_changes_the_selected_strategy",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_decision_can_be_serialized_for_future_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_decision_can_be_serialized_for_future_analysis",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_loads_default_thresholds_from_yaml",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_loads_default_thresholds_from_yaml",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_table_structure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_table_structure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_token_counter_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "function:tests/test_r_table_strategy_selector.py:test_rejects_invalid_token_counter_result",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:embedding_environment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:embedding_environment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_texts_to_vectors_uses_requested_local_batch_settings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_texts_to_vectors_uses_requested_local_batch_settings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_text_to_vector_preserves_single_text_api",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_text_to_vector_preserves_single_text_api",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_build_model_requires_cuda",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_build_model_requires_cuda",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_build_model_uses_cuda_zero_and_fp16",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_build_model_uses_cuda_zero_and_fp16",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_empty_or_non_string_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_empty_or_non_string_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_invalid_text_batches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_invalid_text_batches",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_wrong_embedding_dimension",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_wrong_embedding_dimension",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_invalid_configured_dimension",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_rejects_invalid_configured_dimension",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_wraps_model_inference_error",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "function:tests/test_text2vector.py:test_wraps_model_inference_error",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "class:tests/test_text2vector.py:_Model",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "class:tests/test_text2vector.py:_Model",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_builds_document_section_context_and_original_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_builds_document_section_context_and_original_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_appends_heading_path_and_removes_adjacent_duplicates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_appends_heading_path_and_removes_adjacent_duplicates",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_rejects_invalid_text_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "function:tests/test_text_contextual_builder.py:test_rejects_invalid_text_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/bgem3_token_counter.py",
+      "target": "function:vector_db/bgem3_token_counter.py:_load_tokenizer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/bgem3_token_counter.py",
+      "target": "function:vector_db/bgem3_token_counter.py:_load_tokenizer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:vector_db/bgem3_token_counter.py",
+      "target": "function:vector_db/bgem3_token_counter.py:count_bge_m3_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:vector_db/bgem3_token_counter.py",
+      "target": "function:vector_db/bgem3_token_counter.py:count_bge_m3_tokens",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

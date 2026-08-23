@@ -1,0 +1,2100 @@
+{
+  "nodes": [
+    {
+      "id": "file:knowledge_graph/insert_DSE.py",
+      "type": "file",
+      "name": "insert_DSE.py",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "summary": "Canonical Section과 Evidence Fragment 산출물을 Neo4j용 Disclosure-Section-Evidence 그래프 row로 변환하고 batch 삽입하는 CLI입니다.",
+      "tags": [
+        "knowledge-graph",
+        "neo4j",
+        "data-pipeline",
+        "cli"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:parse_args",
+      "type": "function",
+      "name": "parse_args",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        27,
+        45
+      ],
+      "summary": "source 구조를 분석하여 parse args canonical 결과와 trace 정보를 추출합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:load_schema",
+      "type": "function",
+      "name": "load_schema",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        48,
+        64
+      ],
+      "summary": "load schema 설정 또는 source를 읽고 유효한 runtime 객체로 변환합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:schema_properties",
+      "type": "function",
+      "name": "schema_properties",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        67,
+        73
+      ],
+      "summary": "schema properties 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:filter_properties",
+      "type": "function",
+      "name": "filter_properties",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        76,
+        80
+      ],
+      "summary": "filter properties 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:read_jsonl",
+      "type": "function",
+      "name": "read_jsonl",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        83,
+        89
+      ],
+      "summary": "read jsonl 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:valid_manifest_rows",
+      "type": "function",
+      "name": "valid_manifest_rows",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        92,
+        103
+      ],
+      "summary": "valid manifest rows 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:allocation_by_group",
+      "type": "function",
+      "name": "allocation_by_group",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        106,
+        113
+      ],
+      "summary": "allocation by group 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:select_disclosures",
+      "type": "function",
+      "name": "select_disclosures",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        116,
+        154
+      ],
+      "summary": "입력 feature와 설정 기준을 평가해 select disclosures 대상을 결정합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:graph_id",
+      "type": "function",
+      "name": "graph_id",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        157,
+        162
+      ],
+      "summary": "graph id 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:flattened_headers",
+      "type": "function",
+      "name": "flattened_headers",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        165,
+        174
+      ],
+      "summary": "flattened headers 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:flattened_keys",
+      "type": "function",
+      "name": "flattened_keys",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        177,
+        193
+      ],
+      "summary": "flattened keys 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:joined_caption",
+      "type": "function",
+      "name": "joined_caption",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        196,
+        199
+      ],
+      "summary": "joined caption 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:build_rows",
+      "type": "function",
+      "name": "build_rows",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        202,
+        324
+      ],
+      "summary": "검증된 입력으로 build rows 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:chunks",
+      "type": "function",
+      "name": "chunks",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        327,
+        329
+      ],
+      "summary": "chunks 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:run_batched",
+      "type": "function",
+      "name": "run_batched",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        332,
+        334
+      ],
+      "summary": "run batched 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:insert_rows",
+      "type": "function",
+      "name": "insert_rows",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        337,
+        435
+      ],
+      "summary": "insert rows 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:summary",
+      "type": "function",
+      "name": "summary",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        438,
+        453
+      ],
+      "summary": "summary 처리 규칙을 구현하여 insert_DSE workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:knowledge_graph/insert_DSE.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "lineRange": [
+        456,
+        482
+      ],
+      "summary": "insert_DSE.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_insert_points.py",
+      "type": "file",
+      "name": "test_insert_points.py",
+      "filePath": "tests/test_insert_points.py",
+      "summary": "Qdrant schema 로딩, collection/index 생성, disclosure 선택 재사용, embedding deduplication과 batch upsert 계약을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:_schema",
+      "type": "function",
+      "name": "_schema",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        14,
+        26
+      ],
+      "summary": "schema 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_loads_current_qdrant_schema",
+      "type": "function",
+      "name": "test_loads_current_qdrant_schema",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        53,
+        65
+      ],
+      "summary": "test loads current qdrant schema 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_ensure_collection_creates_named_vector_and_payload_indexes",
+      "type": "function",
+      "name": "test_ensure_collection_creates_named_vector_and_payload_indexes",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        68,
+        85
+      ],
+      "summary": "test ensure collection creates named vector and payload indexes 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_existing_collection_is_not_recreated",
+      "type": "function",
+      "name": "test_existing_collection_is_not_recreated",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        88,
+        94
+      ],
+      "summary": "test existing collection is not recreated 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_selected_disclosures_reuses_insert_dse_selection",
+      "type": "function",
+      "name": "test_selected_disclosures_reuses_insert_dse_selection",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        97,
+        104
+      ],
+      "summary": "test selected disclosures reuses insert dse selection 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:_assert_selected_disclosures_reuses_insert_dse_selection",
+      "type": "function",
+      "name": "_assert_selected_disclosures_reuses_insert_dse_selection",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        107,
+        140
+      ],
+      "summary": "assert selected disclosures reuses insert dse selection 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_batch_embedding_deduplicates_contextual_text",
+      "type": "function",
+      "name": "test_batch_embedding_deduplicates_contextual_text",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        143,
+        158
+      ],
+      "summary": "test batch embedding deduplicates contextual text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_upsert_uses_named_vectors_and_requested_batch_size",
+      "type": "function",
+      "name": "test_upsert_uses_named_vectors_and_requested_batch_size",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        161,
+        185
+      ],
+      "summary": "test upsert uses named vectors and requested batch size 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_insert_points.py:test_upsert_rejects_invalid_batch_size",
+      "type": "function",
+      "name": "test_upsert_rejects_invalid_batch_size",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        189,
+        196
+      ],
+      "summary": "test upsert rejects invalid batch size 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_insert_points.py:_Client",
+      "type": "class",
+      "name": "_Client",
+      "filePath": "tests/test_insert_points.py",
+      "lineRange": [
+        29,
+        50
+      ],
+      "summary": "Client domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_kv_context_builder.py",
+      "type": "file",
+      "name": "test_kv_context_builder.py",
+      "filePath": "tests/test_kv_context_builder.py",
+      "summary": "KV-table contextual text가 table 문맥과 key path를 정확히 보존하고 invalid evidence를 거부하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_kv_context_builder.py:test_builds_complete_kv_table_contextual_text",
+      "type": "function",
+      "name": "test_builds_complete_kv_table_contextual_text",
+      "filePath": "tests/test_kv_context_builder.py",
+      "lineRange": [
+        8,
+        48
+      ],
+      "summary": "test builds complete kv table contextual text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_kv_context_builder.py:test_omits_missing_table_context_and_preserves_each_key_path",
+      "type": "function",
+      "name": "test_omits_missing_table_context_and_preserves_each_key_path",
+      "filePath": "tests/test_kv_context_builder.py",
+      "lineRange": [
+        51,
+        78
+      ],
+      "summary": "test omits missing table context and preserves each key path 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_kv_context_builder.py:test_rejects_invalid_kv_evidence",
+      "type": "function",
+      "name": "test_rejects_invalid_kv_evidence",
+      "filePath": "tests/test_kv_context_builder.py",
+      "lineRange": [
+        99,
+        106
+      ],
+      "summary": "test rejects invalid kv evidence 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_point_builder.py",
+      "type": "file",
+      "name": "test_point_builder.py",
+      "filePath": "tests/test_point_builder.py",
+      "summary": "evidence 유형과 R-table strategy별 Qdrant payload, point ID, embedding 조립 경계를 폭넓게 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:_fragment",
+      "type": "function",
+      "name": "_fragment",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        53,
+        110
+      ],
+      "summary": "fragment 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:_selector",
+      "type": "function",
+      "name": "_selector",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        113,
+        129
+      ],
+      "summary": "selector 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:_whole_table_selector",
+      "type": "function",
+      "name": "_whole_table_selector",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        132,
+        133
+      ],
+      "summary": "whole table selector 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_builds_text_kv_and_one_point_for_a_small_r_table",
+      "type": "function",
+      "name": "test_builds_text_kv_and_one_point_for_a_small_r_table",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        136,
+        154
+      ],
+      "summary": "test builds text kv and one point for a small r table 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_payload_has_nested_retrieval_text_and_minimal_canonical_data",
+      "type": "function",
+      "name": "test_payload_has_nested_retrieval_text_and_minimal_canonical_data",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        157,
+        190
+      ],
+      "summary": "test payload has nested retrieval text and minimal canonical data 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_kv_canonical_preserves_key_value_pairs_and_omits_empty_metadata",
+      "type": "function",
+      "name": "test_kv_canonical_preserves_key_value_pairs_and_omits_empty_metadata",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        193,
+        223
+      ],
+      "summary": "test kv canonical preserves key value pairs and omits empty metadata 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_r_table_metadata_omits_fields_without_values",
+      "type": "function",
+      "name": "test_r_table_metadata_omits_fields_without_values",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        226,
+        247
+      ],
+      "summary": "test r table metadata omits fields without values 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_structured_oversized_r_table_builds_descriptor_with_all_records",
+      "type": "function",
+      "name": "test_structured_oversized_r_table_builds_descriptor_with_all_records",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        250,
+        272
+      ],
+      "summary": "test structured oversized r table builds descriptor with all records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_semantic_oversized_r_table_stores_only_each_row_group_records",
+      "type": "function",
+      "name": "test_semantic_oversized_r_table_stores_only_each_row_group_records",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        275,
+        316
+      ],
+      "summary": "test semantic oversized r table stores only each row group records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_point_ids_are_deterministic_and_evidence_specific",
+      "type": "function",
+      "name": "test_point_ids_are_deterministic_and_evidence_specific",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        319,
+        331
+      ],
+      "summary": "test point ids are deterministic and evidence specific 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_embedding_and_point_assembly_are_separate_and_cache_ready",
+      "type": "function",
+      "name": "test_embedding_and_point_assembly_are_separate_and_cache_ready",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        334,
+        358
+      ],
+      "summary": "test embedding and point assembly are separate and cache ready 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_rejects_mismatched_section_context",
+      "type": "function",
+      "name": "test_rejects_mismatched_section_context",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        361,
+        371
+      ],
+      "summary": "test rejects mismatched section context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_point_builder.py:test_rejects_orphan_records",
+      "type": "function",
+      "name": "test_rejects_orphan_records",
+      "filePath": "tests/test_point_builder.py",
+      "lineRange": [
+        374,
+        393
+      ],
+      "summary": "test rejects orphan records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_r_table_column_profiler.py",
+      "type": "file",
+      "name": "test_r_table_column_profiler.py",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "summary": "R-table column role profiling, threshold, value cardinality와 multi-level header 직렬화를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:_evidence",
+      "type": "function",
+      "name": "_evidence",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        18,
+        29
+      ],
+      "summary": "evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:_records",
+      "type": "function",
+      "name": "_records",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        32,
+        42
+      ],
+      "summary": "records 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_profiles_dimension_and_measure_columns",
+      "type": "function",
+      "name": "test_profiles_dimension_and_measure_columns",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        45,
+        78
+      ],
+      "summary": "test profiles dimension and measure columns 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_profiles_identifier_date_and_long_text_columns",
+      "type": "function",
+      "name": "test_profiles_identifier_date_and_long_text_columns",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        81,
+        100
+      ],
+      "summary": "test profiles identifier date and long text columns 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_empty_cells_are_excluded_and_explicit_values_are_profiled",
+      "type": "function",
+      "name": "test_empty_cells_are_excluded_and_explicit_values_are_profiled",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        103,
+        112
+      ],
+      "summary": "test empty cells are excluded and explicit values are profiled 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_high_cardinality_dimension_omits_values",
+      "type": "function",
+      "name": "test_high_cardinality_dimension_omits_values",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        115,
+        124
+      ],
+      "summary": "test high cardinality dimension omits values 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_total_dimension_value_limit_preserves_record_index_order",
+      "type": "function",
+      "name": "test_total_dimension_value_limit_preserves_record_index_order",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        127,
+        141
+      ],
+      "summary": "test total dimension value limit preserves record index order 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_config_threshold_changes_column_role",
+      "type": "function",
+      "name": "test_config_threshold_changes_column_role",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        144,
+        161
+      ],
+      "summary": "test config threshold changes column role 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_header_keywords_only_adjust_roles_when_values_support_them",
+      "type": "function",
+      "name": "test_header_keywords_only_adjust_roles_when_values_support_them",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        164,
+        181
+      ],
+      "summary": "test header keywords only adjust roles when values support them 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_year_and_numeric_identifier_headers_correct_numeric_profiles",
+      "type": "function",
+      "name": "test_year_and_numeric_identifier_headers_correct_numeric_profiles",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        184,
+        191
+      ],
+      "summary": "test year and numeric identifier headers correct numeric profiles 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_analysis_to_dict_preserves_multi_level_headers_and_roles",
+      "type": "function",
+      "name": "test_analysis_to_dict_preserves_multi_level_headers_and_roles",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        194,
+        207
+      ],
+      "summary": "test analysis to dict preserves multi level headers and roles 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_loads_default_column_profiling_config",
+      "type": "function",
+      "name": "test_loads_default_column_profiling_config",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        210,
+        216
+      ],
+      "summary": "test loads default column profiling config 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_column_profiler.py:test_rejects_invalid_table_structure",
+      "type": "function",
+      "name": "test_rejects_invalid_table_structure",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "lineRange": [
+        240,
+        248
+      ],
+      "summary": "test rejects invalid table structure 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_r_table_descriptor_builder.py",
+      "type": "file",
+      "name": "test_r_table_descriptor_builder.py",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "summary": "R-table descriptor가 context, header, dimension value를 선택적으로 구성하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:_evidence",
+      "type": "function",
+      "name": "_evidence",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        17,
+        39
+      ],
+      "summary": "evidence 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:_records",
+      "type": "function",
+      "name": "_records",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        42,
+        52
+      ],
+      "summary": "records 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:test_builds_descriptor_from_context_headers_and_dimension_values",
+      "type": "function",
+      "name": "test_builds_descriptor_from_context_headers_and_dimension_values",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        55,
+        103
+      ],
+      "summary": "test builds descriptor from context headers and dimension values 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:test_omits_high_cardinality_and_non_dimension_values",
+      "type": "function",
+      "name": "test_omits_high_cardinality_and_non_dimension_values",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        106,
+        136
+      ],
+      "summary": "test omits high cardinality and non dimension values 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:test_omits_missing_optional_table_context_lines",
+      "type": "function",
+      "name": "test_omits_missing_optional_table_context_lines",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        139,
+        156
+      ],
+      "summary": "test omits missing optional table context lines 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_r_table_descriptor_builder.py:test_rejects_mismatched_column_analysis",
+      "type": "function",
+      "name": "test_rejects_mismatched_column_analysis",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "lineRange": [
+        185,
+        200
+      ],
+      "summary": "test rejects mismatched column analysis 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:parse_args",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:parse_args",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:load_schema",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:load_schema",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:schema_properties",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:schema_properties",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:filter_properties",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:filter_properties",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:read_jsonl",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:read_jsonl",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:valid_manifest_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:valid_manifest_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:allocation_by_group",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:allocation_by_group",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:select_disclosures",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:select_disclosures",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:graph_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:graph_id",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:flattened_headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:flattened_headers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:flattened_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:flattened_keys",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:joined_caption",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:joined_caption",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:build_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:build_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:chunks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:chunks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:run_batched",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:run_batched",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:insert_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:insert_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:summary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:summary",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:knowledge_graph/insert_DSE.py",
+      "target": "function:knowledge_graph/insert_DSE.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:_schema",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:_schema",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_loads_current_qdrant_schema",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_loads_current_qdrant_schema",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_ensure_collection_creates_named_vector_and_payload_indexes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_ensure_collection_creates_named_vector_and_payload_indexes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_existing_collection_is_not_recreated",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_existing_collection_is_not_recreated",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_selected_disclosures_reuses_insert_dse_selection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_selected_disclosures_reuses_insert_dse_selection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:_assert_selected_disclosures_reuses_insert_dse_selection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:_assert_selected_disclosures_reuses_insert_dse_selection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_batch_embedding_deduplicates_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_batch_embedding_deduplicates_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_upsert_uses_named_vectors_and_requested_batch_size",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_upsert_uses_named_vectors_and_requested_batch_size",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_upsert_rejects_invalid_batch_size",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "function:tests/test_insert_points.py:test_upsert_rejects_invalid_batch_size",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "class:tests/test_insert_points.py:_Client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "class:tests/test_insert_points.py:_Client",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/insert_points.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_builds_complete_kv_table_contextual_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_builds_complete_kv_table_contextual_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_omits_missing_table_context_and_preserves_each_key_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_omits_missing_table_context_and_preserves_each_key_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_rejects_invalid_kv_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "function:tests/test_kv_context_builder.py:test_rejects_invalid_kv_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_fragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_fragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_selector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_selector",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_whole_table_selector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:_whole_table_selector",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_builds_text_kv_and_one_point_for_a_small_r_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_builds_text_kv_and_one_point_for_a_small_r_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_payload_has_nested_retrieval_text_and_minimal_canonical_data",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_payload_has_nested_retrieval_text_and_minimal_canonical_data",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_kv_canonical_preserves_key_value_pairs_and_omits_empty_metadata",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_kv_canonical_preserves_key_value_pairs_and_omits_empty_metadata",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_r_table_metadata_omits_fields_without_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_r_table_metadata_omits_fields_without_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_structured_oversized_r_table_builds_descriptor_with_all_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_structured_oversized_r_table_builds_descriptor_with_all_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_semantic_oversized_r_table_stores_only_each_row_group_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_semantic_oversized_r_table_stores_only_each_row_group_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_point_ids_are_deterministic_and_evidence_specific",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_point_ids_are_deterministic_and_evidence_specific",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_embedding_and_point_assembly_are_separate_and_cache_ready",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_embedding_and_point_assembly_are_separate_and_cache_ready",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_rejects_mismatched_section_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_rejects_mismatched_section_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_rejects_orphan_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "function:tests/test_point_builder.py:test_rejects_orphan_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_profiles_dimension_and_measure_columns",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_profiles_dimension_and_measure_columns",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_profiles_identifier_date_and_long_text_columns",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_profiles_identifier_date_and_long_text_columns",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_empty_cells_are_excluded_and_explicit_values_are_profiled",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_empty_cells_are_excluded_and_explicit_values_are_profiled",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_high_cardinality_dimension_omits_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_high_cardinality_dimension_omits_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_total_dimension_value_limit_preserves_record_index_order",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_total_dimension_value_limit_preserves_record_index_order",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_config_threshold_changes_column_role",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_config_threshold_changes_column_role",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_header_keywords_only_adjust_roles_when_values_support_them",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_header_keywords_only_adjust_roles_when_values_support_them",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_year_and_numeric_identifier_headers_correct_numeric_profiles",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_year_and_numeric_identifier_headers_correct_numeric_profiles",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_analysis_to_dict_preserves_multi_level_headers_and_roles",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_analysis_to_dict_preserves_multi_level_headers_and_roles",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_loads_default_column_profiling_config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_loads_default_column_profiling_config",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_rejects_invalid_table_structure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "function:tests/test_r_table_column_profiler.py:test_rejects_invalid_table_structure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_builds_descriptor_from_context_headers_and_dimension_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_builds_descriptor_from_context_headers_and_dimension_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_omits_high_cardinality_and_non_dimension_values",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_omits_high_cardinality_and_non_dimension_values",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_omits_missing_optional_table_context_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_omits_missing_optional_table_context_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_rejects_mismatched_column_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "function:tests/test_r_table_descriptor_builder.py:test_rejects_mismatched_column_analysis",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

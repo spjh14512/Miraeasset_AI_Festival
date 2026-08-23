@@ -270,7 +270,7 @@
     },
     {
       "case_id": "CVP-H01",
-      "description": "A 7,592-row R table remains one evidence plus external records",
+      "description": "A 7,592-row R table remains one evidence plus top-level records",
       "tags": ["H"],
       "profiles": ["full"],
       "document_ids": ["holding_20260311004186"],

@@ -1,0 +1,1167 @@
+{
+  "nodes": [
+    {
+      "id": "file:scripts/build_evidence_fragments.py",
+      "type": "file",
+      "name": "build_evidence_fragments.py",
+      "filePath": "scripts/build_evidence_fragments.py",
+      "summary": "Evidence Fragment build pipeline의 main entry point를 실행하는 얇은 CLI wrapper입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/validate_evidence_fragments.py",
+      "type": "file",
+      "name": "validate_evidence_fragments.py",
+      "filePath": "scripts/validate_evidence_fragments.py",
+      "summary": "Evidence Fragment validator의 main entry point를 실행하는 얇은 CLI wrapper입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_build_canonical_sections.py",
+      "type": "file",
+      "name": "test_build_canonical_sections.py",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "summary": "canonical section builder의 multi-source flattening, hash 재사용, 실패 manifest와 graph projection을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_build_canonical_sections.py:_write_manifest",
+      "type": "function",
+      "name": "_write_manifest",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "lineRange": [
+        14,
+        23
+      ],
+      "summary": "write manifest 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_build_canonical_sections.py:test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+      "type": "function",
+      "name": "test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "lineRange": [
+        26,
+        114
+      ],
+      "summary": "test builder flattens multiple sources and reuses matching hash 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_build_canonical_sections.py:test_builder_records_missing_processable_source_as_failure",
+      "type": "function",
+      "name": "test_builder_records_missing_processable_source_as_failure",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "lineRange": [
+        117,
+        140
+      ],
+      "summary": "test builder records missing processable source as failure 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_build_canonical_sections.py:test_graph_output_omits_structural_root_and_keeps_standalone_synthetic",
+      "type": "function",
+      "name": "test_graph_output_omits_structural_root_and_keeps_standalone_synthetic",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "lineRange": [
+        143,
+        180
+      ],
+      "summary": "test graph output omits structural root and keeps standalone synthetic 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_evidence_fragments.py",
+      "type": "file",
+      "name": "test_evidence_fragments.py",
+      "filePath": "tests/test_evidence_fragments.py",
+      "summary": "Evidence Fragment assembly, table record 외부화, context deduplication, validator와 end-to-end pipeline을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:_context",
+      "type": "function",
+      "name": "_context",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        17,
+        23
+      ],
+      "summary": "context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_section_fragment_has_minimal_top_level_and_r_table_records",
+      "type": "function",
+      "name": "test_section_fragment_has_minimal_top_level_and_r_table_records",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        26,
+        75
+      ],
+      "summary": "test section fragment has minimal top level and r table records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+      "type": "function",
+      "name": "test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        78,
+        110
+      ],
+      "summary": "test small r table is one evidence and preserves row types in records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_navigation_layout_does_not_become_table_title",
+      "type": "function",
+      "name": "test_navigation_layout_does_not_become_table_title",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        113,
+        136
+      ],
+      "summary": "test navigation layout does not become table title 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+      "type": "function",
+      "name": "test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        139,
+        166
+      ],
+      "summary": "test text evidence preserves disclosure reference but not internal link 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+      "type": "function",
+      "name": "test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        169,
+        191
+      ],
+      "summary": "test text deduplication keeps same text with different disclosure refs 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+      "type": "function",
+      "name": "test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        194,
+        230
+      ],
+      "summary": "test validator rejects embedded r table and misaligned record width 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+      "type": "function",
+      "name": "test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        233,
+        273
+      ],
+      "summary": "test multiple r tables have stable table ids and record groups 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_kv_payload_omits_provenance_fields",
+      "type": "function",
+      "name": "test_kv_payload_omits_provenance_fields",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        276,
+        308
+      ],
+      "summary": "test kv payload omits provenance fields 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+      "type": "function",
+      "name": "test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        311,
+        340
+      ],
+      "summary": "test unclassified non layout table is preserved as text fallback 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+      "type": "function",
+      "name": "test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        343,
+        380
+      ],
+      "summary": "test local heading and table leadin become table context not text evidence 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+      "type": "function",
+      "name": "test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        383,
+        403
+      ],
+      "summary": "test table captions deduplicate identical leadin and xml caption 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_compound_base_date_and_unit_strip_becomes_r_table_context",
+      "type": "function",
+      "name": "test_compound_base_date_and_unit_strip_becomes_r_table_context",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        406,
+        440
+      ],
+      "summary": "test compound base date and unit strip becomes r table context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_split_xbrl_context_tables_become_r_table_context",
+      "type": "function",
+      "name": "test_split_xbrl_context_tables_become_r_table_context",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        443,
+        475
+      ],
+      "summary": "test split xbrl context tables become r table context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_evidence_fragments.py:test_pipeline_writes_one_fragment_per_graph_section_and_validates",
+      "type": "function",
+      "name": "test_pipeline_writes_one_fragment_per_graph_section_and_validates",
+      "filePath": "tests/test_evidence_fragments.py",
+      "lineRange": [
+        478,
+        540
+      ],
+      "summary": "test pipeline writes one fragment per graph section and validates 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_section_canonicalizer.py",
+      "type": "file",
+      "name": "test_section_canonicalizer.py",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "summary": "명시적·암시적 section hierarchy, exclusion, orphan block, recovery 상태 추적을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:_document_context",
+      "type": "function",
+      "name": "_document_context",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        18,
+        24
+      ],
+      "summary": "document context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+      "type": "function",
+      "name": "test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        27,
+        65
+      ],
+      "summary": "test explicit sections preserve hierarchy paths and direct block order 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_every_source_block_belongs_to_only_one_deepest_section",
+      "type": "function",
+      "name": "test_every_source_block_belongs_to_only_one_deepest_section",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        68,
+        83
+      ],
+      "summary": "test every source block belongs to only one deepest section 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_title_is_metadata_and_not_a_paragraph_block",
+      "type": "function",
+      "name": "test_title_is_metadata_and_not_a_paragraph_block",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        86,
+        95
+      ],
+      "summary": "test title is metadata and not a paragraph block 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_correction_subtree_is_skipped_without_mutating_input",
+      "type": "function",
+      "name": "test_correction_subtree_is_skipped_without_mutating_input",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        98,
+        111
+      ],
+      "summary": "test correction subtree is skipped without mutating input 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_explicit_html_exclusion_skips_entire_container",
+      "type": "function",
+      "name": "test_explicit_html_exclusion_skips_entire_container",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        114,
+        133
+      ],
+      "summary": "test explicit html exclusion skips entire container 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+      "type": "function",
+      "name": "test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        136,
+        158
+      ],
+      "summary": "test html headings create implicit hierarchy and keep preamble root 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_paragraphs_are_implicit_sections",
+      "type": "function",
+      "name": "test_repeated_numbered_paragraphs_are_implicit_sections",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        161,
+        178
+      ],
+      "summary": "test repeated numbered paragraphs are implicit sections 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_single_numbered_paragraph_does_not_create_implicit_boundary",
+      "type": "function",
+      "name": "test_single_numbered_paragraph_does_not_create_implicit_boundary",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        181,
+        192
+      ],
+      "summary": "test single numbered paragraph does not create implicit boundary 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+      "type": "function",
+      "name": "test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        195,
+        210
+      ],
+      "summary": "test repeated numbered single cell tables can be implicit headings 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+      "type": "function",
+      "name": "test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        213,
+        230
+      ],
+      "summary": "test orphan spans and images are preserved as ordered refs 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+      "type": "function",
+      "name": "test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        233,
+        250
+      ],
+      "summary": "test synthetic html title is metadata not duplicate span block 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_section_canonicalizer.py:test_recovered_and_failed_document_statuses_are_traceable",
+      "type": "function",
+      "name": "test_recovered_and_failed_document_statuses_are_traceable",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "lineRange": [
+        253,
+        266
+      ],
+      "summary": "test recovered and failed document statuses are traceable 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:scripts/build_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/validate_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:_write_manifest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:_write_manifest",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_builder_flattens_multiple_sources_and_reuses_matching_hash",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_builder_records_missing_processable_source_as_failure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_builder_records_missing_processable_source_as_failure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_graph_output_omits_structural_root_and_keeps_standalone_synthetic",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "function:tests/test_build_canonical_sections.py:test_graph_output_omits_structural_root_and_keeps_standalone_synthetic",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_section_fragment_has_minimal_top_level_and_r_table_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_section_fragment_has_minimal_top_level_and_r_table_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_small_r_table_is_one_evidence_and_preserves_row_types_in_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_navigation_layout_does_not_become_table_title",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_navigation_layout_does_not_become_table_title",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_text_evidence_preserves_disclosure_reference_but_not_internal_link",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_text_deduplication_keeps_same_text_with_different_disclosure_refs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_validator_rejects_embedded_r_table_and_misaligned_record_width",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_multiple_r_tables_have_stable_table_ids_and_record_groups",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_kv_payload_omits_provenance_fields",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_kv_payload_omits_provenance_fields",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_unclassified_non_layout_table_is_preserved_as_text_fallback",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_local_heading_and_table_leadin_become_table_context_not_text_evidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_table_captions_deduplicate_identical_leadin_and_xml_caption",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_compound_base_date_and_unit_strip_becomes_r_table_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_compound_base_date_and_unit_strip_becomes_r_table_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_split_xbrl_context_tables_become_r_table_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_split_xbrl_context_tables_become_r_table_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_pipeline_writes_one_fragment_per_graph_section_and_validates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "function:tests/test_evidence_fragments.py:test_pipeline_writes_one_fragment_per_graph_section_and_validates",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:_document_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:_document_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_every_source_block_belongs_to_only_one_deepest_section",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_every_source_block_belongs_to_only_one_deepest_section",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_title_is_metadata_and_not_a_paragraph_block",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_title_is_metadata_and_not_a_paragraph_block",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_correction_subtree_is_skipped_without_mutating_input",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_correction_subtree_is_skipped_without_mutating_input",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_explicit_html_exclusion_skips_entire_container",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_explicit_html_exclusion_skips_entire_container",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_html_headings_create_implicit_hierarchy_and_keep_preamble_root",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_paragraphs_are_implicit_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_paragraphs_are_implicit_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_single_numbered_paragraph_does_not_create_implicit_boundary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_single_numbered_paragraph_does_not_create_implicit_boundary",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_repeated_numbered_single_cell_tables_can_be_implicit_headings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_orphan_spans_and_images_are_preserved_as_ordered_refs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_synthetic_html_title_is_metadata_not_duplicate_span_block",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_recovered_and_failed_document_statuses_are_traceable",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "function:tests/test_section_canonicalizer.py:test_recovered_and_failed_document_statuses_are_traceable",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

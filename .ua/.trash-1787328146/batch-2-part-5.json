@@ -1,0 +1,1328 @@
+{
+  "nodes": [
+    {
+      "id": "file:tests/test_semantic_text_segmenter.py",
+      "type": "file",
+      "name": "test_semantic_text_segmenter.py",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "summary": "bold heading, marker chain, BR, caption 경계가 원문을 훼손하지 않고 분할되는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:_context",
+      "type": "function",
+      "name": "_context",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        11,
+        17
+      ],
+      "summary": "context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:_segments",
+      "type": "function",
+      "name": "_segments",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        20,
+        25
+      ],
+      "summary": "segments 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_bold_inline_headings_split_one_p_into_semantic_units",
+      "type": "function",
+      "name": "test_bold_inline_headings_split_one_p_into_semantic_units",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        28,
+        41
+      ],
+      "summary": "test bold inline headings split one p into semantic units 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_concatenated_marker_chain_is_split_without_rewriting_text",
+      "type": "function",
+      "name": "test_concatenated_marker_chain_is_split_without_rewriting_text",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        44,
+        52
+      ],
+      "summary": "test concatenated marker chain is split without rewriting text 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_br_is_a_semantic_boundary_and_reference_stays_with_notice",
+      "type": "function",
+      "name": "test_br_is_a_semantic_boundary_and_reference_stays_with_notice",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        55,
+        72
+      ],
+      "summary": "test br is a semantic boundary and reference stays with notice 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_substantive_prefix_is_separated_from_final_table_caption_sentence",
+      "type": "function",
+      "name": "test_substantive_prefix_is_separated_from_final_table_caption_sentence",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        75,
+        87
+      ],
+      "summary": "test substantive prefix is separated from final table caption sentence 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_sentence_wrapping_and_substring_do_not_create_false_headings",
+      "type": "function",
+      "name": "test_sentence_wrapping_and_substring_do_not_create_false_headings",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        90,
+        100
+      ],
+      "summary": "test sentence wrapping and substring do not create false headings 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_numbered_section_name_inside_reference_sentence_is_not_a_heading",
+      "type": "function",
+      "name": "test_numbered_section_name_inside_reference_sentence_is_not_a_heading",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        103,
+        112
+      ],
+      "summary": "test numbered section name inside reference sentence is not a heading 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numeric_heading_and_korean_caption_are_split",
+      "type": "function",
+      "name": "test_concatenated_numeric_heading_and_korean_caption_are_split",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        115,
+        128
+      ],
+      "summary": "test concatenated numeric heading and korean caption are split 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numbered_items_split_after_sentence_end",
+      "type": "function",
+      "name": "test_concatenated_numbered_items_split_after_sentence_end",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        131,
+        140
+      ],
+      "summary": "test concatenated numbered items split after sentence end 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_semantic_text_segmenter.py:test_parenthesized_heading_is_split_from_consolidated_entity_body",
+      "type": "function",
+      "name": "test_parenthesized_heading_is_split_from_consolidated_entity_body",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "lineRange": [
+        143,
+        155
+      ],
+      "summary": "test parenthesized heading is split from consolidated entity body 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_table_context_resolver.py",
+      "type": "file",
+      "name": "test_table_context_resolver.py",
+      "filePath": "tests/test_table_context_resolver.py",
+      "summary": "table 주변 title/unit/note 결합과 ambiguous narrative 및 table boundary 차단을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_table_context_resolver.py:_document_context",
+      "type": "function",
+      "name": "_document_context",
+      "filePath": "tests/test_table_context_resolver.py",
+      "lineRange": [
+        11,
+        17
+      ],
+      "summary": "document context 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_context_resolver.py:test_resolver_bundles_photo_style_title_unit_and_trailing_notes",
+      "type": "function",
+      "name": "test_resolver_bundles_photo_style_title_unit_and_trailing_notes",
+      "filePath": "tests/test_table_context_resolver.py",
+      "lineRange": [
+        20,
+        68
+      ],
+      "summary": "test resolver bundles photo style title unit and trailing notes 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_context_resolver.py:test_resolver_does_not_attach_ambiguous_narrative_or_cross_table_boundary",
+      "type": "function",
+      "name": "test_resolver_does_not_attach_ambiguous_narrative_or_cross_table_boundary",
+      "filePath": "tests/test_table_context_resolver.py",
+      "lineRange": [
+        71,
+        89
+      ],
+      "summary": "test resolver does not attach ambiguous narrative or cross table boundary 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_table_parser.py",
+      "type": "file",
+      "name": "test_table_parser.py",
+      "filePath": "tests/test_table_parser.py",
+      "summary": "merged cell, KV/record/layout/unknown table과 DART XML/HTML recovery를 포괄적으로 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:tests/test_table_parser.py:_field_by_value",
+      "type": "function",
+      "name": "_field_by_value",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        20,
+        23
+      ],
+      "summary": "field by value 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_preserves_shared_evidence_context_in_canonical_output",
+      "type": "function",
+      "name": "test_table_preserves_shared_evidence_context_in_canonical_output",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        26,
+        79
+      ],
+      "summary": "test table preserves shared evidence context in canonical output 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_logical_grid_shares_merged_cell_identity",
+      "type": "function",
+      "name": "test_logical_grid_shares_merged_cell_identity",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        82,
+        94
+      ],
+      "summary": "test logical grid shares merged cell identity 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_simple_kv_keeps_only_final_key_paths_and_source_attributes",
+      "type": "function",
+      "name": "test_simple_kv_keeps_only_final_key_paths_and_source_attributes",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        97,
+        115
+      ],
+      "summary": "test simple kv keeps only final key paths and source attributes 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_hierarchical_kv_context_and_colspan_do_not_leak_previous_labels",
+      "type": "function",
+      "name": "test_hierarchical_kv_context_and_colspan_do_not_leak_previous_labels",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        118,
+        153
+      ],
+      "summary": "test hierarchical kv context and colspan do not leak previous labels 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_merged_value_retains_multiple_contexts",
+      "type": "function",
+      "name": "test_merged_value_retains_multiple_contexts",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        156,
+        165
+      ],
+      "summary": "test merged value retains multiple contexts 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_nested_p_and_span_keep_paragraph_boundaries",
+      "type": "function",
+      "name": "test_nested_p_and_span_keep_paragraph_boundaries",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        168,
+        178
+      ],
+      "summary": "test nested p and span keep paragraph boundaries 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_aupdatecont_is_metadata_not_a_role_rule",
+      "type": "function",
+      "name": "test_aupdatecont_is_metadata_not_a_role_rule",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        181,
+        191
+      ],
+      "summary": "test aupdatecont is metadata not a role rule 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_tu_preserves_aunit_and_aunitvalue_without_dedicated_code_fields",
+      "type": "function",
+      "name": "test_tu_preserves_aunit_and_aunitvalue_without_dedicated_code_fields",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        194,
+        207
+      ],
+      "summary": "test tu preserves aunit and aunitvalue without dedicated code fields 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_simple_record_table_extracts_columns_and_records",
+      "type": "function",
+      "name": "test_simple_record_table_extracts_columns_and_records",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        210,
+        231
+      ],
+      "summary": "test simple record table extracts columns and records 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_record_without_thead_is_inferred_from_repeated_rows",
+      "type": "function",
+      "name": "test_record_without_thead_is_inferred_from_repeated_rows",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        234,
+        247
+      ],
+      "summary": "test record without thead is inferred from repeated rows 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_plain_td_key_value_matrix_is_not_mistaken_for_record_header",
+      "type": "function",
+      "name": "test_plain_td_key_value_matrix_is_not_mistaken_for_record_header",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        250,
+        285
+      ],
+      "summary": "test plain td key value matrix is not mistaken for record header 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_multilevel_record_header_row_context_and_totals",
+      "type": "function",
+      "name": "test_multilevel_record_header_row_context_and_totals",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        288,
+        316
+      ],
+      "summary": "test multilevel record header row context and totals 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_layout_and_table_group_attach_title_and_unit",
+      "type": "function",
+      "name": "test_layout_and_table_group_attach_title_and_unit",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        319,
+        350
+      ],
+      "summary": "test layout and table group attach title and unit 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_group_attaches_compound_base_date_and_unit_strip",
+      "type": "function",
+      "name": "test_table_group_attaches_compound_base_date_and_unit_strip",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        353,
+        383
+      ],
+      "summary": "test table group attaches compound base date and unit strip 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_group_keeps_non_context_single_row_kv_table",
+      "type": "function",
+      "name": "test_table_group_keeps_non_context_single_row_kv_table",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        386,
+        404
+      ],
+      "summary": "test table group keeps non context single row kv table 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_group_attaches_split_date_caption_and_unit_strip",
+      "type": "function",
+      "name": "test_table_group_attaches_split_date_caption_and_unit_strip",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        407,
+        425
+      ],
+      "summary": "test table group attaches split date caption and unit strip 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_group_attaches_split_context_title_period_and_unit",
+      "type": "function",
+      "name": "test_table_group_attaches_split_context_title_period_and_unit",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        428,
+        449
+      ],
+      "summary": "test table group attaches split context title period and unit 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_table_group_keeps_split_context_candidate_with_real_kv_value",
+      "type": "function",
+      "name": "test_table_group_keeps_split_context_candidate_with_real_kv_value",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        452,
+        467
+      ],
+      "summary": "test table group keeps split context candidate with real kv value 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_navigation_layout_is_ignored_but_anchor_title_is_preserved",
+      "type": "function",
+      "name": "test_navigation_layout_is_ignored_but_anchor_title_is_preserved",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        470,
+        494
+      ],
+      "summary": "test navigation layout is ignored but anchor title is preserved 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_explicit_html_caption_is_kept_as_context",
+      "type": "function",
+      "name": "test_explicit_html_caption_is_kept_as_context",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        497,
+        508
+      ],
+      "summary": "test explicit html caption is kept as context 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_unknown_table_is_not_forced_into_kv_or_record",
+      "type": "function",
+      "name": "test_unknown_table_is_not_forced_into_kv_or_record",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        511,
+        518
+      ],
+      "summary": "test unknown table is not forced into kv or record 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_empty_and_dash_values_are_distinct",
+      "type": "function",
+      "name": "test_empty_and_dash_values_are_distinct",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        521,
+        529
+      ],
+      "summary": "test empty and dash values are distinct 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_exchange_html_fragment_uses_xforms_input_as_value",
+      "type": "function",
+      "name": "test_exchange_html_fragment_uses_xforms_input_as_value",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        532,
+        552
+      ],
+      "summary": "test exchange html fragment uses xforms input as value 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_table_parser.py:test_recovery_and_input_non_mutation",
+      "type": "function",
+      "name": "test_recovery_and_input_non_mutation",
+      "filePath": "tests/test_table_parser.py",
+      "lineRange": [
+        555,
+        567
+      ],
+      "summary": "test recovery and input non mutation 시나리오의 기대 동작과 regression 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:_segments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:_segments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_bold_inline_headings_split_one_p_into_semantic_units",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_bold_inline_headings_split_one_p_into_semantic_units",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_marker_chain_is_split_without_rewriting_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_marker_chain_is_split_without_rewriting_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_br_is_a_semantic_boundary_and_reference_stays_with_notice",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_br_is_a_semantic_boundary_and_reference_stays_with_notice",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_substantive_prefix_is_separated_from_final_table_caption_sentence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_substantive_prefix_is_separated_from_final_table_caption_sentence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_sentence_wrapping_and_substring_do_not_create_false_headings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_sentence_wrapping_and_substring_do_not_create_false_headings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_numbered_section_name_inside_reference_sentence_is_not_a_heading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_numbered_section_name_inside_reference_sentence_is_not_a_heading",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numeric_heading_and_korean_caption_are_split",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numeric_heading_and_korean_caption_are_split",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numbered_items_split_after_sentence_end",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_concatenated_numbered_items_split_after_sentence_end",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_parenthesized_heading_is_split_from_consolidated_entity_body",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "function:tests/test_semantic_text_segmenter.py:test_parenthesized_heading_is_split_from_consolidated_entity_body",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:_document_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:_document_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:test_resolver_bundles_photo_style_title_unit_and_trailing_notes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:test_resolver_bundles_photo_style_title_unit_and_trailing_notes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:test_resolver_does_not_attach_ambiguous_narrative_or_cross_table_boundary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "function:tests/test_table_context_resolver.py:test_resolver_does_not_attach_ambiguous_narrative_or_cross_table_boundary",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:_field_by_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:_field_by_value",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_preserves_shared_evidence_context_in_canonical_output",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_preserves_shared_evidence_context_in_canonical_output",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_logical_grid_shares_merged_cell_identity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_logical_grid_shares_merged_cell_identity",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_simple_kv_keeps_only_final_key_paths_and_source_attributes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_simple_kv_keeps_only_final_key_paths_and_source_attributes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_hierarchical_kv_context_and_colspan_do_not_leak_previous_labels",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_hierarchical_kv_context_and_colspan_do_not_leak_previous_labels",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_merged_value_retains_multiple_contexts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_merged_value_retains_multiple_contexts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_nested_p_and_span_keep_paragraph_boundaries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_nested_p_and_span_keep_paragraph_boundaries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_aupdatecont_is_metadata_not_a_role_rule",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_aupdatecont_is_metadata_not_a_role_rule",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_tu_preserves_aunit_and_aunitvalue_without_dedicated_code_fields",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_tu_preserves_aunit_and_aunitvalue_without_dedicated_code_fields",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_simple_record_table_extracts_columns_and_records",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_simple_record_table_extracts_columns_and_records",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_record_without_thead_is_inferred_from_repeated_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_record_without_thead_is_inferred_from_repeated_rows",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_plain_td_key_value_matrix_is_not_mistaken_for_record_header",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_plain_td_key_value_matrix_is_not_mistaken_for_record_header",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_multilevel_record_header_row_context_and_totals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_multilevel_record_header_row_context_and_totals",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_layout_and_table_group_attach_title_and_unit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_layout_and_table_group_attach_title_and_unit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_compound_base_date_and_unit_strip",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_compound_base_date_and_unit_strip",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_keeps_non_context_single_row_kv_table",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_keeps_non_context_single_row_kv_table",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_split_date_caption_and_unit_strip",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_split_date_caption_and_unit_strip",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_split_context_title_period_and_unit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_attaches_split_context_title_period_and_unit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_keeps_split_context_candidate_with_real_kv_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_table_group_keeps_split_context_candidate_with_real_kv_value",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_navigation_layout_is_ignored_but_anchor_title_is_preserved",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_navigation_layout_is_ignored_but_anchor_title_is_preserved",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_explicit_html_caption_is_kept_as_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_explicit_html_caption_is_kept_as_context",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_unknown_table_is_not_forced_into_kv_or_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_unknown_table_is_not_forced_into_kv_or_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_empty_and_dash_values_are_distinct",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_empty_and_dash_values_are_distinct",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_exchange_html_fragment_uses_xforms_input_as_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_exchange_html_fragment_uses_xforms_input_as_value",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_recovery_and_input_non_mutation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "function:tests/test_table_parser.py:test_recovery_and_input_non_mutation",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

@@ -259,6 +259,78 @@ def _inferred_header_rows(grid: LogicalGrid) -> set[int]:
     return {0} if comparable >= 2 else set()
 
 
+def _plain_td_kv_value_ids(grid: LogicalGrid) -> set[str]:
+    """Recognize conservative multi-row key/value matrices made only of TDs.
+
+    DART's stock-administration tables commonly start with one ``key | value``
+    row whose value spans the remaining columns, then mix that shape with
+    ``key | value | key | value`` rows.  Without an explicit THEAD or XBRL
+    value tags, the generic first-row heuristic otherwise mistakes the first
+    key/value row for a record header.
+    """
+    if grid.height < 3 or grid.width < 4:
+        return set()
+    if any(_strong_value(cell) for cell in grid.cells):
+        return set()
+
+    value_ids: set[str] = set()
+    nonempty_row_count = 0
+    merged_value_row_count = 0
+    multi_pair_row_count = 0
+    first_nonempty_is_merged_pair = False
+
+    for row_index, logical_row in enumerate(grid.rows):
+        cells = _unique_cells(logical_row)
+        if not any(cell.raw_value for cell in cells):
+            continue
+        nonempty_row_count += 1
+
+        if any(cell.tag != "TD" for cell in cells):
+            return set()
+        if any(
+            cell.row_start != row_index or cell.row_end != row_index + 1
+            for cell in cells
+        ):
+            return set()
+        if any(cell is None for cell in logical_row) or len(cells) % 2:
+            return set()
+
+        row_has_merged_value = False
+        cursor = 0
+        for pair_index in range(0, len(cells), 2):
+            key = cells[pair_index]
+            value = cells[pair_index + 1]
+            if (
+                not key.raw_value
+                or key.col_start != cursor
+                or key.col_end != key.col_start + 1
+                or value.col_start != key.col_end
+            ):
+                return set()
+            cursor = value.col_end
+            if value.col_end - value.col_start > 1:
+                row_has_merged_value = True
+            value_ids.add(value.id)
+
+        if cursor != grid.width:
+            return set()
+        if row_has_merged_value:
+            merged_value_row_count += 1
+        if len(cells) >= 4:
+            multi_pair_row_count += 1
+        if nonempty_row_count == 1:
+            first_nonempty_is_merged_pair = len(cells) == 2 and row_has_merged_value
+
+    if (
+        nonempty_row_count >= 3
+        and first_nonempty_is_merged_pair
+        and merged_value_row_count >= 2
+        and multi_pair_row_count >= 1
+    ):
+        return value_ids
+    return set()
+
+
 def _unique_cells(cells: Iterable[SourceCell | None]) -> list[SourceCell]:
     result: list[SourceCell] = []
     seen: set[str] = set()
@@ -297,6 +369,8 @@ def classify_table_type(
 ) -> tuple[TableType, set[int], LayoutRole | None]:
     rows = _table_rows(table_element)
     header_rows = _thead_row_indexes(table_element, rows)
+    if not header_rows and _plain_td_kv_value_ids(grid):
+        return TableType.KV_TABLE, set(), None
     if not header_rows:
         header_rows = _inferred_header_rows(grid)
 
@@ -400,10 +474,14 @@ def _deduplicate_paths(
 
 def _parse_kv(
     grid: LogicalGrid,
+    *,
+    inferred_value_ids: set[str] | None = None,
 ) -> tuple[dict[str, CellRole], dict[str, Any]]:
     roles: dict[str, CellRole] = {}
     for cell in grid.cells:
-        if _strong_value(cell):
+        if _strong_value(cell) or (
+            inferred_value_ids is not None and cell.id in inferred_value_ids
+        ):
             roles[cell.id] = CellRole.VALUE
         elif not cell.raw_value:
             roles[cell.id] = CellRole.EMPTY
@@ -608,7 +686,11 @@ def parse_table(
     table_type, header_rows, layout_role = classify_table_type(table_element, grid)
 
     if table_type == TableType.KV_TABLE:
-        roles, content = _parse_kv(grid)
+        inferred_value_ids = _plain_td_kv_value_ids(grid)
+        roles, content = _parse_kv(
+            grid,
+            inferred_value_ids=inferred_value_ids or None,
+        )
     elif table_type == TableType.R_TABLE:
         roles, content = _parse_record(grid, header_rows)
     elif table_type == TableType.LAYOUT_TABLE and layout_role is not None:

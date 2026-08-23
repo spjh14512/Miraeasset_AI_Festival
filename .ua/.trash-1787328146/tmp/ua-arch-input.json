@@ -1,0 +1,3390 @@
+{
+  "fileNodes": [
+    {
+      "id": "file:knowledge_graph/insert_DSE.py",
+      "type": "file",
+      "name": "insert_DSE.py",
+      "filePath": "knowledge_graph/insert_DSE.py",
+      "summary": "Canonical Section과 Evidence Fragment 산출물을 Neo4j용 Disclosure-Section-Evidence 그래프 row로 변환하고 batch 삽입하는 CLI입니다.",
+      "tags": [
+        "knowledge-graph",
+        "neo4j",
+        "data-pipeline",
+        "cli"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:tests/test_insert_points.py",
+      "type": "file",
+      "name": "test_insert_points.py",
+      "filePath": "tests/test_insert_points.py",
+      "summary": "Qdrant schema 로딩, collection/index 생성, disclosure 선택 재사용, embedding deduplication과 batch upsert 계약을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_kv_context_builder.py",
+      "type": "file",
+      "name": "test_kv_context_builder.py",
+      "filePath": "tests/test_kv_context_builder.py",
+      "summary": "KV-table contextual text가 table 문맥과 key path를 정확히 보존하고 invalid evidence를 거부하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_point_builder.py",
+      "type": "file",
+      "name": "test_point_builder.py",
+      "filePath": "tests/test_point_builder.py",
+      "summary": "evidence 유형과 R-table strategy별 Qdrant payload, point ID, embedding 조립 경계를 폭넓게 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_r_table_column_profiler.py",
+      "type": "file",
+      "name": "test_r_table_column_profiler.py",
+      "filePath": "tests/test_r_table_column_profiler.py",
+      "summary": "R-table column role profiling, threshold, value cardinality와 multi-level header 직렬화를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_r_table_descriptor_builder.py",
+      "type": "file",
+      "name": "test_r_table_descriptor_builder.py",
+      "filePath": "tests/test_r_table_descriptor_builder.py",
+      "summary": "R-table descriptor가 context, header, dimension value를 선택적으로 구성하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_r_table_record_context_builder.py",
+      "type": "file",
+      "name": "test_r_table_record_context_builder.py",
+      "filePath": "tests/test_r_table_record_context_builder.py",
+      "summary": "R-table record/whole-table contextual text 렌더링과 입력 정합성 검사를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_r_table_row_group_builder.py",
+      "type": "file",
+      "name": "test_r_table_row_group_builder.py",
+      "filePath": "tests/test_r_table_row_group_builder.py",
+      "summary": "token 제한 기반 greedy row grouping이 누락·중복 없이 oversized record와 오류를 처리하는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_r_table_strategy_selector.py",
+      "type": "file",
+      "name": "test_r_table_strategy_selector.py",
+      "filePath": "tests/test_r_table_strategy_selector.py",
+      "summary": "table 크기와 content 특성에 따른 embedding strategy 선택 및 설정 threshold를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_text2vector.py",
+      "type": "file",
+      "name": "test_text2vector.py",
+      "filePath": "tests/test_text2vector.py",
+      "summary": "BGE-M3 local model 설정, CUDA/FP16 사용, batch API와 embedding dimension 오류 처리를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_text_contextual_builder.py",
+      "type": "file",
+      "name": "test_text_contextual_builder.py",
+      "filePath": "tests/test_text_contextual_builder.py",
+      "summary": "TEXT evidence contextual text의 document/section/heading 결합과 중복 제거를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/bgem3_token_counter.py",
+      "type": "file",
+      "name": "bgem3_token_counter.py",
+      "filePath": "vector_db/bgem3_token_counter.py",
+      "summary": "BGE-M3 tokenizer를 지연 로딩하여 contextual text의 token 수를 계산합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "vector_db/contextual_text_builders/__init__.py",
+      "summary": "TEXT, KV-table, R-table evidence용 contextual text builder의 공개 API를 모아 재노출합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Python package barrel로 public builder API를 명시적으로 re-export합니다."
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "type": "file",
+      "name": "kv_table_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "summary": "KV-table의 문서·section·table 문맥과 key path/value를 결합해 embedding용 contextual text를 만듭니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "type": "file",
+      "name": "r_table_descriptor_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "summary": "대형 R-table의 header, dimension value, 문맥을 압축한 descriptor embedding text를 생성합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "file",
+      "name": "r_table_record_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "summary": "R-table 전체 또는 개별 record를 column header와 table 문맥에 연결한 embedding text로 렌더링합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "file",
+      "name": "r_table_row_group_builder.py",
+      "filePath": "vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "summary": "token 제한을 지키면서 R-table record를 누락·중복 없이 greedy row group으로 분할하고 렌더링합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "type": "file",
+      "name": "text_context_builder.py",
+      "filePath": "vector_db/contextual_text_builders/text_context_builder.py",
+      "summary": "일반 TEXT evidence에 disclosure, section, heading 문맥을 덧붙인 embedding text를 생성합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:vector_db/insert_points.py",
+      "type": "file",
+      "name": "insert_points.py",
+      "filePath": "vector_db/insert_points.py",
+      "summary": "Evidence Fragment를 읽어 PointInput을 만들고 local embedding을 계산한 뒤 Qdrant collection과 payload index에 batch upsert하는 CLI입니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:vector_db/point_builder.py",
+      "type": "file",
+      "name": "point_builder.py",
+      "filePath": "vector_db/point_builder.py",
+      "summary": "TEXT, KV-table, R-table evidence를 strategy별 Qdrant point payload와 deterministic ID로 조립합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:vector_db/r_table_column_profiler.py",
+      "type": "file",
+      "name": "r_table_column_profiler.py",
+      "filePath": "vector_db/r_table_column_profiler.py",
+      "summary": "R-table column 값을 통계적으로 profile하여 dimension, measure, identifier, date, long-text role을 판정합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:vector_db/r_table_strategy_selector.py",
+      "type": "file",
+      "name": "r_table_strategy_selector.py",
+      "filePath": "vector_db/r_table_strategy_selector.py",
+      "summary": "R-table의 token 크기와 cell 특성을 바탕으로 whole-table, descriptor, row-group embedding strategy를 선택합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:vector_db/text2vector.py",
+      "type": "file",
+      "name": "text2vector.py",
+      "filePath": "vector_db/text2vector.py",
+      "summary": "CUDA 기반 BGE-M3 model을 지연 로딩하고 batch text를 고정 차원 dense vector로 변환합니다.",
+      "tags": [
+        "vector-db",
+        "embedding",
+        "qdrant",
+        "retrieval"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/common/document_loader.py",
+      "type": "file",
+      "name": "document_loader.py",
+      "filePath": "converters/common/document_loader.py",
+      "summary": "DART XML/HTML source를 decode하고 tolerant recovery를 적용하여 추적 가능한 LoadedDocument로 정규화합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/common/source_models.py",
+      "type": "file",
+      "name": "source_models.py",
+      "filePath": "converters/common/source_models.py",
+      "summary": "document syntax, source reference, evidence context를 표현하는 공통 Enum과 dataclass model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/common/source_resolver.py",
+      "type": "file",
+      "name": "source_resolver.py",
+      "filePath": "converters/common/source_resolver.py",
+      "summary": "LoadedDocument element를 stable path로 index하고 SourceRef에서 원본 element와 table 위치를 역참조합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/correction_extractor/correction_extractor.py",
+      "type": "file",
+      "name": "correction_extractor.py",
+      "filePath": "converters/correction_extractor/correction_extractor.py",
+      "summary": "XML과 거래소 HTML에서 정정공시 metadata, 대상 접수번호, 정정 사유 및 block reference를 복원·추출합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:converters/correction_extractor/correction_models.py",
+      "type": "file",
+      "name": "correction_models.py",
+      "filePath": "converters/correction_extractor/correction_models.py",
+      "summary": "정정공시 추출 상태, issue, metadata, block reference 결과를 직렬화 가능한 model로 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "file",
+      "name": "fragment_assembler.py",
+      "filePath": "converters/evidence_builder/fragment_assembler.py",
+      "summary": "canonical section의 paragraph와 table을 semantic evidence로 조립하고 외부 R-table record를 연결한 Evidence Fragment를 생성합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "file",
+      "name": "semantic_text_segmenter.py",
+      "filePath": "converters/evidence_builder/semantic_text_segmenter.py",
+      "summary": "paragraph 내부 heading, marker, caption 경계를 감지해 원문 reference를 보존한 semantic text segment로 분할합니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "file",
+      "name": "paragraph_models.py",
+      "filePath": "converters/paragraph_parser/paragraph_models.py",
+      "summary": "paragraph parse 상태, marker, fragment, canonical paragraph collection을 나타내는 model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "file",
+      "name": "paragraph_parser.py",
+      "filePath": "converters/paragraph_parser/paragraph_parser.py",
+      "summary": "XML/HTML의 P, SPAN, BR, anchor 구조를 순서와 source attribute를 보존한 canonical paragraph로 변환합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/table_context_resolver/resolver_models.py",
+      "type": "file",
+      "name": "resolver_models.py",
+      "filePath": "converters/table_context_resolver/resolver_models.py",
+      "summary": "table evidence bundle과 table context resolution 결과를 표현하는 dataclass model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "file",
+      "name": "table_context_resolver.py",
+      "filePath": "converters/table_context_resolver/table_context_resolver.py",
+      "summary": "주변 paragraph와 layout table에서 title, unit, caption, note를 찾아 각 canonical table에 안전하게 연결합니다.",
+      "tags": [
+        "context-builder",
+        "embedding",
+        "serialization",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/table_parser/table_models.py",
+      "type": "file",
+      "name": "table_models.py",
+      "filePath": "converters/table_parser/table_models.py",
+      "summary": "table type, cell/row role, logical grid, canonical table/group을 표현하는 parser domain model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/table_parser/table_parser.py",
+      "type": "file",
+      "name": "table_parser.py",
+      "filePath": "converters/table_parser/table_parser.py",
+      "summary": "병합 cell logical grid를 만들고 DART XML/HTML table을 KV, record, layout, unknown canonical table로 분류·파싱합니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:tests/test_correction_extractor.py",
+      "type": "file",
+      "name": "test_correction_extractor.py",
+      "filePath": "tests/test_correction_extractor.py",
+      "summary": "XML 및 거래소 HTML 정정공시 metadata 추출, recovery, false-positive 방지를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_document_loader.py",
+      "type": "file",
+      "name": "test_document_loader.py",
+      "filePath": "tests/test_document_loader.py",
+      "summary": "정상 XML, bare ampersand, malformed attribute와 loose HTML의 tolerant loading 상태를 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_paragraph_parser.py",
+      "type": "file",
+      "name": "test_paragraph_parser.py",
+      "filePath": "tests/test_paragraph_parser.py",
+      "summary": "inline span, anchor, BR, exclusion, recovery를 보존하는 canonical paragraph parsing을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_semantic_text_segmenter.py",
+      "type": "file",
+      "name": "test_semantic_text_segmenter.py",
+      "filePath": "tests/test_semantic_text_segmenter.py",
+      "summary": "bold heading, marker chain, BR, caption 경계가 원문을 훼손하지 않고 분할되는지 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_table_context_resolver.py",
+      "type": "file",
+      "name": "test_table_context_resolver.py",
+      "filePath": "tests/test_table_context_resolver.py",
+      "summary": "table 주변 title/unit/note 결합과 ambiguous narrative 및 table boundary 차단을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_table_parser.py",
+      "type": "file",
+      "name": "test_table_parser.py",
+      "filePath": "tests/test_table_parser.py",
+      "summary": "merged cell, KV/record/layout/unknown table과 DART XML/HTML recovery를 포괄적으로 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_models.py",
+      "type": "file",
+      "name": "fragment_models.py",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "summary": "Evidence Fragment의 evidence type, storage mode, external table record 및 직렬화 형식을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "file",
+      "name": "fragment_pipeline.py",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "summary": "canonical section manifest를 graph section으로 투영하고 disclosure별 Evidence Fragment를 원자적으로 생성·재사용하는 pipeline입니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "file",
+      "name": "fragment_validator.py",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "summary": "Evidence Fragment schema, reference 정합성, external record 폭, manifest hash와 금지 필드를 검증합니다.",
+      "tags": [
+        "validation",
+        "schema",
+        "data-integrity",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "file",
+      "name": "section_canonicalizer.py",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "summary": "명시적 section과 암시적 heading을 탐지해 모든 source block을 단일 계층 section에 귀속시키는 canonicalizer입니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:converters/section_canonicalizer/section_models.py",
+      "type": "file",
+      "name": "section_models.py",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "summary": "section boundary, block reference, issue, canonical section collection의 직렬화 model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:scripts/build_canonical_sections.py",
+      "type": "file",
+      "name": "build_canonical_sections.py",
+      "filePath": "scripts/build_canonical_sections.py",
+      "summary": "source manifest를 읽어 canonical section JSON과 manifest를 병렬 생성하고 hash 기반 재사용·실패 추적을 수행하는 CLI입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:scripts/build_evidence_fragments.py",
+      "type": "file",
+      "name": "build_evidence_fragments.py",
+      "filePath": "scripts/build_evidence_fragments.py",
+      "summary": "Evidence Fragment build pipeline의 main entry point를 실행하는 얇은 CLI wrapper입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/validate_evidence_fragments.py",
+      "type": "file",
+      "name": "validate_evidence_fragments.py",
+      "filePath": "scripts/validate_evidence_fragments.py",
+      "summary": "Evidence Fragment validator의 main entry point를 실행하는 얇은 CLI wrapper입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_build_canonical_sections.py",
+      "type": "file",
+      "name": "test_build_canonical_sections.py",
+      "filePath": "tests/test_build_canonical_sections.py",
+      "summary": "canonical section builder의 multi-source flattening, hash 재사용, 실패 manifest와 graph projection을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_evidence_fragments.py",
+      "type": "file",
+      "name": "test_evidence_fragments.py",
+      "filePath": "tests/test_evidence_fragments.py",
+      "summary": "Evidence Fragment assembly, table record 외부화, context deduplication, validator와 end-to-end pipeline을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "file:tests/test_section_canonicalizer.py",
+      "type": "file",
+      "name": "test_section_canonicalizer.py",
+      "filePath": "tests/test_section_canonicalizer.py",
+      "summary": "명시적·암시적 section hierarchy, exclusion, orphan block, recovery 상태 추적을 검증합니다.",
+      "tags": [
+        "test",
+        "regression",
+        "validation",
+        "pytest"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:converters/regression_validation/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "converters/regression_validation/__init__.py",
+      "summary": "converter regression validation package의 공개 진입점으로 run_regression을 재노출합니다.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "regression-validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/regression_validation/assertions.py",
+      "type": "file",
+      "name": "assertions.py",
+      "filePath": "converters/regression_validation/assertions.py",
+      "summary": "고정 converter fixture에 선언된 section, evidence, table, record 조건을 평가하고 구조화된 실패 정보를 생성합니다.",
+      "tags": [
+        "validation",
+        "regression-test",
+        "semantic-assertion",
+        "tested"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/regression_validation/normalizer.py",
+      "type": "file",
+      "name": "normalizer.py",
+      "filePath": "converters/regression_validation/normalizer.py",
+      "summary": "생성 ID와 비의미 공백을 정규화하고 converter output의 안정적인 hash 및 golden snapshot을 구성합니다.",
+      "tags": [
+        "normalization",
+        "serialization",
+        "golden-snapshot",
+        "tested"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:converters/regression_validation/runner.py",
+      "type": "file",
+      "name": "runner.py",
+      "filePath": "converters/regression_validation/runner.py",
+      "summary": "고정 DART corpus를 임시 작업공간에 복원하고 canonical section, evidence fragment, structural·semantic 검증을 순차 실행합니다.",
+      "tags": [
+        "orchestration",
+        "regression-test",
+        "data-pipeline",
+        "tested"
+      ],
+      "complexity": "complex",
+      "languageNotes": "filesystem signature를 실행 전후 비교해 production data의 우발적 변경도 탐지합니다."
+    },
+    {
+      "id": "file:scripts/validate_converter_pipeline.py",
+      "type": "file",
+      "name": "validate_converter_pipeline.py",
+      "filePath": "scripts/validate_converter_pipeline.py",
+      "summary": "project root를 import path에 추가한 뒤 regression runner의 main을 실행하는 얇은 CLI wrapper입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "regression-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_converter_pipeline_regression.py",
+      "type": "file",
+      "name": "test_converter_pipeline_regression.py",
+      "filePath": "tests/test_converter_pipeline_regression.py",
+      "summary": "semantic mutation, duplicate whitespace, candidate overwrite, golden mismatch 및 quick profile 격리를 검증합니다.",
+      "tags": [
+        "test",
+        "regression-test",
+        "converter-validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": ".env.example",
+      "summary": "BGE-M3 embedding model과 vector dimension, model cache, Neo4j 접속 정보를 위한 runtime 환경변수 예시를 정의합니다.",
+      "tags": [
+        "configuration",
+        "embedding",
+        "database"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "DART disclosure의 canonical section, Evidence Fragment, Knowledge Graph, Hybrid Retrieval architecture와 현재 pipeline 상태를 설명합니다.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "Python 3.14 기반 프로젝트 metadata, LangChain·LangGraph·Neo4j·Qdrant dependency, pytest 설정과 CUDA PyTorch uv index를 관리합니다.",
+      "tags": [
+        "configuration",
+        "dependency-management",
+        "build-system"
+      ],
+      "complexity": "simple",
+      "languageNotes": "uv source mapping으로 torch만 별도 PyTorch CUDA index에서 설치하도록 고정합니다."
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+      "type": "config",
+      "name": "CVP-A01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-A01.json",
+      "summary": "깊은 merged-value KV table과 ordered text를 보존해야 하는 merger filing의 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "kv-table"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+      "type": "config",
+      "name": "CVP-A02.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-A02.json",
+      "summary": "계층형 treasury-stock contract KV table 변환 결과를 고정한 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "kv-table"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+      "type": "config",
+      "name": "CVP-B01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-B01.json",
+      "summary": "rowspan, multi-level header, subtotal·total 및 layout metadata를 포함한 R-table golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "r-table"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+      "type": "config",
+      "name": "CVP-C01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-C01.json",
+      "summary": "merged multi-level header를 가진 compact R-table 변환 결과의 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "r-table"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+      "type": "config",
+      "name": "CVP-E01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-E01.json",
+      "summary": "두 R-table에 걸친 subtotal과 total row classification을 검증하는 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "row-classification"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+      "type": "config",
+      "name": "CVP-F01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-F01.json",
+      "summary": "navigation link text가 R-table title로 오인되지 않아야 하는 변환 결과의 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "title-detection"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+      "type": "config",
+      "name": "CVP-G01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-G01.json",
+      "summary": "908개 evidence와 5,214개 record를 포함하는 대규모 mixed financial-notes section의 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "large-table"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+      "type": "config",
+      "name": "CVP-H01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-H01.json",
+      "summary": "7,592-row R-table이 단일 evidence와 external records로 분리되는지를 고정한 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "external-records"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+      "type": "config",
+      "name": "CVP-I01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-I01.json",
+      "summary": "중첩 P/SPAN text가 순서를 유지한 단일 text evidence로 남는지 검증하는 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "text-parsing"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+      "type": "config",
+      "name": "CVP-J01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-J01.json",
+      "summary": "src0/src2 financial notes 사이의 의미 있는 K-ICS 차이를 보존하는 대규모 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "semantic-difference"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+      "type": "config",
+      "name": "CVP-J02.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-J02.json",
+      "summary": "src0/src2 notes의 비의미 공백 차이를 semantic equality로 처리하는 대규모 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "semantic-equality"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+      "type": "config",
+      "name": "CVP-REF01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-REF01.json",
+      "summary": "inline DART disclosure link가 Evidence reference로 보존되는지 검증하는 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "reference-link"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+      "type": "config",
+      "name": "CVP-TEXT01.json",
+      "filePath": "tests/fixtures/converter_pipeline/golden/CVP-TEXT01.json",
+      "summary": "inline heading, 인용된 filing section name, table lead-in을 semantic context와 caption으로 보존하는 golden snapshot입니다.",
+      "tags": [
+        "regression-fixture",
+        "golden-snapshot",
+        "semantic-text"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "type": "config",
+      "name": "CVP-A01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-A01.json",
+      "summary": "합병 공시의 깊은 계층형 KV table과 병합 값 보존을 검증하기 위해 생성된 converter regression candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "kv-table",
+        "dart"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "type": "config",
+      "name": "CVP-A02.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-A02.json",
+      "summary": "자기주식 계약 공시의 계층형 KV table 변환 결과를 담은 converter regression candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "kv-table",
+        "dart"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "type": "config",
+      "name": "CVP-B01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-B01.json",
+      "summary": "rowspan, 다단 header, subtotal·total과 layout metadata를 포함한 R table 변환 결과 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "r-table",
+        "table-parsing"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "type": "config",
+      "name": "CVP-C01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-C01.json",
+      "summary": "병합된 다단 header를 가진 소형 R table의 canonical 변환 결과를 고정한 candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "r-table",
+        "merged-header"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "type": "config",
+      "name": "CVP-E01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-E01.json",
+      "summary": "두 R table에 걸친 subtotal 및 total row 분류 결과를 보존하는 converter regression candidate입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "r-table",
+        "row-classification"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "type": "config",
+      "name": "CVP-F01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-F01.json",
+      "summary": "navigation link text가 R table 제목으로 오인되지 않는지 확인하는 candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "r-table",
+        "title-detection"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "type": "config",
+      "name": "CVP-G01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-G01.json",
+      "summary": "대규모 혼합 재무주석 section에서 수백 개 Evidence와 수천 개 external record를 생성한 전체 변환 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "financial-notes",
+        "large-fixture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "type": "config",
+      "name": "CVP-H01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-H01.json",
+      "summary": "7,592행 R table을 하나의 Evidence와 외부 record 집합으로 유지하는 변환 결과 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "r-table",
+        "large-fixture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "type": "config",
+      "name": "CVP-I01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-I01.json",
+      "summary": "중첩 P/SPAN text가 순서를 유지한 단일 Evidence로 정규화되는지 검증하는 candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "text-evidence",
+        "ordering"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "type": "config",
+      "name": "CVP-J01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-J01.json",
+      "summary": "src0과 src2 재무주석 간 의미 있는 K-ICS 차이를 SEMANTIC_NOT_EQUAL로 판정한 대규모 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "semantic-comparison",
+        "financial-notes"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "type": "config",
+      "name": "CVP-J02.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-J02.json",
+      "summary": "공백 차이만 있는 src0과 src2 재무주석을 SEMANTIC_EQUAL로 판정한 대규모 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "semantic-comparison",
+        "normalization"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "type": "config",
+      "name": "CVP-REF01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-REF01.json",
+      "summary": "DART 공시 inline link가 Evidence reference로 보존되는지 검증하는 소형 candidate snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "reference-extraction",
+        "dart"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "type": "config",
+      "name": "CVP-TEXT01.json",
+      "filePath": "tmp/converter-golden-candidate-context-v4/CVP-TEXT01.json",
+      "summary": "inline heading, 인용된 공시 section 명칭과 table lead-in을 semantic context로 보존한 변환 snapshot입니다.",
+      "tags": [
+        "configuration",
+        "regression-snapshot",
+        "text-evidence",
+        "semantic-context"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".agents/skills/validate-converter-pipeline/SKILL.md",
+      "summary": "고정 DART regression corpus의 quick/full validation, failure 진단, candidate 생성과 명시적 golden 승인 절차를 규정합니다.",
+      "tags": [
+        "documentation",
+        "validation",
+        "regression-testing",
+        "workflow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "type": "config",
+      "name": "openai.yaml",
+      "filePath": ".agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "summary": "Validate Converter Pipeline skill의 표시 이름, 설명과 기본 prompt를 정의하는 agent interface 설정입니다.",
+      "tags": [
+        "configuration",
+        "agent-skill",
+        "interface",
+        "prompt"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "type": "document",
+      "name": "failure-codes.md",
+      "filePath": ".agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "summary": "converter regression suite가 보고하는 source hash, structure, semantic assertion, golden 및 production-write failure code를 설명합니다.",
+      "tags": [
+        "documentation",
+        "failure-codes",
+        "regression-testing",
+        "diagnostics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.python-version",
+      "type": "file",
+      "name": ".python-version",
+      "filePath": ".python-version",
+      "summary": "프로젝트의 uv 및 Python 도구가 사용할 Python 3.14 runtime version을 고정합니다.",
+      "tags": [
+        "configuration",
+        "python",
+        "runtime-version"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.ua/.understandignore",
+      "type": "file",
+      "name": ".understandignore",
+      "filePath": ".ua/.understandignore",
+      "summary": "Understand Anything 분석에서 data, 환경 파일과 cache를 제외하고 docs, scripts 및 tests는 포함하도록 조정한 ignore 규칙입니다.",
+      "tags": [
+        "configuration",
+        "analysis-scope",
+        "ignore-rules"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "type": "config",
+      "name": "config.json",
+      "filePath": ".ua/config.json",
+      "summary": "Understand Anything knowledge graph의 textual output language를 한국어로 지정합니다.",
+      "tags": [
+        "configuration",
+        "knowledge-graph",
+        "localization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:DOCS/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "DOCS/README.md",
+      "summary": "70개 상장기업의 4,204개 DART 공시 corpus 구성, metadata schema, 원문 형식과 안전한 로딩 방법을 설명합니다.",
+      "tags": [
+        "documentation",
+        "dart-corpus",
+        "data-catalog",
+        "metadata"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:DOCS/data_filter.md",
+      "type": "document",
+      "name": "data_filter.md",
+      "filePath": "DOCS/data_filter.md",
+      "summary": "DART corpus의 대상 기업, sector, 문서 유형, 기간과 표본 선정·제외 기준을 명세합니다.",
+      "tags": [
+        "documentation",
+        "data-filtering",
+        "corpus-selection",
+        "dart"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:DOCS/universe.xlsx",
+      "type": "file",
+      "name": "universe.xlsx",
+      "filePath": "DOCS/universe.xlsx",
+      "summary": "분석 대상 70개 기업의 식별자, 시장, 산업·sector와 공시 건수를 universe sheet에 정리한 Excel master table입니다.",
+      "tags": [
+        "data-model",
+        "company-universe",
+        "spreadsheet",
+        "dart"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:DOCS/온톨로지.xlsx",
+      "type": "file",
+      "name": "온톨로지.xlsx",
+      "filePath": "DOCS/온톨로지.xlsx",
+      "summary": "프로젝트 knowledge graph의 Entity와 Relation 정의를 각각의 worksheet로 정리한 ontology workbook입니다.",
+      "tags": [
+        "data-model",
+        "ontology",
+        "spreadsheet",
+        "knowledge-graph"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent_graph/graph.py",
+      "type": "file",
+      "name": "graph.py",
+      "filePath": "agent_graph/graph.py",
+      "summary": "ChatClovaX를 초기화해 사용자 질문을 분석하고 QueryPlan을 만들 예정인 LangGraph node 초안을 제공합니다. 현재는 LLM 호출이나 state 갱신 없이 AgentState class 자체를 반환합니다.",
+      "tags": [
+        "agent-node",
+        "langgraph",
+        "llm",
+        "query-planning"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Pydantic AgentState를 함수 입출력으로 선언했지만 LangGraph reducer나 partial state update 계약은 아직 구현되지 않았습니다."
+    },
+    {
+      "id": "file:agent_graph/state.py",
+      "type": "file",
+      "name": "state.py",
+      "filePath": "agent_graph/state.py",
+      "summary": "질문과 retrieval 계획을 표현하는 Pydantic AgentState 및 QueryPlan model을 정의합니다. AgentState가 정의 시점에 아직 선언되지 않은 QueryPlan을 직접 참조하는 forward-reference 순서 문제가 있습니다.",
+      "tags": [
+        "data-model",
+        "agent-state",
+        "pydantic",
+        "type-definition"
+      ],
+      "complexity": "simple",
+      "languageNotes": "QueryPlan을 먼저 선언하거나 quoted annotation 및 model_rebuild를 사용해야 import 시 NameError를 피할 수 있습니다."
+    },
+    {
+      "id": "document:converters/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "converters/README.md",
+      "summary": "DART XML에서 correction 추출, canonical section·paragraph·table 변환, context resolution과 Evidence Fragment 조립까지 전체 converter 계약과 예시를 상세히 설명합니다.",
+      "tags": [
+        "documentation",
+        "converter-pipeline",
+        "dart-xml",
+        "evidence"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:knowledge_graph/neo4j_schema.yaml",
+      "type": "config",
+      "name": "neo4j_schema.yaml",
+      "filePath": "knowledge_graph/neo4j_schema.yaml",
+      "summary": "Disclosure, Section, Evidence, Text, Table entity와 HAS_SECTION·HAS_EVIDENCE 관계의 Neo4j property schema를 정의합니다.",
+      "tags": [
+        "configuration",
+        "neo4j",
+        "schema-definition",
+        "knowledge-graph"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:main.py",
+      "type": "file",
+      "name": "main.py",
+      "filePath": "main.py",
+      "summary": "PyTorch와 CUDA version, 가용성 및 첫 GPU 이름을 출력하는 환경 확인용 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "diagnostics",
+        "pytorch",
+        "cuda"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/approve_converter_golden.py",
+      "type": "file",
+      "name": "approve_converter_golden.py",
+      "filePath": "scripts/approve_converter_golden.py",
+      "summary": "candidate converter snapshot과 golden 간 unified diff를 출력하고, --apply가 명시된 경우에만 선택된 snapshot을 승인 경로로 복사합니다.",
+      "tags": [
+        "utility",
+        "regression-testing",
+        "snapshot-approval",
+        "cli"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tests/fixtures/converter_pipeline/corpus.json",
+      "type": "config",
+      "name": "corpus.json",
+      "filePath": "tests/fixtures/converter_pipeline/corpus.json",
+      "summary": "실제 DART 문서와 section을 CVP case로 연결하고 구조·semantic·snapshot assertion을 선언하는 converter regression corpus입니다.",
+      "tags": [
+        "configuration",
+        "test-fixture",
+        "regression-testing",
+        "semantic-assertion"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_bgem3_token_counter.py",
+      "type": "file",
+      "name": "test_bgem3_token_counter.py",
+      "filePath": "tests/test_bgem3_token_counter.py",
+      "summary": "BGE-M3 token counter의 special token 처리, tokenizer cache, model ID 전달과 잘못된 입력·token ID 검증을 monkeypatch 기반으로 테스트합니다.",
+      "tags": [
+        "test",
+        "tokenization",
+        "bge-m3",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "type": "file",
+      "name": "manifest.jsonl",
+      "filePath": "tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "summary": "원본 XML이 없어 PDF와 viewer HTML로 대체 수집된 KB금융 연차보고서와 한화오션 분기보고서의 두 건 metadata manifest입니다.",
+      "tags": [
+        "data-model",
+        "manifest",
+        "dart",
+        "fallback-source"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+      "type": "file",
+      "name": "20260619000667_viewer.html",
+      "filePath": "tmp/excluded_pdf_html_corrections/raw/periodic/KB금융/20260619000667_annual_2025_12/20260619000667_viewer.html",
+      "summary": "XML 미제공 공시를 대체하기 위해 보존된 KB금융 2025년 사업보고서의 DART viewer HTML 원문입니다.",
+      "tags": [
+        "markup",
+        "dart",
+        "annual-report",
+        "fallback-source"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html",
+      "type": "file",
+      "name": "20240514001522_viewer.html",
+      "filePath": "tmp/excluded_pdf_html_corrections/raw/periodic/한화오션/20240514001522_quarter_2024_03/20240514001522_viewer.html",
+      "summary": "XML 미제공 공시를 대체하기 위해 보존된 한화오션 2024년 1분기보고서의 DART viewer HTML 원문입니다.",
+      "tags": [
+        "markup",
+        "dart",
+        "quarterly-report",
+        "fallback-source"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "type": "config",
+      "name": "FIXED.json",
+      "filePath": "tmp/pytest-insert-points-validation/test_candidate_generation_neve0/candidate/FIXED.json",
+      "summary": "Qdrant point insertion validation에서 candidate 생성이 기존 snapshot을 덮어쓰지 않는지 확인하기 위한 임시 normalized snapshot입니다.",
+      "tags": [
+        "configuration",
+        "test-fixture",
+        "candidate-snapshot",
+        "qdrant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "type": "config",
+      "name": "FIXED.json",
+      "filePath": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "summary": "snapshot mutation 탐지 테스트가 비교하는 candidate 측 임시 normalized snapshot입니다.",
+      "tags": [
+        "configuration",
+        "test-fixture",
+        "candidate-snapshot",
+        "mutation-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "type": "config",
+      "name": "FIXED.json",
+      "filePath": "tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "summary": "snapshot mutation 탐지 테스트에서 의도적으로 비교 기준이 되는 임시 golden snapshot입니다.",
+      "tags": [
+        "configuration",
+        "test-fixture",
+        "golden-snapshot",
+        "mutation-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:vector_db/qdrant_schema.yaml",
+      "type": "config",
+      "name": "qdrant_schema.yaml",
+      "filePath": "vector_db/qdrant_schema.yaml",
+      "summary": "DART Evidence의 TEXT, KV_TABLE, R_TABLE point identity, BGE-M3 dense vector, strategy-selected table embedding pipeline과 retrieval payload schema를 정의합니다.",
+      "tags": [
+        "configuration",
+        "qdrant",
+        "schema-definition",
+        "vector-search"
+      ],
+      "complexity": "complex",
+      "languageNotes": "R_TABLE은 token limit에 따라 whole-table, descriptor 또는 contiguous row-group point로 route되며 canonical record 범위를 payload에 유지합니다."
+    },
+    {
+      "id": "config:vector_db/r_table_embedding.yaml",
+      "type": "config",
+      "name": "r_table_embedding.yaml",
+      "filePath": "vector_db/r_table_embedding.yaml",
+      "summary": "oversized R table의 whole-table·descriptor·row-group embedding 선택과 column role profiling에 사용할 token, text ratio, cardinality 및 header keyword threshold를 정의합니다.",
+      "tags": [
+        "configuration",
+        "r-table",
+        "embedding",
+        "column-profiling"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "importEdges": [
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/insert_points.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:knowledge_graph/insert_DSE.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/resolver_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_extractor.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/validate_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/__init__.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/assertions.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/regression_validation/assertions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/validate_converter_pipeline.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/assertions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent_graph/graph.py",
+      "target": "file:agent_graph/state.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ],
+  "allEdges": [
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/insert_points.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_kv_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_record_context_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_r_table_strategy_selector.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text2vector.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_text_contextual_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/kv_table_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/__init__.py",
+      "target": "file:vector_db/contextual_text_builders/text_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_descriptor_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/contextual_text_builders/r_table_record_context_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/contextual_text_builders/r_table_row_group_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:knowledge_graph/insert_DSE.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/point_builder.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/insert_points.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/contextual_text_builders/__init__.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_column_profiler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/point_builder.py",
+      "target": "file:vector_db/text2vector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_column_profiler.py",
+      "target": "file:vector_db/r_table_strategy_selector.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:vector_db/r_table_strategy_selector.py",
+      "target": "file:vector_db/bgem3_token_counter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/common/source_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_extractor.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/correction_extractor/correction_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/common/source_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_assembler.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/paragraph_parser/paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/resolver_models.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/resolver_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_context_resolver/table_context_resolver.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/table_parser/table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_extractor.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_correction_extractor.py",
+      "target": "file:converters/correction_extractor/correction_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_document_loader.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_paragraph_parser.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/evidence_builder/semantic_text_segmenter.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_semantic_text_segmenter.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/paragraph_parser/paragraph_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_context_resolver/table_context_resolver.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_context_resolver.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_table_parser.py",
+      "target": "file:converters/table_parser/table_parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/validate_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_build_canonical_sections.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_evidence_fragments.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/__init__.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/assertions.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/regression_validation/assertions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:scripts/build_canonical_sections.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/validate_converter_pipeline.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/assertions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/normalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_converter_pipeline_regression.py",
+      "target": "file:converters/regression_validation/runner.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/regression_validation/assertions.py",
+      "target": "file:tests/test_converter_pipeline_regression.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:converters/regression_validation/normalizer.py",
+      "target": "file:tests/test_converter_pipeline_regression.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:converters/regression_validation/runner.py",
+      "target": "file:tests/test_converter_pipeline_regression.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:agent_graph/graph.py",
+      "target": "file:agent_graph/state.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "target": "document:.agents/skills/validate-converter-pipeline/references/failure-codes.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.agents/skills/validate-converter-pipeline/agents/openai.yaml",
+      "target": "document:.agents/skills/validate-converter-pipeline/SKILL.md",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:DOCS/README.md",
+      "target": "file:DOCS/universe.xlsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:DOCS/README.md",
+      "target": "file:tmp/excluded_pdf_html_corrections/manifest.jsonl",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:DOCS/data_filter.md",
+      "target": "file:DOCS/universe.xlsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:converters/README.md",
+      "target": "config:tests/fixtures/converter_pipeline/corpus.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/candidate/FIXED.json",
+      "target": "config:tmp/pytest-insert-points-validation/test_snapshot_mutation_is_dete0/golden/FIXED.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

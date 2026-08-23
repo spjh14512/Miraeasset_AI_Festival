@@ -1,0 +1,2174 @@
+{
+  "nodes": [
+    {
+      "id": "file:converters/evidence_builder/fragment_models.py",
+      "type": "file",
+      "name": "fragment_models.py",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "summary": "Evidence Fragment의 evidence type, storage mode, external table record 및 직렬화 형식을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_models.py:EvidenceType",
+      "type": "class",
+      "name": "EvidenceType",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "lineRange": [
+        13,
+        15
+      ],
+      "summary": "EvidenceType domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_models.py:StorageMode",
+      "type": "class",
+      "name": "StorageMode",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "lineRange": [
+        18,
+        19
+      ],
+      "summary": "StorageMode domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_models.py:FragmentEvidence",
+      "type": "class",
+      "name": "FragmentEvidence",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "lineRange": [
+        23,
+        45
+      ],
+      "summary": "FragmentEvidence domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_models.py:ExternalTableRecord",
+      "type": "class",
+      "name": "ExternalTableRecord",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "lineRange": [
+        49,
+        63
+      ],
+      "summary": "ExternalTableRecord domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/evidence_builder/fragment_models.py:EvidenceFragment",
+      "type": "class",
+      "name": "EvidenceFragment",
+      "filePath": "converters/evidence_builder/fragment_models.py",
+      "lineRange": [
+        67,
+        78
+      ],
+      "summary": "EvidenceFragment domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "file",
+      "name": "fragment_pipeline.py",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "summary": "canonical section manifest를 graph section으로 투영하고 disclosure별 Evidence Fragment를 원자적으로 생성·재사용하는 pipeline입니다.",
+      "tags": [
+        "converter",
+        "data-pipeline",
+        "normalization",
+        "dart-disclosure"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_json_lines",
+      "type": "function",
+      "name": "_json_lines",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        29,
+        36
+      ],
+      "summary": "json lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_sha256",
+      "type": "function",
+      "name": "_sha256",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        39,
+        44
+      ],
+      "summary": "sha256 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_atomic_write",
+      "type": "function",
+      "name": "_atomic_write",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        47,
+        51
+      ],
+      "summary": "atomic write 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_combined_source_hash",
+      "type": "function",
+      "name": "_combined_source_hash",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        54,
+        61
+      ],
+      "summary": "combined source hash 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_kept_sections",
+      "type": "function",
+      "name": "_kept_sections",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        64,
+        79
+      ],
+      "summary": "kept sections 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:project_graph_sections",
+      "type": "function",
+      "name": "project_graph_sections",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        82,
+        118
+      ],
+      "summary": "project graph sections 처리 규칙을 구현하여 fragment_pipeline workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_fragment_filename",
+      "type": "function",
+      "name": "_fragment_filename",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        121,
+        125
+      ],
+      "summary": "fragment filename 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_overall_status",
+      "type": "function",
+      "name": "_overall_status",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        128,
+        136
+      ],
+      "summary": "overall status 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_failed_record",
+      "type": "function",
+      "name": "_failed_record",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        139,
+        161
+      ],
+      "summary": "failed record 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:_build_one",
+      "type": "function",
+      "name": "_build_one",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        164,
+        317
+      ],
+      "summary": "build one 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:build_evidence_fragments",
+      "type": "function",
+      "name": "build_evidence_fragments",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        320,
+        379
+      ],
+      "summary": "검증된 입력으로 build evidence fragments 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_pipeline.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "converters/evidence_builder/fragment_pipeline.py",
+      "lineRange": [
+        382,
+        416
+      ],
+      "summary": "fragment_pipeline.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/evidence_builder/fragment_validator.py",
+      "type": "file",
+      "name": "fragment_validator.py",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "summary": "Evidence Fragment schema, reference 정합성, external record 폭, manifest hash와 금지 필드를 검증합니다.",
+      "tags": [
+        "validation",
+        "schema",
+        "data-integrity",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:_json_lines",
+      "type": "function",
+      "name": "_json_lines",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        47,
+        52
+      ],
+      "summary": "json lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:_sha256",
+      "type": "function",
+      "name": "_sha256",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        55,
+        60
+      ],
+      "summary": "sha256 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:_find_forbidden",
+      "type": "function",
+      "name": "_find_forbidden",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        63,
+        74
+      ],
+      "summary": "find forbidden 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:validate_fragment",
+      "type": "function",
+      "name": "validate_fragment",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        77,
+        303
+      ],
+      "summary": "validate fragment 구조와 cross-reference 정합성을 검사하고 오류를 보고합니다.",
+      "tags": [
+        "validation",
+        "data-integrity",
+        "schema"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:validate_evidence_fragments",
+      "type": "function",
+      "name": "validate_evidence_fragments",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        306,
+        418
+      ],
+      "summary": "validate evidence fragments 구조와 cross-reference 정합성을 검사하고 오류를 보고합니다.",
+      "tags": [
+        "validation",
+        "data-integrity",
+        "schema"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/evidence_builder/fragment_validator.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "converters/evidence_builder/fragment_validator.py",
+      "lineRange": [
+        421,
+        438
+      ],
+      "summary": "fragment_validator.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "file",
+      "name": "section_canonicalizer.py",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "summary": "명시적 section과 암시적 heading을 탐지해 모든 source block을 단일 계층 section에 귀속시키는 canonicalizer입니다.",
+      "tags": [
+        "parser",
+        "normalization",
+        "dart-xml",
+        "data-pipeline"
+      ],
+      "complexity": "complex",
+      "languageNotes": "복잡한 DART source 변형과 traceability를 다루는 다단계 Python pipeline입니다."
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_tag",
+      "type": "function",
+      "name": "_tag",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        49,
+        50
+      ],
+      "summary": "tag 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_clean_text",
+      "type": "function",
+      "name": "_clean_text",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        53,
+        54
+      ],
+      "summary": "clean text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_element_text",
+      "type": "function",
+      "name": "_element_text",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        57,
+        58
+      ],
+      "summary": "element text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_child_paths",
+      "type": "function",
+      "name": "_child_paths",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        61,
+        68
+      ],
+      "summary": "child paths 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_source_ref",
+      "type": "function",
+      "name": "_source_ref",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        71,
+        81
+      ],
+      "summary": "source ref 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_exclusions",
+      "type": "function",
+      "name": "_exclusions",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        96,
+        106
+      ],
+      "summary": "exclusions 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_is_section",
+      "type": "function",
+      "name": "_is_section",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        109,
+        110
+      ],
+      "summary": "is section 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_section_level",
+      "type": "function",
+      "name": "_section_level",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        113,
+        115
+      ],
+      "summary": "section level 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_find_section_title",
+      "type": "function",
+      "name": "_find_section_title",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        118,
+        147
+      ],
+      "summary": "find section title 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_scan_blocks",
+      "type": "function",
+      "name": "_scan_blocks",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        150,
+        240
+      ],
+      "summary": "scan blocks 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_numbered_heading",
+      "type": "function",
+      "name": "_numbered_heading",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        254,
+        258
+      ],
+      "summary": "numbered heading 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_styled_heading",
+      "type": "function",
+      "name": "_styled_heading",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        261,
+        268
+      ],
+      "summary": "styled heading 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_single_cell_table_text",
+      "type": "function",
+      "name": "_single_cell_table_text",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        271,
+        281
+      ],
+      "summary": "single cell table text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_headings",
+      "type": "function",
+      "name": "_implicit_headings",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        284,
+        386
+      ],
+      "summary": "implicit headings 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_document_title",
+      "type": "function",
+      "name": "_document_title",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        389,
+        410
+      ],
+      "summary": "document title 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_explicit_sections",
+      "type": "function",
+      "name": "_explicit_sections",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        450,
+        523
+      ],
+      "summary": "explicit sections 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_sections",
+      "type": "function",
+      "name": "_implicit_sections",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        526,
+        688
+      ],
+      "summary": "implicit sections 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:converters/section_canonicalizer/section_canonicalizer.py:chunk_sections",
+      "type": "function",
+      "name": "chunk_sections",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        691,
+        740
+      ],
+      "summary": "chunk sections 처리 규칙을 구현하여 section_canonicalizer workflow의 한 단계를 수행합니다.",
+      "tags": [
+        "service",
+        "data-pipeline",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_canonicalizer.py:_Exclusions",
+      "type": "class",
+      "name": "_Exclusions",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        85,
+        93
+      ],
+      "summary": "Exclusions domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_canonicalizer.py:_HeadingCandidate",
+      "type": "class",
+      "name": "_HeadingCandidate",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        244,
+        251
+      ],
+      "summary": "HeadingCandidate domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_canonicalizer.py:_SectionBuilder",
+      "type": "class",
+      "name": "_SectionBuilder",
+      "filePath": "converters/section_canonicalizer/section_canonicalizer.py",
+      "lineRange": [
+        414,
+        447
+      ],
+      "summary": "SectionBuilder domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:converters/section_canonicalizer/section_models.py",
+      "type": "file",
+      "name": "section_models.py",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "summary": "section boundary, block reference, issue, canonical section collection의 직렬화 model을 정의합니다.",
+      "tags": [
+        "data-model",
+        "schema-definition",
+        "serialization",
+        "type-definition"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:SectionParseStatus",
+      "type": "class",
+      "name": "SectionParseStatus",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        16,
+        19
+      ],
+      "summary": "SectionParseStatus domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:SectionBoundaryKind",
+      "type": "class",
+      "name": "SectionBoundaryKind",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        22,
+        25
+      ],
+      "summary": "SectionBoundaryKind domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:SectionBlockType",
+      "type": "class",
+      "name": "SectionBlockType",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        28,
+        33
+      ],
+      "summary": "SectionBlockType domain 값의 허용 범위를 명시하는 Enum입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:SectionIssue",
+      "type": "class",
+      "name": "SectionIssue",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        37,
+        47
+      ],
+      "summary": "SectionIssue 실패 원인과 진단 context를 표현하는 error model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:SectionBlockRef",
+      "type": "class",
+      "name": "SectionBlockRef",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        51,
+        61
+      ],
+      "summary": "SectionBlockRef domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:CanonicalSection",
+      "type": "class",
+      "name": "CanonicalSection",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        65,
+        97
+      ],
+      "summary": "CanonicalSection domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:converters/section_canonicalizer/section_models.py:CanonicalSectionCollection",
+      "type": "class",
+      "name": "CanonicalSectionCollection",
+      "filePath": "converters/section_canonicalizer/section_models.py",
+      "lineRange": [
+        101,
+        116
+      ],
+      "summary": "CanonicalSectionCollection domain data와 관련 동작을 캡슐화하는 model입니다.",
+      "tags": [
+        "data-model",
+        "type-definition",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/build_canonical_sections.py",
+      "type": "file",
+      "name": "build_canonical_sections.py",
+      "filePath": "scripts/build_canonical_sections.py",
+      "summary": "source manifest를 읽어 canonical section JSON과 manifest를 병렬 생성하고 hash 기반 재사용·실패 추적을 수행하는 CLI입니다.",
+      "tags": [
+        "entry-point",
+        "cli",
+        "data-pipeline",
+        "automation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_json_lines",
+      "type": "function",
+      "name": "_json_lines",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        22,
+        29
+      ],
+      "summary": "json lines 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_atomic_write_text",
+      "type": "function",
+      "name": "_atomic_write_text",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        32,
+        36
+      ],
+      "summary": "atomic write text 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_sha256",
+      "type": "function",
+      "name": "_sha256",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        39,
+        44
+      ],
+      "summary": "sha256 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_source_files",
+      "type": "function",
+      "name": "_source_files",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        47,
+        62
+      ],
+      "summary": "source files 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_combined_source_hash",
+      "type": "function",
+      "name": "_combined_source_hash",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        65,
+        74
+      ],
+      "summary": "combined source hash 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_overall_status",
+      "type": "function",
+      "name": "_overall_status",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        77,
+        84
+      ],
+      "summary": "overall status 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_append_section_outputs",
+      "type": "function",
+      "name": "_append_section_outputs",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        87,
+        133
+      ],
+      "summary": "append section outputs 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_failed_record",
+      "type": "function",
+      "name": "_failed_record",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        136,
+        156
+      ],
+      "summary": "failed record 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_completed_record",
+      "type": "function",
+      "name": "_completed_record",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        159,
+        190
+      ],
+      "summary": "completed record 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_build_one",
+      "type": "function",
+      "name": "_build_one",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        193,
+        302
+      ],
+      "summary": "build one 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:build_canonical_sections",
+      "type": "function",
+      "name": "build_canonical_sections",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        305,
+        366
+      ],
+      "summary": "검증된 입력으로 build canonical sections 결과를 조립하여 downstream 단계에 전달합니다.",
+      "tags": [
+        "factory",
+        "data-pipeline",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:_arguments",
+      "type": "function",
+      "name": "_arguments",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        369,
+        386
+      ],
+      "summary": "arguments 처리를 담당하며 상위 pipeline에서 재사용되는 내부 helper입니다.",
+      "tags": [
+        "internal-helper",
+        "data-pipeline",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build_canonical_sections.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "scripts/build_canonical_sections.py",
+      "lineRange": [
+        389,
+        400
+      ],
+      "summary": "build_canonical_sections.py workflow를 초기화하고 전체 실행 순서를 조정하는 entry point입니다.",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "cli"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:EvidenceType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:EvidenceType",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:StorageMode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:StorageMode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:FragmentEvidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:FragmentEvidence",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:ExternalTableRecord",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:ExternalTableRecord",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:EvidenceFragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_models.py",
+      "target": "class:converters/evidence_builder/fragment_models.py:EvidenceFragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_json_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_json_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_sha256",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_sha256",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_atomic_write",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_atomic_write",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_combined_source_hash",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_combined_source_hash",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_kept_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_kept_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:project_graph_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:project_graph_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_fragment_filename",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_fragment_filename",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_overall_status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_overall_status",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_failed_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_failed_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_build_one",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:_build_one",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:build_evidence_fragments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:build_evidence_fragments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "function:converters/evidence_builder/fragment_pipeline.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/evidence_builder/fragment_assembler.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_pipeline.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_json_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_json_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_sha256",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_sha256",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_find_forbidden",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:_find_forbidden",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:validate_fragment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:validate_fragment",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:validate_evidence_fragments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:validate_evidence_fragments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "function:converters/evidence_builder/fragment_validator.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/evidence_builder/fragment_validator.py",
+      "target": "file:converters/evidence_builder/fragment_pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_tag",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_tag",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_clean_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_clean_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_element_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_element_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_child_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_child_paths",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_source_ref",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_source_ref",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_exclusions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_exclusions",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_is_section",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_is_section",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_section_level",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_section_level",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_find_section_title",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_find_section_title",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_scan_blocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_scan_blocks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_numbered_heading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_numbered_heading",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_styled_heading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_styled_heading",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_single_cell_table_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_single_cell_table_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_headings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_headings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_document_title",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_document_title",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_explicit_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_explicit_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:_implicit_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:chunk_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "function:converters/section_canonicalizer/section_canonicalizer.py:chunk_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_Exclusions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_Exclusions",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_HeadingCandidate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_HeadingCandidate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_SectionBuilder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "class:converters/section_canonicalizer/section_canonicalizer.py:_SectionBuilder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/document_loader.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionParseStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionParseStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBoundaryKind",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBoundaryKind",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBlockType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBlockType",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionIssue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionIssue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBlockRef",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:SectionBlockRef",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:CanonicalSection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:CanonicalSection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:CanonicalSectionCollection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "class:converters/section_canonicalizer/section_models.py:CanonicalSectionCollection",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:converters/section_canonicalizer/section_models.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_json_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_json_lines",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_atomic_write_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_atomic_write_text",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_sha256",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_sha256",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_source_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_source_files",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_combined_source_hash",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_combined_source_hash",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_overall_status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_overall_status",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_append_section_outputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_append_section_outputs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_failed_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_failed_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_completed_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_completed_record",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_build_one",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_build_one",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:build_canonical_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:build_canonical_sections",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_arguments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:_arguments",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "function:scripts/build_canonical_sections.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/common/source_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_canonicalizer.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/build_canonical_sections.py",
+      "target": "file:converters/section_canonicalizer/section_models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

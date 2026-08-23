@@ -1,0 +1,6 @@
+{
+  "nodes": [
+    {"id":"config:vector_db/r_table_embedding.yaml","type":"config","name":"r_table_embedding.yaml","filePath":"vector_db/r_table_embedding.yaml","summary":"oversized R table의 whole-table·descriptor·row-group embedding 선택과 column role profiling에 사용할 token, text ratio, cardinality 및 header keyword threshold를 정의합니다.","tags":["configuration","r-table","embedding","column-profiling"],"complexity":"moderate"}
+  ],
+  "edges": []
+}
