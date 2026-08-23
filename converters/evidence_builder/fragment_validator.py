@@ -11,7 +11,10 @@ import re
 from typing import Any, Mapping
 
 from converters.evidence_builder.fragment_models import FRAGMENT_SCHEMA_VERSION
-from converters.evidence_builder.fragment_pipeline import MANIFEST_SCHEMA_VERSION
+from converters.evidence_builder.fragment_pipeline import (
+    EVIDENCE_BUILDER_VERSION,
+    MANIFEST_SCHEMA_VERSION,
+)
 
 
 _EVIDENCE_ID = re.compile(
@@ -323,6 +326,8 @@ def validate_evidence_fragments(
         doc_id = str(record.get("doc_id"))
         if record.get("schema_version") != MANIFEST_SCHEMA_VERSION:
             errors.append(f"manifest_schema:{doc_id}")
+        if record.get("builder_version") != EVIDENCE_BUILDER_VERSION:
+            errors.append(f"builder_version:{doc_id}")
         status_counts[str(record.get("status"))] += 1
         input_path = data_root / Path(str(record.get("input_path")))
         if not input_path.is_file():

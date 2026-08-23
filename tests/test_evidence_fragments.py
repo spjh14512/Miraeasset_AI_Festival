@@ -5,7 +5,11 @@ from pathlib import Path
 
 from converters.common.source_models import DocumentContext
 from converters.evidence_builder.fragment_assembler import build_source_fragments
-from converters.evidence_builder.fragment_pipeline import build_evidence_fragments
+from converters.evidence_builder.fragment_pipeline import (
+    EVIDENCE_BUILDER_VERSION,
+    MANIFEST_SCHEMA_VERSION,
+    build_evidence_fragments,
+)
 from converters.evidence_builder.fragment_validator import (
     validate_evidence_fragments,
     validate_fragment,
@@ -520,6 +524,41 @@ def test_pipeline_writes_one_fragment_per_graph_section_and_validates(tmp_path: 
     )
 
     assert summary == {"generated": 1, "reused": 0, "failed": 0, "total": 1}
+    manifest_path = output_root / "manifest.jsonl"
+    manifest_record = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest_record["schema_version"] == MANIFEST_SCHEMA_VERSION
+    assert manifest_record["builder_version"] == EVIDENCE_BUILDER_VERSION
+
+    reused = build_evidence_fragments(
+        section_manifest_path=canonical_root / "manifest.jsonl",
+        data_root=data_root,
+        output_root=output_root,
+        workers=1,
+        progress_every=0,
+    )
+    assert reused == {"generated": 0, "reused": 1, "failed": 0, "total": 1}
+
+    manifest_record["builder_version"] = "stale-builder"
+    manifest_path.write_text(
+        json.dumps(manifest_record, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    regenerated = build_evidence_fragments(
+        section_manifest_path=canonical_root / "manifest.jsonl",
+        data_root=data_root,
+        output_root=output_root,
+        workers=1,
+        progress_every=0,
+    )
+    assert regenerated == {
+        "generated": 1,
+        "reused": 0,
+        "failed": 0,
+        "total": 1,
+    }
+    refreshed_record = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert refreshed_record["builder_version"] == EVIDENCE_BUILDER_VERSION
+
     files = sorted((output_root / "major/20250101000001").glob("*.json"))
     assert [path.name for path in files] == ["src0__s1.json", "src0__s2.json"]
     fragments = [json.loads(path.read_text(encoding="utf-8")) for path in files]

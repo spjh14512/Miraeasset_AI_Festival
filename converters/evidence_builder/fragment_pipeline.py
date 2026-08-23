@@ -22,7 +22,8 @@ from converters.section_canonicalizer.section_models import (
 )
 
 
-MANIFEST_SCHEMA_VERSION = "evidence-fragment-manifest.v2"
+MANIFEST_SCHEMA_VERSION = "evidence-fragment-manifest.v3"
+EVIDENCE_BUILDER_VERSION = "evidence-builder.v1"
 _SECTION_ID = re.compile(r"^section:(?P<rcept>\d+):src(?P<src>\d+):s(?P<section>\d+)$")
 
 
@@ -144,6 +145,7 @@ def _failed_record(
 ) -> dict[str, Any]:
     return {
         "schema_version": MANIFEST_SCHEMA_VERSION,
+        "builder_version": EVIDENCE_BUILDER_VERSION,
         "doc_id": row.get("doc_id"),
         "rcept_no": row.get("rcept_no"),
         "doc_group": row.get("doc_group"),
@@ -199,6 +201,7 @@ def _build_one(
             not force
             and previous is not None
             and previous.get("schema_version") == MANIFEST_SCHEMA_VERSION
+            and previous.get("builder_version") == EVIDENCE_BUILDER_VERSION
             and previous.get("input_sha256") == input_hash
             and previous.get("source_sha256") == source_hash
             and previous.get("status") in {"SUCCESS", "RECOVERED", "PARTIAL"}
@@ -288,6 +291,7 @@ def _build_one(
         status = _overall_status(statuses)
         record = {
             "schema_version": MANIFEST_SCHEMA_VERSION,
+            "builder_version": EVIDENCE_BUILDER_VERSION,
             "doc_id": row["doc_id"],
             "rcept_no": row["rcept_no"],
             "doc_group": row["doc_group"],
@@ -420,4 +424,10 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["build_evidence_fragments", "main", "project_graph_sections"]
+__all__ = [
+    "EVIDENCE_BUILDER_VERSION",
+    "MANIFEST_SCHEMA_VERSION",
+    "build_evidence_fragments",
+    "main",
+    "project_graph_sections",
+]
