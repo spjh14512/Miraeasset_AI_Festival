@@ -102,3 +102,21 @@ uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-
 - 중복 정보는 저장하지 않고 ID와 관계로 연결합니다.
 - 구조화 가능한 데이터는 결정론적으로 처리합니다.
 - 모든 주요 판단은 Evidence에서 원문 공시까지 추적할 수 있어야 합니다.
+
+
+## Quick Commands
+### run at root directory
+### DB insert는 --dry-run 가능
+
+- Section canonicalize
+```uv run python -m scripts.build_canonical_sections --force --workers 4 --progress-every 100```
+
+- Evidence builder
+```uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 100```
+
+- Neo4j insert
+```uv run python -m knowledge_graph.insert_DSE --limit 100 --random-seed 42```
+
+- Qdrant insert
+```uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
+
