@@ -119,13 +119,13 @@ uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 1
 ```
 
 ### Neo4j insert
-#### Disclosure, Section, Evidence insert
-```powershell
-uv run python -m knowledge_graph.insert_DSE --limit 100 --random-seed 42
-```
 #### Company nodes insert (from universe.csv)
 ```powershell
 uv run python -m knowledge_graph.insertUniverse
+```
+#### Disclosure, Section, Evidence insert
+```powershell
+uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 ```
 
 ### Qdrant insert
