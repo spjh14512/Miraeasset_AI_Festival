@@ -1,4 +1,4 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 
 entities:
   Disclosure:
@@ -44,6 +44,60 @@ entities:
       - keys                # [KV-table 전용] 표의 key 목록. ">"로 flatten된 헤더 이름을 사용한다. ( list[string] / ex: ["항목", "직전보고서 > 금액", "이번보고서 > 금액"] )
       - n_entries           # [KV-table 전용] 표의 key-value 쌍 개수. ( integer / ex: 5 )
 
+  Event:
+    label: Event # 하나 이상의 Evidence를 묶어 해석한 공시사건의 공통 엔티티
+    properties:
+      - id                    # Event 고유 ID (string / ex: "ev:d20230512000974:0001")
+      - event_type            # 주 Event 유형. 아래 12개 다중 라벨과 반드시 일치해야 함 (string)
+      - secondary_event_types # 함께 검색할 보조 Event 유형 (list[string])
+      - title                 # 사건을 식별하는 짧은 제목 (string)
+      - summary               # Evidence 범위를 벗어나지 않는 사건 요약 (string)
+      - event_date            # 사건 발생일 또는 의사결정일 (date / nullable)
+      - period_start          # 계약·사업·관측 기간 시작일 (date / nullable)
+      - period_end            # 계약·사업·관측 기간 종료일 (date / nullable)
+      - amount                # 원문에 명시된 대표 금액 (number / nullable)
+      - currency              # amount 통화 (string / ex: "KRW", nullable)
+      - status                # 사건 상태 (string / domain: [announced, planned, ongoing, completed, cancelled, corrected, unknown])
+      - is_correction         # 정정공시에서 생성된 Event인지 여부 (boolean)
+      - materiality           # 이해관계자 중요도 (string / domain: [high, medium, low])
+      - confidence            # Event 추출 신뢰도 (float / range: 0.0..1.0)
+
+  Contract:
+    label: "Event:Contract" # 계약·수주·판매·공급계약 (event_type: contract)
+
+  FinancialPerformance:
+    label: "Event:FinancialPerformance" # 매출·이익·재무상태·현금흐름 (event_type: financial_performance)
+
+  CapitalReturn:
+    label: "Event:CapitalReturn" # 배당·자사주·주식소각·주주환원 (event_type: capital_return)
+
+  Financing:
+    label: "Event:Financing" # 채권·차입·증자·채무·담보·보증 (event_type: financing)
+
+  InvestmentCapex:
+    label: "Event:InvestmentCapex" # 투자·신규시설·증설·신사업 (event_type: investment_capex)
+
+  MergerAcquisition:
+    label: "Event:MergerAcquisition" # 합병·분할·인수·사업양수도·구조조정 (event_type: merger_acquisition)
+
+  OwnershipChange:
+    label: "Event:OwnershipChange" # 출자·지분취득·지분매각·최대주주 변경 (event_type: ownership_change)
+
+  AssetFinancialTransaction:
+    label: "Event:AssetFinancialTransaction" # 부동산·유형자산·파생상품·금융거래 (event_type: asset_financial_transaction)
+
+  BusinessOperation:
+    label: "Event:BusinessOperation" # 생산·판매·영업·제품·연구개발·임상 (event_type: business_operation)
+
+  GovernanceAudit:
+    label: "Event:GovernanceAudit" # 이사회·임원·주주총회·감사·회계·정정 (event_type: governance_audit)
+
+  LegalRisk:
+    label: "Event:LegalRisk" # 소송·규제·제재·우발채무·위험 (event_type: legal_risk)
+
+  ESGSafety:
+    label: "Event:ESGSafety" # 환경·산업안전·노동·소비자·정보보호 (event_type: esg_safety)
+
 relations:
   HAS_SECTION:
     label: HAS_SECTION    # Disclosure 또는 상위 Section이 하위 Section을 포함하는 관계
@@ -62,3 +116,42 @@ relations:
       - Text
       - Table
     properties: {}
+
+  HAS_EVENT:
+    label: HAS_EVENT # Disclosure 또는 Section이 해당 범위에서 추출된 Event를 포함하는 관계
+    source_labels:
+      - Disclosure
+      - Section
+    target_labels:
+      - Event
+    properties: {}
+
+  SUPPORTED_BY:
+    label: SUPPORTED_BY # Event가 판단 근거인 Text 또는 Table Evidence를 가리키는 핵심 추적 관계
+    source_labels:
+      - Event
+    target_labels:
+      - Text
+      - Table
+    properties:
+      - evidence_role # 근거 역할 (string / domain: [primary, supporting, contradictory, correction])
+      - confidence    # 해당 Evidence의 지지 신뢰도 (float / range: 0.0..1.0)
+
+  CORRECTS_EVENT:
+    label: CORRECTS_EVENT # 정정 Event가 기존 Event를 수정하거나 대체하는 관계
+    source_labels:
+      - Event
+    target_labels:
+      - Event
+    properties:
+      - corrected_fields # 정정된 속성 목록 (list[string])
+
+  RELATED_TO_EVENT:
+    label: RELATED_TO_EVENT # 인과·정정은 아니지만 함께 조회할 가치가 있는 Event 간 관계
+    source_labels:
+      - Event
+    target_labels:
+      - Event
+    properties:
+      - reason     # 연관 사유 (string)
+      - confidence # 연관관계 신뢰도 (float / range: 0.0..1.0)
