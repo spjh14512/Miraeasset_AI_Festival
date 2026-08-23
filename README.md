@@ -109,14 +109,22 @@ uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-
 ### DB insert는 --dry-run 가능
 
 - Section canonicalize
-```uv run python -m scripts.build_canonical_sections --force --workers 4 --progress-every 100```
+```powershell
+uv run python -m scripts.build_canonical_sections --force --workers 4 --progress-every 100
+```
 
 - Evidence builder
-```uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 100```
+```powershell
+uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 100
+```
 
 - Neo4j insert
-```uv run python -m knowledge_graph.insert_DSE --limit 100 --random-seed 42```
+```powershell
+uv run python -m knowledge_graph.insert_DSE --limit 100 --random-seed 42
+```
 
 - Qdrant insert
-```uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
+```powershell
+uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
+```
 
