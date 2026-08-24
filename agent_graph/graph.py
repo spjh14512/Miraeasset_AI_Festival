@@ -1,77 +1,208 @@
-import os
+from functools import lru_cache
 from typing import Any
 
-from dotenv import load_dotenv
-
 from langgraph.graph import StateGraph
+from langchain_core.messages import HumanMessage, SystemMessage
 
-if __package__:
-    from . import system_prompts as sp
-    from .state import AgentState, QuestionAnalysis
-else:
-    import system_prompts as sp
-    from state import AgentState, QuestionAnalysis
+from . import system_prompts as sp
+from .llm import get_llm
+from .state import AgentState, AnswerDraft, Plan, PlannerOutput, QuestionAnalysis
+from .tools import (
+    build_retriever_human_message,
+    build_answer_generator_human_message,
+    resolve_answer_draft,
+    create_plan,
+    delete_plan,
+    execute_tool_call,
+    modify_plan,
+    retrieve_search,
+    finish
+)
 
 
 graph_builder = StateGraph(AgentState)
-load_dotenv()
+
+# DB retrieval 최대 반복 횟수
+MAX_RETRIEVAL_COUNT = 5
+MAX_TOOL_CALL_RETRIES = 2
 
 
-def _build_llm() -> Any:
-    """환경 설정으로 question planner용 ChatClovaX를 생성한다."""
+@lru_cache(maxsize=1)
+def _build_planner_llm() -> Any:
+    """공용 LLM에 planner structured output을 한 번 binding한다."""
 
-    api_key = os.getenv("CLOVASTUDIO_API_KEY")
-    if not api_key:
-        raise RuntimeError("CLOVASTUDIO_API_KEY 환경변수가 필요합니다.")
-
-    # Import가 무거우므로 실제 LLM 호출이 필요한 시점까지 지연한다.
-    from langchain_naver import ChatClovaX
-
-    return ChatClovaX(
-        model=os.getenv("CLOVAX_MODEL_NAME", "HCX-005"),
-        api_key=api_key,
-        max_tokens=1024,
-        temperature=0.0,
-        top_p=0.8,
-        top_k=0,
-        repetition_penalty=1.0,
-        disabled_params={"parallel_tool_calls": None},
+    return get_llm().with_structured_output(
+        PlannerOutput,
+        method="function_calling",
     )
+@lru_cache(maxsize=1)
+def _build_retriever_llm() -> Any:
+    """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
+
+    return get_llm().bind_tools(
+        [retrieve_search, create_plan, delete_plan, modify_plan, finish],
+    )
+@lru_cache(maxsize=1)
+def _build_answer_generator_llm() -> Any:
+    """공용 LLM에 answer generator structured output을 한 번 binding한다."""
+
+    return get_llm().with_structured_output(
+        AnswerDraft,
+        method="function_calling"
+    )
+
+
+# Actual Node
 
 
 def planner(
     state: AgentState,
     *,
     llm: Any | None = None,
-) -> dict[str, QuestionAnalysis]:
+) -> dict[str, QuestionAnalysis | list[Plan] | int]:
     """
-    사용자의 질문을 분석하고 routing 결정과 query plan을 생성한다.
+    사용자의 질문을 분석하고 routing 결정과 plan을 생성한다.
     """
+
+    print("-- planner 노드 호출 --")
 
     question = state["question_text"].strip()
     if not question:
         raise ValueError("question_text는 비어 있을 수 없습니다.")
 
-    planner = (llm or _build_llm()).with_structured_output(
-        QuestionAnalysis,
-        method="function_calling",
+    planner_llm = (
+        _build_planner_llm()
+        if llm is None
+        else llm.with_structured_output(
+            PlannerOutput,
+            method="function_calling",
+        )
     )
-    result = planner.invoke(
+    response = planner_llm.invoke(
         [
-            ("system", sp.PLANNER_SYSTEM_PROMPT),
-            ("human", question),
+            SystemMessage(content = sp.PLANNER_SYSTEM_PROMPT),
+            HumanMessage(content = question),
         ]
     )
 
-    print("질문 분석 결과:\n", result, "\n" + "-" * 80)
+    print("질문 분석 결과:\n", response, "\n" + "\n\n")
 
-    analysis = (
-        result
-        if isinstance(result, QuestionAnalysis)
-        else QuestionAnalysis.model_validate(result)
+    planner_output = (
+        response
+        if isinstance(response, PlannerOutput)
+        else PlannerOutput.model_validate(response)
     )
-    return {"question_analysis": analysis}
+    next_plan_seq = state.get("next_plan_seq", 1)
+    plans: list[Plan] = []
+    for draft in planner_output.plans:
+        plan = Plan.from_plan_draft(draft, next_plan_seq)
+        next_plan_seq += 1
+        plans.append(plan)
 
+    return {
+        "question_analysis": planner_output.question_analysis,
+        "plans": plans,
+        "next_plan_seq": next_plan_seq,
+        "retrieval_status": "CONTINUE"
+    }
+
+
+def retriever(
+    state: AgentState,
+    *,
+    llm: Any | None = None,
+) -> dict:
+    print("retriever 노드 호출")
+
+    tools = [retrieve_search, create_plan, delete_plan, modify_plan, finish]
+
+    retriever_llm = (
+        _build_retriever_llm()
+        if llm is None
+        else llm.bind_tools(tools)
+    )
+
+    retriever_human_message = build_retriever_human_message(state)
+
+    print(f"[retriever human message]:\n{retriever_human_message}\n\n")
+
+    messages = [
+        SystemMessage(content=sp.RETRIEVER_SYSTEM_PROMPT),
+        retriever_human_message
+    ]
+    for attempt in range(MAX_TOOL_CALL_RETRIES + 1):
+        response = retriever_llm.invoke(messages)
+        tool_calls = response.tool_calls
+        if len(tool_calls) == 1:
+            break
+        if attempt < MAX_TOOL_CALL_RETRIES:
+            messages.append(HumanMessage(
+                content=(
+                    "응답 본문을 작성하지 말고 현재 상태에 적합한 tool을 "
+                    "정확히 하나만 호출하세요."
+                )
+            ))
+    else:
+        tool_names = [
+            tool_call.get("name", "<unknown>")
+            for tool_call in tool_calls
+        ]
+        raise ValueError(
+            "재시도 후에도 정확히 하나의 tool을 호출하지 않았습니다. "
+            f"호출 개수: {len(tool_calls)}, tool: {tool_names}"
+        )
+
+    # 실제 함수 실행
+    return execute_tool_call(state, tool_calls[0])
+
+
+def answer_generator(
+        state: AgentState,
+        *,
+        llm: Any | None = None
+) -> dict:
+    print("-- answer_genartor 노드 호출 --")
+
+    answer_generator_human_message = build_answer_generator_human_message(state)
+    print(f"[retriever human message]:\n{answer_generator_human_message}\n\n")
+
+    answer_generator_llm = (
+        _build_answer_generator_llm()
+        if llm is None
+        else llm.with_structured_output(
+            AnswerDraft,
+            method="function_calling"
+        )   
+    )
+
+    response = answer_generator_llm.invoke(
+        [
+            SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
+            answer_generator_human_message
+        ]
+    )
+
+    answer_generator_output = (
+        response
+        if isinstance(response, AnswerDraft)
+        else AnswerDraft.model_validate(response)
+    )
+
+    return {
+        "ai_answer": resolve_answer_draft(state, answer_generator_output)
+    }
+
+
+def answer_directly(state: AgentState) -> dict:
+    print("answer_directly 노드 호출")
+    return {"answer": "임시 답변", "citations": ["임시 인용 정보"]}
+
+def request_clarification(state: AgentState) -> dict:
+    print("request_clarification 노드 호출")
+    return {"answer": " 임시 답변", "citations": ["임시 인용 정보"]}
+
+
+# Conditional Routing Function
 
 def route_after_analysis(state: AgentState) -> str:
     """질문 분석 결과에 대응하는 다음 LangGraph node 이름을 반환한다."""
@@ -88,30 +219,23 @@ def route_after_analysis(state: AgentState) -> str:
     return decision
 
 
-def retriever(state: AgentState) -> dict:
-    print("retriever 노드 호출")
+def route_after_retrieval(state: AgentState) -> str:
+    """Retrieval 결과에 대응하는 다음 LangGraph node 이름을 반환한다."""
 
-    plans = state.get("question_analysis").query_plans
-    if not plans:
-        raise ValueError("query plan이 생성되지 않았습니다.")
+    status = state.get("retrieval_status")
+    if status == "CONTINUE":
+        return "retriever"
+    elif status in {"COMPLETE", "INSUFFICIENT"}:
+        return "answer_generator"
 
-    
-
-    return {"answer": "임시 답변", "citations": ["임시 인용 정보"]}
-
-def answer_directly(state: AgentState) -> dict:
-    print("answer_directly 노드 호출")
-    return {"answer": "임시 답변", "citations": ["임시 인용 정보"]}
-
-def request_clarification(state: AgentState) -> dict:
-    print("request_clarification 노드 호출")
-    return {"answer": " 임시 답변", "citations": ["임시 인용 정보"]}
+    raise ValueError(f"지원하지 않는 retrieval status: {status}")
 
 
 # Node
 
 graph_builder.add_node("planner", planner)
 graph_builder.add_node("retriever", retriever)
+graph_builder.add_node("answer_generator", answer_generator)
 graph_builder.add_node("answer_directly", answer_directly)
 graph_builder.add_node("request_clarification", request_clarification)
 
@@ -128,9 +252,17 @@ graph_builder.add_conditional_edges(
         "clarify": "request_clarification",
     }
 )
+graph_builder.add_conditional_edges(
+    "retriever",
+    route_after_retrieval,
+    {
+        "retriever": "retriever",
+        "answer_generator": "answer_generator"
+    }
+)
 
 # 임시 END 노드 설정
-graph_builder.set_finish_point("retriever")
+graph_builder.set_finish_point("answer_generator")
 graph_builder.set_finish_point("answer_directly")
 graph_builder.set_finish_point("request_clarification")
 

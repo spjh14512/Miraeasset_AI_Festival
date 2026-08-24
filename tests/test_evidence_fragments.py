@@ -479,6 +479,63 @@ def test_split_xbrl_context_tables_become_r_table_context():
     assert validate_fragment(fragment) == []
 
 
+def test_two_cell_footnote_table_attaches_to_preceding_r_table():
+    xml = """<DOCUMENT><SECTION-1><TITLE>주석</TITLE>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>리스부채(주1)</TD><TD>100</TD></TR></TBODY></TABLE>
+    <TABLE BORDER="0"><TR>
+      <TD>(주1)</TD><TD>리스부채는 기타로 분류하였습니다.</TD>
+    </TR></TABLE>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    fragment = result["fragments"][0]
+    assert len(fragment["evidence_list"]) == 1
+    table = fragment["evidence_list"][0]
+    assert table["table_type"] == "R_TABLE"
+    assert table["payload"]["notes"] == [
+        "(주1) 리스부채는 기타로 분류하였습니다."
+    ]
+    assert validate_fragment(fragment) == []
+
+
+def test_two_cell_bullet_table_becomes_text_evidence():
+    xml = """<DOCUMENT><SECTION-1><TITLE>주석</TITLE>
+    <P>위험회피관계는 다음과 같습니다.</P>
+    <TABLE BORDER="0"><TR>
+      <TD>-</TD><TD>현금흐름 변동에 대한 위험회피</TD>
+    </TR></TABLE>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    fragment = result["fragments"][0]
+    assert [item["evidence_type"] for item in fragment["evidence_list"]] == [
+        "TEXT",
+        "TEXT",
+    ]
+    assert fragment["evidence_list"][1]["payload"] == {
+        "text": "- 현금흐름 변동에 대한 위험회피",
+        "text_role": "BODY",
+    }
+    assert validate_fragment(fragment) == []
+
+
 def test_pipeline_writes_one_fragment_per_graph_section_and_validates(tmp_path: Path):
     data_root = tmp_path / "data"
     source_dir = data_root / "raw/major/회사/20250101000001"

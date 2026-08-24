@@ -15,7 +15,7 @@ import yaml
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 
-from knowledge_graph.insert_DSE import read_jsonl, select_disclosures
+from knowledge_graph.insertDSE import read_jsonl, select_disclosures
 from vector_db.point_builder import (
     VECTOR_NAME,
     PointInput,
@@ -52,7 +52,7 @@ def parse_args() -> argparse.Namespace:
         "--random-seed",
         type=int,
         default=None,
-        help="Use the same value as insert_DSE.py to select the same disclosures.",
+        help="Use the same value as insertDSE.py to select the same disclosures.",
     )
     parser.add_argument("--batch-size", type=int, default=100)
     parser.add_argument("--data-root", type=Path, default=Path("data"))
@@ -181,7 +181,7 @@ def selected_disclosures(
     limit: int,
     random_seed: int | None,
 ) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
-    """Reuse insert_DSE sampling and attach each selected document manifest."""
+    """Reuse insertDSE sampling and attach each selected document manifest."""
     selected = select_disclosures(
         data_root,
         limit=limit,

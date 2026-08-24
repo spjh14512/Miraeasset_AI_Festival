@@ -508,6 +508,20 @@ def test_explicit_html_caption_is_kept_as_context():
     assert result.context.blocks[0].source_ref.table_index == 3
 
 
+def test_two_cell_footnote_table_is_layout_note():
+    result = parse_table_fragment(
+        """<TABLE BORDER="0"><TR>
+        <TD>(주1)</TD><TD>리스부채는 기타로 분류하였습니다.</TD>
+        </TR></TABLE>"""
+    )
+
+    assert result.table_type.value == "LAYOUT_TABLE"
+    assert result.content == {
+        "layout_role": "NOTE",
+        "values": ["(주1) 리스부채는 기타로 분류하였습니다."],
+    }
+
+
 def test_unknown_table_is_not_forced_into_kv_or_record():
     table = ET.fromstring(
         "<TABLE><TR><TD>A</TD></TR><TR><TD>B</TD><TD>C</TD></TR></TABLE>"

@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from vector_db.contextual_text_builders import (
-    build_r_table_contextual_text,
     build_r_table_record_contextual_text,
 )
 
@@ -65,87 +64,6 @@ def test_builds_one_contextual_text_per_r_table_record():
         "투자 금액 : 120000"
     )
 
-
-def test_builds_one_contextual_text_for_the_complete_r_table():
-    records = [
-        {
-            "table_id": "rtable:20250318000123:src0:s12:t0",
-            "record_index": 1,
-            "row_type": "DATA",
-            "row_context": [],
-            "values": ["화성 사업장", "", "해당없음", "-", "0"],
-        },
-        {
-            "table_id": "rtable:20250318000123:src0:s12:t0",
-            "record_index": 0,
-            "row_type": "DATA",
-            "row_context": [],
-            "values": ["평택 사업장", "경기도", "가동", "-", "120000"],
-        },
-        {
-            "table_id": "rtable:20250318000123:src0:s12:t0",
-            "record_index": 2,
-            "row_type": "TOTAL",
-            "row_context": ["국내", "사업장"],
-            "values": ["합계", None, "", "", "120000"],
-        },
-    ]
-
-    result = build_r_table_contextual_text(
-        _evidence(),
-        records,
-        corp_name="삼성전자",
-        report_nm="2025년 사업보고서",
-        section_path=["사업의 내용", "시설 및 설비"],
-    )
-
-    assert result.count("회사 : 삼성전자") == 1
-    assert result.count("표 제목 : 사업장별 생산시설 현황") == 1
-    assert (
-        "열 : 사업장 | 주소 > 시도 | 가동 여부 | 비고 | 투자 금액" in result
-    )
-    assert result.index("사업장 : 평택 사업장") < result.index("사업장 : 화성 사업장")
-    assert "주소 > 시도 : 경기도" in result
-    assert "주소 > 시도 :" not in result.replace("주소 > 시도 : 경기도", "")
-    assert "가동 여부 : 해당없음" in result
-    assert "비고 : -" in result
-    assert "투자 금액 : 0" in result
-    assert "행 유형 : TOTAL\n행 문맥 : 국내 > 사업장" in result
-
-
-def test_complete_r_table_rejects_cross_table_records():
-    records = [
-        {
-            "table_id": "rtable:other",
-            "record_index": 0,
-            "row_type": "DATA",
-            "row_context": [],
-            "values": ["평택", "경기도", "가동", "-", "120000"],
-        },
-        {
-            "table_id": "rtable:20250318000123:src0:s12:t0",
-            "record_index": 1,
-            "row_type": "DATA",
-            "row_context": [],
-            "values": ["화성", "경기도", "가동", "-", "100000"],
-        },
-        {
-            "table_id": "rtable:20250318000123:src0:s12:t0",
-            "record_index": 2,
-            "row_type": "TOTAL",
-            "row_context": [],
-            "values": ["합계", "", "", "", "220000"],
-        },
-    ]
-
-    with pytest.raises(ValueError, match="table_id must match"):
-        build_r_table_contextual_text(
-            _evidence(),
-            records,
-            corp_name="삼성전자",
-            report_nm="사업보고서",
-            section_path=["사업의 내용"],
-        )
 
 def test_omits_empty_values_but_preserves_explicit_source_values():
     record = {

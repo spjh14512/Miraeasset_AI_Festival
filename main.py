@@ -1,5 +1,6 @@
 from agent_graph.graph import graph
 from agent_graph.state import AgentState
+from agent_graph.tools import format_citations
 
 def main():
 
@@ -18,9 +19,10 @@ def main():
 
     # 결과 출력
     print("Graph 실행 결과:")
-    print(output_state["answer"])
+    print(output_state["ai_answer"].answer)
     print("인용 정보:")
-    print(output_state["citations"])
+    for citation in format_citations(output_state["ai_answer"].citation):
+        print("- " + citation)
 
 
 if __name__ == "__main__":

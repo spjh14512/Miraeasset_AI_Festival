@@ -1,114 +1,84 @@
-schema_version: "qdrant-schema.v6"
+schema_version: "qdrant-live-schema.v1"
+
+# This file describes the collection observed directly from the local Qdrant
+# instance. Runtime counts are a snapshot and are not schema constraints.
+inspection:
+  source: "Qdrant localhost instance"
+  observed_on: "2026-08-24"
+  collection_status: "green"
+  optimizer_status: "ok"
+  points_count: 28882
+  indexed_vectors_count: 27980
+  segments_count: 4
+  point_kind_counts:
+    TEXT: 14187
+    KV_TABLE: 789
+    R_TABLE: 13906
 
 collection:
   name: "dart_evidence"
-  description: "DART Evidence semantic search collection"
+  shard_number: 1
+  replication_factor: 1
+  write_consistency_factor: 1
+  on_disk_payload: true
+  hnsw_config:
+    m: 16
+    ef_construct: 100
+    full_scan_threshold: 10000
+    max_indexing_threads: 0
+    on_disk: false
+  optimizer_config:
+    deleted_threshold: 0.2
+    vacuum_min_vector_number: 1000
+    default_segment_number: 0
+    indexing_threshold: 10000
+    flush_interval_sec: 5
+  wal_config:
+    wal_capacity_mb: 32
+    wal_segments_ahead: 0
+    wal_retain_closed: 1
+  quantization_config: null
+  strict_mode_config: null
 
 point:
-  kinds:
-    - "TEXT"
-    - "KV_TABLE"
-    - "R_TABLE"
-  generation:
-    TEXT: "one point per TEXT Evidence"
-    KV_TABLE: "one point per complete KV_TABLE Evidence"
-    R_TABLE: "strategy-selected whole-table, descriptor, or non-overlapping row-group Points"
   id:
     type: "uuid"
+    required: true
+    observed_version: 5
     policy: "uuid_v5"
     namespace: "9220d409-a029-5497-8ab2-fc39b239ab18"
-    namespace_derivation: "uuid5(NAMESPACE_URL, 'miraeasset:dart_evidence')"
+    note: "Point UUID identity continues to use the Canonical source Evidence ID."
     identity_keys:
-      TEXT: "{evidence_id}"
-      KV_TABLE: "{evidence_id}"
-      R_TABLE_WHOLE: "{evidence_id}"
-      R_TABLE_DESCRIPTOR: "{evidence_id}:descriptor"
-      R_TABLE_ROW_GROUP: "{evidence_id}:row_group:{row_start_index}:{row_end_index}"
+      TEXT: "{source_evidence_id}"
+      KV_TABLE: "{source_evidence_id}"
+      R_TABLE_WHOLE: "{source_evidence_id}"
+      R_TABLE_DESCRIPTOR: "{source_evidence_id}:descriptor"
+      R_TABLE_ROW_GROUP: "{source_evidence_id}:row_group:{row_start_index}:{row_end_index}"
   vectors:
     dense:
       name: "evidence_dense"
-      embedding_model: "bge-m3"
       dimension: 1024
       distance: "Cosine"
-      source_field: "contextual_text"
-      builders:
-        TEXT: "build_text_contextual_text"
-        KV_TABLE: "build_kv_contextual_text"
-        R_TABLE_WHOLE: "build_r_table_contextual_text"
-        R_TABLE_DESCRIPTOR: "build_r_table_descriptor_contextual_text"
-        R_TABLE_ROW_GROUP: "build_r_table_row_groups"
-      r_table_policy:
-        default_unit: "strategy_selected"
-        table_boundary: "never mix records from different table_id values"
-        record_source: "canonical records stored in the Qdrant Point payload"
-        context_components:
-          - "document context"
-          - "section and heading path"
-          - "table title, captions, units, and notes"
-          - "headers"
-          - "all records in record_index order"
-        size_evaluation:
-          target: "final contextual_text"
-          row_count_based: false
-          max_characters: null
-          max_tokens_config: "r_table_embedding.whole_table_max_tokens"
-          token_counter: "count_bge_m3_tokens"
-          on_exceeded: "classify as descriptor or row_group"
-        oversized_handler:
-          enabled_by_default: true
-          selector: "RTableEmbeddingStrategySelector"
-          strategies:
-            semantic_textual: "row-group chunking"
-            structured_numeric: "table descriptor embedding plus complete canonical records in payload"
-        strategy_classifier:
-          selector: "RTableEmbeddingStrategySelector"
-          config: "vector_db/r_table_embedding.yaml"
-          supported_results: ["whole_table", "descriptor", "row_group"]
-          evaluation_order:
-            - "whole_table when final contextual_text is within the token limit"
-            - "row_group when an oversized table has enough long-text cells"
-            - "descriptor for other oversized tables"
-          implementation_scope: "automatic Point routing is implemented in build_point_inputs"
-        descriptor_column_profiling:
-          profiler: "profile_r_table_columns"
-          config: "vector_db/r_table_embedding.yaml"
-          roles: ["dimension", "measure", "date", "identifier", "long_text", "other"]
-          descriptor_value_policy:
-            include: "bounded distinct values from low-cardinality dimension columns"
-            exclude: "values from measure, date, identifier, long-text, other, and high-cardinality dimension columns"
-          implementation_scope: "column analysis feeds the implemented descriptor builder"
-        descriptor_builder:
-          builder: "build_r_table_descriptor_contextual_text"
-          components:
-            - "document and section context"
-            - "table title, captions, and notes"
-            - "all header paths"
-            - "bounded values from low-cardinality dimension columns"
-          excluded_components:
-            - "units"
-            - "row identifier column block"
-            - "record count"
-            - "measure, date, identifier, long-text, and other column values"
-          implementation_scope: "contextual text and descriptor Point routing are implemented"
-        row_group_builder:
-          builder: "build_r_table_row_groups"
-          max_tokens_config: "r_table_embedding.row_group_max_tokens"
-          grouping: "greedy contiguous record groups with no overlap or omission"
-          record_range: "0-based inclusive start_record_index and end_record_index"
-          single_record_overflow: "preserve the indivisible record as one singleton group"
-          implementation_scope: "contextual text, range metadata, and row-group Point routing are implemented"
-  pipeline:
-    stages:
-      - "build_point_inputs"
-      - "embed_point_inputs"
-      - "assemble_qdrant_points"
-    embedding_cache_key: "sha256(contextual_text UTF-8 bytes)"
-    note: "Embedding is separated from Point assembly so a persistent cache can be added without changing payloads."
+      required: true
+      storage:
+        on_disk: null
+        datatype: null
+        multivector: false
+      embedding:
+        model: "bge-m3"
+        implementation: "FlagEmbedding.BGEM3FlagModel"
+        source_field: "contextual_text"
+        normalize_embeddings: true
+        max_length: 3000
+        batch_size: 32
+        device: "cuda:0"
+        source: "project configuration; embedding settings are not stored by Qdrant"
 
-# Retrieval fields are grouped for indexing. contextual_text is the exact embedding
-# input, while canonical contains the minimal source data needed after retrieval.
 payload:
-  required_fields: ["retrieval_metadata", "contextual_text", "canonical"]
+  required_fields:
+    - "retrieval_metadata"
+    - "contextual_text"
+    - "canonical"
   fields:
     retrieval_metadata:
       type: "object"
@@ -117,12 +87,17 @@ payload:
         point_kind:
           type: "keyword"
           required: true
+          nullable: false
+          allowed_values: ["TEXT", "KV_TABLE", "R_TABLE"]
           payload_index: true
           index_path: "retrieval_metadata.point_kind"
-          allowed_values: ["TEXT", "KV_TABLE", "R_TABLE"]
         evidence_id:
           type: "keyword"
           required: true
+          nullable: false
+          format: "d{rcept_no}:src{source_index}:s{section_order}:e{evidence_order}"
+          source_conversion: "replace the Canonical 'evidence:' prefix with 'd'"
+          migration_verified_on: "2026-08-25"
           payload_index: true
           index_path: "retrieval_metadata.evidence_id"
           neo4j_entity: "Evidence"
@@ -130,115 +105,181 @@ payload:
         corp_name:
           type: "keyword"
           required: true
+          nullable: false
           payload_index: true
           index_path: "retrieval_metadata.corp_name"
         corp_code:
           type: "keyword"
           required: true
+          nullable: false
           payload_index: true
           index_path: "retrieval_metadata.corp_code"
-          note: "Stored as a string to preserve leading zeroes."
+          note: "String value preserves leading zeroes."
         industry:
           type: "keyword"
-          required: false
+          required: true
           nullable: true
+          observed_null_count: 0
           payload_index: true
           index_path: "retrieval_metadata.industry"
         sector:
           type: "keyword"
-          required: false
+          required: true
           nullable: true
+          observed_null_count: 0
           payload_index: true
           index_path: "retrieval_metadata.sector"
         report_nm:
           type: "text"
           required: true
+          nullable: false
           payload_index: false
         base_year:
           type: "integer"
-          required: false
+          required: true
           nullable: true
+          observed_null_count: 788
+          observed_range: [2023, 2026]
           payload_index: true
           index_path: "retrieval_metadata.base_year"
         base_month:
           type: "integer"
-          required: false
+          required: true
           nullable: true
-          payload_index: true
-          index_path: "retrieval_metadata.base_month"
           minimum: 1
           maximum: 12
+          observed_null_count: 788
+          observed_range: [3, 12]
+          payload_index: true
+          index_path: "retrieval_metadata.base_month"
         table_id:
           type: "keyword"
-          required: "r_table_only"
+          required: "R_TABLE only"
+          nullable: false
+          omitted_for: ["TEXT", "KV_TABLE"]
+          observed_point_count: 13906
           payload_index: true
           index_path: "retrieval_metadata.table_id"
         row_start_index:
           type: "integer"
-          required: "row_group_only"
-          payload_index: false
+          required: "R_TABLE row-group only"
+          nullable: false
           minimum: 0
-          note: "0-based inclusive record range start."
+          observed_point_count: 479
+          payload_index: false
         row_end_index:
           type: "integer"
-          required: "row_group_only"
-          payload_index: false
+          required: "R_TABLE row-group only"
+          nullable: false
           minimum: 0
-          note: "0-based inclusive record range end."
+          constraint: "row_end_index >= row_start_index"
+          observed_point_count: 479
+          payload_index: false
     contextual_text:
       type: "text"
       required: true
+      nullable: false
       payload_index: false
-      note: "Exact text passed to the embedding API."
+      note: "Exact text used as the dense embedding input."
     canonical:
       type: "object"
       required: true
+      nullable: false
       payload_index: false
-      common_rules:
-        table_metadata:
-          required: false
-          fields: ["title", "captions", "units", "notes"]
-          omission_policy: "Omit empty fields; omit table_metadata when all fields are empty."
+      table_metadata:
+        type: "object"
+        required: false
+        omission_policy: "Omitted when every table metadata field is empty."
+        fields:
+          title:
+            type: "text"
+            required: false
+          captions:
+            type: "list<text>"
+            required: false
+          units:
+            type: "list<text>"
+            required: false
+          notes:
+            type: "list<text>"
+            required: false
       variants:
         TEXT:
           fields:
             text:
               type: "text"
               required: true
-              source: "evidence.payload.text"
+              nullable: false
         KV_TABLE:
           fields:
             table_metadata:
-              type: "object"
+              reference: "payload.fields.canonical.table_metadata"
               required: false
             entries:
               type: "list<object>"
               required: true
+              may_be_empty: true
               item_fields:
                 key:
                   type: "text"
-                  source: "evidence.payload.fields[].key_paths[] joined with ' > '"
+                  required: true
+                  nullable: false
                 value:
                   type: "text"
-                  source: "evidence.payload.fields[].raw_value"
+                  required: true
+                  nullable: false
         R_TABLE:
           fields:
             table_metadata:
-              type: "object"
+              reference: "payload.fields.canonical.table_metadata"
               required: false
             headers:
               type: "list<list<text>>"
               required: true
-              source: "evidence.payload.headers"
+              nullable: false
             records:
               type: "list<object>"
               required: true
+              nullable: false
               item_fields:
                 record_index:
                   type: "integer"
+                  required: true
+                  minimum: 0
                 values:
                   type: "list<text|null>"
+                  required: true
           record_scope:
-            whole_table: "all records"
-            descriptor: "all records"
-            row_group: "only records from row_start_index through row_end_index"
+            whole_table: "all table records"
+            descriptor: "all table records"
+            row_group: "records in the inclusive row_start_index..row_end_index range"
+
+# These are the nine payload indexes returned by Qdrant collection inspection.
+payload_indexes:
+  - path: "retrieval_metadata.point_kind"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.evidence_id"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.corp_name"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.corp_code"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.industry"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.sector"
+    type: "keyword"
+    indexed_points: 28882
+  - path: "retrieval_metadata.base_year"
+    type: "integer"
+    indexed_points: 28094
+  - path: "retrieval_metadata.base_month"
+    type: "integer"
+    indexed_points: 28094
+  - path: "retrieval_metadata.table_id"
+    type: "keyword"
+    indexed_points: 13906

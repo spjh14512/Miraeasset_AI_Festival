@@ -12,6 +12,7 @@ from vector_db.point_builder import (
     build_point_inputs,
     build_qdrant_points,
     embed_point_inputs,
+    to_neo4j_evidence_id,
 )
 from vector_db.r_table_strategy_selector import (
     RTableEmbeddingStrategySelector,
@@ -150,6 +151,14 @@ def test_builds_text_kv_and_one_point_for_a_small_r_table():
     assert len(embedded_texts) == 3
     assert all(point["vector"] == {"evidence_dense": [0.1, 0.2]} for point in points)
     assert len({point["id"] for point in points}) == 3
+    assert [
+        point["payload"]["retrieval_metadata"]["evidence_id"]
+        for point in points
+    ] == [
+        "d20250318000123:src0:s12:e0",
+        "d20250318000123:src0:s12:e1",
+        "d20250318000123:src0:s12:e2",
+    ]
     assert "사업장 : 평택" in points[2]["payload"]["contextual_text"]
     assert "사업장 : 화성" in points[2]["payload"]["contextual_text"]
 
@@ -329,6 +338,18 @@ def test_point_ids_are_deterministic_and_evidence_specific():
 
     assert [point["id"] for point in first] == [point["id"] for point in second]
     assert len(first) == 3
+
+
+def test_converts_source_evidence_id_to_neo4j_evidence_id():
+    assert to_neo4j_evidence_id(
+        "evidence:20241227000631:src0:s18:e361"
+    ) == "d20241227000631:src0:s18:e361"
+
+
+@pytest.mark.parametrize("source_evidence_id", [None, "", "section:123", "evidence:"])
+def test_rejects_invalid_source_evidence_id(source_evidence_id):
+    with pytest.raises(ValueError, match="source_evidence_id"):
+        to_neo4j_evidence_id(source_evidence_id)
 
 
 def test_embedding_and_point_assembly_are_separate_and_cache_ready():

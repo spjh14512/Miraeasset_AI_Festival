@@ -43,6 +43,20 @@ class PointInput:
     payload: dict[str, Any]
 
 
+def to_neo4j_evidence_id(source_evidence_id: str) -> str:
+    """Convert a Canonical Evidence ID to the Neo4j Evidence node ID."""
+    if not isinstance(source_evidence_id, str) or not source_evidence_id.strip():
+        raise ValueError("source_evidence_id must be a non-empty string")
+    source_evidence_id = source_evidence_id.strip()
+    prefix = "evidence:"
+    if not source_evidence_id.startswith(prefix):
+        raise ValueError("source_evidence_id must start with evidence:")
+    suffix = source_evidence_id[len(prefix) :]
+    if not suffix:
+        raise ValueError("source_evidence_id must include an Evidence identifier")
+    return f"d{suffix}"
+
+
 def _required_text(source: Mapping[str, Any], field: str) -> str:
     value = source.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -246,7 +260,7 @@ def _point_payload(
 
     retrieval_metadata = {
         "point_kind": point_kind,
-        "evidence_id": evidence_id,
+        "evidence_id": to_neo4j_evidence_id(evidence_id),
         "corp_name": _required_text(document_context, "corp_name"),
         "corp_code": _required_text(document_context, "corp_code"),
         "industry": _optional_text(document_context, "industry"),
@@ -581,4 +595,5 @@ __all__ = [
     "build_point_inputs",
     "build_qdrant_points",
     "embed_point_inputs",
+    "to_neo4j_evidence_id",
 ]

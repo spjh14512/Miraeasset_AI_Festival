@@ -23,7 +23,7 @@ from converters.section_canonicalizer.section_models import (
 
 
 MANIFEST_SCHEMA_VERSION = "evidence-fragment-manifest.v3"
-EVIDENCE_BUILDER_VERSION = "evidence-builder.v1"
+EVIDENCE_BUILDER_VERSION = "evidence-builder.v2"
 _SECTION_ID = re.compile(r"^section:(?P<rcept>\d+):src(?P<src>\d+):s(?P<section>\d+)$")
 
 

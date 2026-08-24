@@ -64,6 +64,7 @@ _COVER_UNKNOWN_TEXT = re.compile(
 )
 _SUBTOTAL_TEXT = re.compile(r"^\s*소\s*계(?:\s|\(|$)")
 _TOTAL_TEXT = re.compile(r"^\s*(?:총\s*계|합\s*계)(?:\s|\(|$)")
+_BULLET_MARKER = re.compile(r"^[-ㆍ·•]$")
 _DISCLOSURE_REFNO = re.compile(r"^\d{14}$")
 
 
@@ -287,6 +288,8 @@ def _fallback_unknown(
             return "R_TABLE", records
     flattened = [_clean_text(value) for row in nonempty_rows for value in row if _clean_text(value)]
     if len(flattened) == 2 and width == 2:
+        if _BULLET_MARKER.fullmatch(flattened[0]):
+            return "TEXT", {"text": f"{flattened[0]} {flattened[1]}"}
         payload = _context_payload(table)
         payload["fields"] = [
             {"key_paths": [[flattened[0]]], "raw_value": flattened[1]}

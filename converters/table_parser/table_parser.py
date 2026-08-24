@@ -53,6 +53,10 @@ _NOTE_TEXT = re.compile(
     r"^(?:※|[*]|주\s*\d+\s*[):.]|[-ㆍ·]\s*상기)",
     re.IGNORECASE,
 )
+_FOOTNOTE_MARKER = re.compile(
+    r"^(?:\(\s*주\s*\d+\s*\)|주\s*\d+\s*[):：.]?)$",
+    re.IGNORECASE,
+)
 _NAVIGATION_TEXT = re.compile(
     r"\s*(?:[☞▶►]\s*)?(?:"
     r"본문\s*(?:(?:위치)?로\s*)?이동|"
@@ -343,6 +347,14 @@ def _unique_cells(cells: Iterable[SourceCell | None]) -> list[SourceCell]:
 
 def _layout_role(grid: LogicalGrid) -> LayoutRole | None:
     nonempty = [cell for cell in grid.cells if cell.raw_value]
+    if (
+        grid.height == 1
+        and len(nonempty) == 2
+        and all(cell.tag == "TD" for cell in nonempty)
+        and _FOOTNOTE_MARKER.fullmatch(nonempty[0].raw_value.strip())
+        and not _strong_value(nonempty[1])
+    ):
+        return LayoutRole.NOTE
     if len(nonempty) != 1:
         return None
     cell = nonempty[0]
@@ -653,6 +665,12 @@ def _parse_layout(
         for cell in grid.cells
     }
     values = [cell.raw_value for cell in grid.cells if cell.raw_value]
+    if (
+        layout_role == LayoutRole.NOTE
+        and len(values) == 2
+        and _FOOTNOTE_MARKER.fullmatch(values[0].strip())
+    ):
+        values = [f"{values[0].strip()} {values[1].strip()}"]
     return roles, {"layout_role": layout_role.value, "values": values}
 
 

@@ -103,6 +103,34 @@ def valid_manifest_rows(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     return rows
 
 
+def disclosure_metadata_rows(data_root: Path) -> dict[str, dict[str, Any]]:
+    """Index the source document manifest by rcept_no."""
+    rows: dict[str, dict[str, Any]] = {}
+    for row in read_jsonl(data_root / "manifest.jsonl"):
+        rcept_no = str(row.get("rcept_no", ""))
+        corp_code = str(row.get("corp_code", ""))
+        if not rcept_no or not corp_code:
+            continue
+        previous = rows.get(rcept_no)
+        if previous is not None and str(previous.get("corp_code")) != corp_code:
+            raise ValueError(
+                f"Conflicting corp_code values for rcept_no {rcept_no}"
+            )
+        rows[rcept_no] = row
+    return rows
+
+
+def optional_integer(value: Any, *, field: str, rcept_no: str) -> int | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{field} must be an integer for {rcept_no}")
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} must be an integer for {rcept_no}") from exc
+
+
 def allocation_by_group(limit: int) -> dict[str, int]:
     if limit < 1:
         raise ValueError("--limit must be positive")
@@ -203,6 +231,7 @@ def build_rows(
     schema: Mapping[str, Any],
     data_root: Path,
     selected: Sequence[tuple[dict[str, Any], dict[str, Any]]],
+    disclosure_metadata: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, list[dict[str, Any]]]:
     rows: dict[str, list[dict[str, Any]]] = {
         "disclosures": [],
@@ -213,9 +242,16 @@ def build_rows(
 
     for section_manifest, evidence_manifest in selected:
         rcept_no = str(section_manifest["rcept_no"])
+        document_metadata = disclosure_metadata.get(rcept_no)
+        if document_metadata is None:
+            raise ValueError(
+                f"Selected disclosure is missing from data/manifest.jsonl: {rcept_no}"
+            )
+        corp_code = str(document_metadata.get("corp_code", ""))
+        if not corp_code:
+            raise ValueError(f"corp_code is missing for disclosure {rcept_no}")
         disclosure_id = f"d{rcept_no}"
-        rows["disclosures"].append(
-            filter_properties(
+        disclosure_properties = filter_properties(
                 schema,
                 "Disclosure",
                 {
@@ -225,7 +261,23 @@ def build_rows(
                     "n_sections": 0,
                 },
             )
+        disclosure_properties.update(
+            {
+                "report_name": str(document_metadata.get("report_nm", "")),
+                "base_year": optional_integer(
+                    document_metadata.get("base_year"),
+                    field="base_year",
+                    rcept_no=rcept_no,
+                ),
+                "base_month": optional_integer(
+                    document_metadata.get("base_month"),
+                    field="base_month",
+                    rcept_no=rcept_no,
+                ),
+                "_corp_code": corp_code,
+            }
         )
+        rows["disclosures"].append(disclosure_properties)
 
         section_document = json.loads(
             (data_root / str(section_manifest["output_path"])).read_text(
@@ -345,6 +397,26 @@ def insert_rows(
         raise ValueError("--batch-size must be positive")
     driver.verify_connectivity()
     with driver.session(database=database) as session:
+        corp_codes = sorted(
+            {str(row["_corp_code"]) for row in rows["disclosures"]}
+        )
+        missing_record = session.run(
+            """
+            UNWIND $corp_codes AS corp_code
+            OPTIONAL MATCH (company:Company {corp_code: corp_code})
+            WITH corp_code, count(company) AS company_count
+            WHERE company_count = 0
+            RETURN collect(corp_code) AS missing_corp_codes
+            """,
+            corp_codes=corp_codes,
+        ).single(strict=True)
+        missing_corp_codes = list(missing_record["missing_corp_codes"])
+        if missing_corp_codes:
+            raise RuntimeError(
+                "Company nodes must be inserted before Disclosure nodes. "
+                f"Missing corp_code values: {', '.join(missing_corp_codes)}"
+            )
+
         for label in ("Disclosure", "Section", "Evidence"):
             session.run(
                 f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS "
@@ -353,7 +425,22 @@ def insert_rows(
 
         run_batched(
             session,
-            "UNWIND $rows AS row MERGE (n:Disclosure {id: row.id}) SET n += row",
+            """
+            UNWIND $rows AS row
+            MERGE (n:Disclosure {id: row.id})
+            SET n += properties(row), n._corp_code = null
+            """,
+            rows["disclosures"],
+            batch_size,
+        )
+        run_batched(
+            session,
+            """
+            UNWIND $rows AS row
+            MATCH (company:Company {corp_code: row._corp_code})
+            MATCH (disclosure:Disclosure {id: row.id})
+            MERGE (company)-[:PUBLISHES]->(disclosure)
+            """,
             rows["disclosures"],
             batch_size,
         )
@@ -448,6 +535,9 @@ def summary(
         "evidences": len(rows["texts"]) + len(rows["tables"]),
         "texts": len(rows["texts"]),
         "tables": len(rows["tables"]),
+        "publishers": len(
+            {str(row["_corp_code"]) for row in rows["disclosures"]}
+        ),
         "by_group": by_group,
         "rcept_nos": [str(item[0]["rcept_no"]) for item in selected],
     }
@@ -459,7 +549,8 @@ def main() -> int:
     selected = select_disclosures(
         args.data_root, limit=args.limit, random_seed=args.random_seed
     )
-    rows = build_rows(schema, args.data_root, selected)
+    disclosure_metadata = disclosure_metadata_rows(args.data_root)
+    rows = build_rows(schema, args.data_root, selected, disclosure_metadata)
     print(json.dumps(summary(selected, rows), ensure_ascii=False, indent=2))
     if args.dry_run:
         return 0

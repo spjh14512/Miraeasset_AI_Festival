@@ -1,157 +1,272 @@
-schema_version: "0.2.0"
+schema_version: "1.1.0"
+
+metadata:
+  description: Neo4j 적재 코드가 사용하는 목표 스키마
+  notes:
+    - nullable하거나 존재하지 않을 수 있는 속성은 type 뒤에 ?로 표기
+    - Text와 Table은 Evidence 공통 label을 함께 갖는 subtype
+    - 복합 label은 Evidence:Text와 Evidence:Table 형식으로 표기
 
 entities:
-  Disclosure:
-    label: Disclosure # 공시 문서를 나타내는 엔티티
+  Company:
+    labels:
+      - Company
+    description: 공시 발행회사
     properties:
-      - id            # 공시 문서의 rcept_no을 그대로 사용한다. ( string / ex: "d20230512000974" )
-      - doc_group     # 공시 문서의 종류 ( string / domain: [ "exchange", "holding", "major", "periodic" ] )
-      - source_path   # 공시 문서의 원문 파일 경로 ( string / ex: "raw/periodic/효성중공업/20230512000974_quarter_2023_03" )
-      - n_sections    # 공시 문서 내부의 섹션 수. 별도의 update 쿼리로 관리할 수 있어야 함. ( integer / ex: 16 )
+      corp_code:
+        type: string
+        description: DART 고유 회사 코드
+      stock_code:
+        type: string?
+        description: 종목 코드
+      corp_name:
+        type: string?
+        description: 회사 한글명
+      corp_eng_name:
+        type: string?
+        description: 회사 영문명
+      market:
+        type: string?
+        description: 상장 시장
+      industry:
+        type: string?
+        description: 산업 분류
+      sector:
+        type: string?
+        description: 세부 업종
+      listing_date:
+        type: date?
+        description: 상장일
+      market_cap:
+        type: integer?
+        description: 시가총액
+
+  Disclosure:
+    labels:
+      - Disclosure
+    description: 공시 문서
+    properties:
+      id:
+        type: string
+        description: 공시 고유 ID
+      doc_group:
+        type: string
+        values:
+          - exchange
+          - holding
+          - major
+          - periodic
+        description: 공시 문서 유형
+      source_path:
+        type: string
+        description: 공시 원문 데이터 상대 경로
+      report_name:
+        type: string
+        description: 공시 보고서명
+      base_year:
+        type: integer?
+        description: 공시 기준 연도
+      base_month:
+        type: integer?
+        description: 공시 기준 월
+      n_sections:
+        type: integer
+        description: 연결된 전체 Section 수
 
   Section:
-    label: Section    # 공시 문서 내부의 구획을 나타내는 엔티티
+    labels:
+      - Section
+    description: 공시 문서 내부 구획
     properties:
-      - id            # 문서에 등장하는 순서대로 섹션 번호가 부여된다. ( string / ex: "d20230512000974:src0:s16" )
-      - title         # 섹션의 제목 ( string / ex: "8. 기타 재무에 관한 사항" )
-      - section_path  # 상위 섹션을 포함한 경로 ( list[string] / ex: ["III. 재무에 관한 사항", "8. 기타 재무에 관한 사항"] )
-      - element_path  # 공시 원문 내에서 섹션의 위치를 나타내는 경로 ( string / ex: "/DOCUMENT[1]/BODY[1]/SECTION-1[4]/SECTION-2[4]" )
-      - order_in_doc  # 공시 문서 내에서 섹션이 등장하는 순서 ( integer / ex: 0 )
-      - n_evidence    # 섹션 내에서 추출된 Evidence 수. 별도의 update 쿼리로 관리할 수 있어야 함. ( integer / ex: 3 )
+      id:
+        type: string
+        description: Section 고유 ID
+      title:
+        type: string?
+        description: Section 제목
+      section_path:
+        type: list[string]
+        description: 상위 제목을 포함한 계층 경로
+      element_path:
+        type: string?
+        description: 원문 내 element 경로
+      order_in_doc:
+        type: integer
+        description: 문서 내 등장 순서
+      n_evidence:
+        type: integer
+        description: 직접 연결된 Evidence 수
 
   Evidence:
-    label: Evidence       # 공시 원문에서 추출한 최소한의 근거 단위를 나타내는 엔티티. 하위 엔티티로 Text와 Table을 가진다.
+    labels:
+      - Evidence
+    abstract: true
+    description: Text와 Table의 공통 base label
     properties:
-      - id                # ( string / ex: "d20230512000974:src0:s16:e1" )
-      - order_in_section  # 섹션 내에서 Evidence가 등장하는 순서 ( integer / ex: 0 )
-      - heading_path      # Evidence의 소제목 문맥 ( list[string] / ex: ["II. 사업의 내용", "3. 주요 제품 및 서비스"] )
+      id:
+        type: string
+        description: Evidence 고유 ID
+      order_in_section:
+        type: integer
+        description: Section 내 등장 순서
+      heading_path:
+        type: list[string]
+        description: 소제목 문맥 경로
 
   Text:
-    label: "Evidence:Text"  # 추출한 Evidence 중 유형이 Text인 경우를 나타내는 엔티티
+    labels:
+      - Evidence
+      - Text
+    extends: Evidence
+    description: 텍스트 Evidence
     properties:
-      - text                # 공시 원문에서 추출한 텍스트 원문 ( string / ex: "당사는 2023년 3월 31일 현재 연결재무제표 기준으로 유동자산이 비유동자산보다 많습니다." )
+      text:
+        type: string
+        description: 추출 텍스트 원문
 
   Table:
-    label: "Evidence:Table"  # 추출한 Evidence 중 유형이 Table인 경우를 나타내는 엔티티
+    labels:
+      - Evidence
+      - Table
+    extends: Evidence
+    description: 표 Evidence
     properties:
-      - table_type          # 표의 유형 ( string / domain: [ "KV-table", "R-table" ] )
-      - title               # 표의 제목 ( string / ex: "주요 제품 현황" )
-      - captions            # 표의 캡션 ( string / ex: "주요 제품별 매출은 다음과 같습니다." )
-      - notes               # 표의 주석 ( list[string] / ex: ["※ 연결 기준"] )
-      - units               # 표의 단위 ( list[string] / ex: ["(단위: 백만원)","(주식 수 단위: 주)"] )
-      - headers             # [R-table 전용] 표의 헤더(=컬럼명) 목록. ">"로 flatten된 헤더 이름을 사용한다. ( list[string] / ex: ["항목", "직전보고서 > 금액", "이번보고서 > 금액"] )
-      - n_rows              # [R-table 전용] 표의 행 수. ( integer / ex: 3 )
-      - keys                # [KV-table 전용] 표의 key 목록. ">"로 flatten된 헤더 이름을 사용한다. ( list[string] / ex: ["항목", "직전보고서 > 금액", "이번보고서 > 금액"] )
-      - n_entries           # [KV-table 전용] 표의 key-value 쌍 개수. ( integer / ex: 5 )
-
-  Event:
-    label: Event # 하나 이상의 Evidence를 묶어 해석한 공시사건의 공통 엔티티
-    properties:
-      - id                    # Event 고유 ID (string / ex: "ev:d20230512000974:0001")
-      - event_type            # 주 Event 유형. 아래 12개 다중 라벨과 반드시 일치해야 함 (string)
-      - secondary_event_types # 함께 검색할 보조 Event 유형 (list[string])
-      - title                 # 사건을 식별하는 짧은 제목 (string)
-      - summary               # Evidence 범위를 벗어나지 않는 사건 요약 (string)
-      - event_date            # 사건 발생일 또는 의사결정일 (date / nullable)
-      - period_start          # 계약·사업·관측 기간 시작일 (date / nullable)
-      - period_end            # 계약·사업·관측 기간 종료일 (date / nullable)
-      - amount                # 원문에 명시된 대표 금액 (number / nullable)
-      - currency              # amount 통화 (string / ex: "KRW", nullable)
-      - status                # 사건 상태 (string / domain: [announced, planned, ongoing, completed, cancelled, corrected, unknown])
-      - is_correction         # 정정공시에서 생성된 Event인지 여부 (boolean)
-      - materiality           # 이해관계자 중요도 (string / domain: [high, medium, low])
-      - confidence            # Event 추출 신뢰도 (float / range: 0.0..1.0)
-
-  Contract:
-    label: "Event:Contract" # 계약·수주·판매·공급계약 (event_type: contract)
-
-  FinancialPerformance:
-    label: "Event:FinancialPerformance" # 매출·이익·재무상태·현금흐름 (event_type: financial_performance)
-
-  CapitalReturn:
-    label: "Event:CapitalReturn" # 배당·자사주·주식소각·주주환원 (event_type: capital_return)
-
-  Financing:
-    label: "Event:Financing" # 채권·차입·증자·채무·담보·보증 (event_type: financing)
-
-  InvestmentCapex:
-    label: "Event:InvestmentCapex" # 투자·신규시설·증설·신사업 (event_type: investment_capex)
-
-  MergerAcquisition:
-    label: "Event:MergerAcquisition" # 합병·분할·인수·사업양수도·구조조정 (event_type: merger_acquisition)
-
-  OwnershipChange:
-    label: "Event:OwnershipChange" # 출자·지분취득·지분매각·최대주주 변경 (event_type: ownership_change)
-
-  AssetFinancialTransaction:
-    label: "Event:AssetFinancialTransaction" # 부동산·유형자산·파생상품·금융거래 (event_type: asset_financial_transaction)
-
-  BusinessOperation:
-    label: "Event:BusinessOperation" # 생산·판매·영업·제품·연구개발·임상 (event_type: business_operation)
-
-  GovernanceAudit:
-    label: "Event:GovernanceAudit" # 이사회·임원·주주총회·감사·회계·정정 (event_type: governance_audit)
-
-  LegalRisk:
-    label: "Event:LegalRisk" # 소송·규제·제재·우발채무·위험 (event_type: legal_risk)
-
-  ESGSafety:
-    label: "Event:ESGSafety" # 환경·산업안전·노동·소비자·정보보호 (event_type: esg_safety)
+      table_type:
+        type: string
+        values:
+          - KV-table
+          - R-table
+        description: 표 구조 유형
+      title:
+        type: string?
+        description: 표 제목
+      captions:
+        type: string?
+        description: 표 캡션
+      notes:
+        type: list[string]
+        description: 표 주석 목록
+      units:
+        type: list[string]
+        description: 표 단위 목록
+      headers:
+        type: list[string]?
+        applies_to: R-table
+        description: flatten된 column header 목록
+      n_rows:
+        type: integer?
+        applies_to: R-table
+        description: row 수
+      keys:
+        type: list[string]?
+        applies_to: KV-table
+        description: flatten된 key 목록
+      n_entries:
+        type: integer?
+        applies_to: KV-table
+        description: key-value entry 수
 
 relations:
+  PUBLISHES:
+    type: PUBLISHES
+    description: 회사가 발행한 공시 연결
+    endpoints:
+      source:
+        - Company
+      target:
+        - Disclosure
+    properties: {}
+
   HAS_SECTION:
-    label: HAS_SECTION    # Disclosure 또는 상위 Section이 하위 Section을 포함하는 관계
-    source_labels:
-      - Disclosure
-      - Section
-    target_labels:
-      - Section
+    type: HAS_SECTION
+    description: 공시 또는 상위 Section의 하위 Section 연결
+    endpoints:
+      source:
+        - Disclosure
+        - Section
+      target:
+        - Section
     properties: {}
 
   HAS_EVIDENCE:
-    label: HAS_EVIDENCE    # Section이 해당 구획에서 추출된 Evidence를 포함하는 관계
-    source_labels:
-      - Section
-    target_labels:
-      - Text
-      - Table
+    type: HAS_EVIDENCE
+    description: Section의 Text 또는 Table Evidence 연결
+    endpoints:
+      source:
+        - Section
+      target:
+        - Evidence:Text
+        - Evidence:Table
     properties: {}
 
-  HAS_EVENT:
-    label: HAS_EVENT # Disclosure 또는 Section이 해당 범위에서 추출된 Event를 포함하는 관계
-    source_labels:
+constraints:
+  - name: company_corp_code
+    entity: node
+    labels:
+      - Company
+    properties:
+      - corp_code
+    constraint_type: uniqueness
+  - name: disclosure_id
+    entity: node
+    labels:
       - Disclosure
+    properties:
+      - id
+    constraint_type: uniqueness
+  - name: section_id
+    entity: node
+    labels:
       - Section
-    target_labels:
-      - Event
-    properties: {}
-
-  SUPPORTED_BY:
-    label: SUPPORTED_BY # Event가 판단 근거인 Text 또는 Table Evidence를 가리키는 핵심 추적 관계
-    source_labels:
-      - Event
-    target_labels:
-      - Text
-      - Table
     properties:
-      - evidence_role # 근거 역할 (string / domain: [primary, supporting, contradictory, correction])
-      - confidence    # 해당 Evidence의 지지 신뢰도 (float / range: 0.0..1.0)
-
-  CORRECTS_EVENT:
-    label: CORRECTS_EVENT # 정정 Event가 기존 Event를 수정하거나 대체하는 관계
-    source_labels:
-      - Event
-    target_labels:
-      - Event
+      - id
+    constraint_type: uniqueness
+  - name: evidence_id
+    entity: node
+    labels:
+      - Evidence
     properties:
-      - corrected_fields # 정정된 속성 목록 (list[string])
+      - id
+    constraint_type: uniqueness
 
-  RELATED_TO_EVENT:
-    label: RELATED_TO_EVENT # 인과·정정은 아니지만 함께 조회할 가치가 있는 Event 간 관계
-    source_labels:
-      - Event
-    target_labels:
-      - Event
+indexes:
+  - name: company_corp_code
+    index_type: range
+    entity: node
+    labels:
+      - Company
     properties:
-      - reason     # 연관 사유 (string)
-      - confidence # 연관관계 신뢰도 (float / range: 0.0..1.0)
+      - corp_code
+    owned_by_constraint: company_corp_code
+  - name: disclosure_id
+    index_type: range
+    entity: node
+    labels:
+      - Disclosure
+    properties:
+      - id
+    owned_by_constraint: disclosure_id
+  - name: section_id
+    index_type: range
+    entity: node
+    labels:
+      - Section
+    properties:
+      - id
+    owned_by_constraint: section_id
+  - name: evidence_id
+    index_type: range
+    entity: node
+    labels:
+      - Evidence
+    properties:
+      - id
+    owned_by_constraint: evidence_id
+  - name: index_460996c0
+    index_type: lookup
+    entity: node
+    lookup_target: labels
+  - name: index_1b9dcc97
+    index_type: lookup
+    entity: relationship
+    lookup_target: relationship_type
