@@ -5,7 +5,7 @@ import json
 import pytest
 
 from agent_graph.state import (
-    AnswerDraft,
+    AnswerGeneratorOutput,
     EvidenceSelection,
     QuestionAnalysis,
     RetrievalResult,
@@ -106,7 +106,10 @@ def test_resolves_selected_reference_to_citation():
 
     answer = resolve_answer_draft(
         state,
-        AnswerDraft(answer="확인했습니다.", citation_reference_ids=["C1"]),
+        AnswerGeneratorOutput(
+            answer="확인했습니다.",
+            citation_reference_ids=["C1"],
+        ),
     )
 
     assert answer.answer == "확인했습니다."
@@ -122,7 +125,10 @@ def test_rejects_unknown_reference_id():
     with pytest.raises(ValueError, match="허용되지 않은 citation reference"):
         resolve_answer_draft(
             state,
-            AnswerDraft(answer="확인했습니다.", citation_reference_ids=["C99"]),
+            AnswerGeneratorOutput(
+                answer="확인했습니다.",
+                citation_reference_ids=["C99"],
+            ),
         )
 
 
@@ -131,7 +137,10 @@ def test_deduplicates_selected_reference_ids():
 
     answer = resolve_answer_draft(
         state,
-        AnswerDraft(answer="확인했습니다.", citation_reference_ids=["C1", "C1"]),
+        AnswerGeneratorOutput(
+            answer="확인했습니다.",
+            citation_reference_ids=["C1", "C1"],
+        ),
     )
 
     assert len(answer.citation) == 1
@@ -148,7 +157,7 @@ def test_company_properties_without_dart_ids_return_empty_citations():
 
     answer = resolve_answer_draft(
         state,
-        AnswerDraft(
+        AnswerGeneratorOutput(
             answer="영문명과 종목 코드입니다.",
             citation_reference_ids=["R1-I1"],
         ),

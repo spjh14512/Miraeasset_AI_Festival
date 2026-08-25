@@ -6,7 +6,13 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from . import system_prompts as sp
 from .llm import get_llm
-from .state import AgentState, AnswerDraft, Plan, PlannerOutput, QuestionAnalysis
+from .state import (
+    AgentState,
+    AnswerGeneratorOutput,
+    Plan,
+    PlannerOutput,
+    QuestionAnalysis,
+)
 from .tools import (
     build_retriever_human_message,
     build_answer_generator_human_message,
@@ -47,7 +53,7 @@ def _build_answer_generator_llm() -> Any:
     """공용 LLM에 answer generator structured output을 한 번 binding한다."""
 
     return get_llm().with_structured_output(
-        AnswerDraft,
+        AnswerGeneratorOutput,
         method="function_calling"
     )
 
@@ -124,7 +130,7 @@ def retriever(
 
     retriever_human_message = build_retriever_human_message(state)
 
-    print(f"[retriever human message]:\n{retriever_human_message}\n\n")
+    print(f"[retriever human message]:\n{retriever_human_message.content.replace("\\n", "\n")}\n\n")
 
     messages = [
         SystemMessage(content=sp.RETRIEVER_SYSTEM_PROMPT),
@@ -164,13 +170,13 @@ def answer_generator(
     print("-- answer_genartor 노드 호출 --")
 
     answer_generator_human_message = build_answer_generator_human_message(state)
-    print(f"[retriever human message]:\n{answer_generator_human_message}\n\n")
+    print(f"[retriever human message]:\n{answer_generator_human_message.content.replace("\\n", "\n")}\n\n")
 
     answer_generator_llm = (
         _build_answer_generator_llm()
         if llm is None
         else llm.with_structured_output(
-            AnswerDraft,
+            AnswerGeneratorOutput,
             method="function_calling"
         )   
     )
@@ -184,8 +190,8 @@ def answer_generator(
 
     answer_generator_output = (
         response
-        if isinstance(response, AnswerDraft)
-        else AnswerDraft.model_validate(response)
+        if isinstance(response, AnswerGeneratorOutput)
+        else AnswerGeneratorOutput.model_validate(response)
     )
 
     return {

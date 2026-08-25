@@ -9,4 +9,4 @@ def test_answer_generator_prompt_matches_answer_draft_reference_selection():
     assert "reference_id" in prompt
     assert "citation_reference_ids" in prompt
     assert "빈 목록" in prompt
-    assert "AnswerDraft" in prompt
+    assert "AnswerGeneratorOutput" in prompt

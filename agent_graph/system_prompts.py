@@ -461,7 +461,7 @@ Human message의 `citation_candidates`는 application이 검증한 Citation 후�
 
 ## 출력 형식
 
-반드시 `AnswerDraft` schema에 맞는 structured output만 반환하세요.
+반드시 `AnswerGeneratorOutput` schema에 맞는 structured output만 반환하세요.
 
 * `answer`: 사용자에게 전달할 최종 답변 문자열
 * `citation_reference_ids`: 답변에 사용한 citation 후보의 reference ID 목록

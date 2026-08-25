@@ -24,7 +24,7 @@ from .retrieval_result_parser import parse_neo4j_response, parse_qdrant_response
 from .state import (
     AgentState,
     AiAnswer,
-    AnswerDraft,
+    AnswerGeneratorOutput,
     Citation,
     EvidenceSelection,
     Plan,
@@ -726,11 +726,14 @@ def build_citation_candidates(state: AgentState) -> list[dict[str, Any]]:
     return candidates
 
 
-def resolve_answer_draft(state: AgentState, draft: AnswerDraft) -> AiAnswer:
-    """AnswerDraft의 reference ID를 application이 검증한 Citation으로 변환합니다.
+def resolve_answer_draft(
+    state: AgentState,
+    draft: AnswerGeneratorOutput,
+) -> AiAnswer:
+    """AnswerGeneratorOutput의 reference ID를 검증된 Citation으로 변환합니다.
 
     입력 예시:
-        AnswerDraft(answer="답변", citation_reference_ids=["C1"])
+        AnswerGeneratorOutput(answer="답변", citation_reference_ids=["C1"])
 
     출력 예시:
         AiAnswer(answer="답변", citation=[Citation(disclosure_id="d1")])

@@ -155,7 +155,7 @@ class AiAnswer(BaseModel):
     citation: list[Citation]
 
 
-class AnswerDraft(BaseModel):
+class AnswerGeneratorOutput(BaseModel):
     """Answer Generator가 생성하는 답변과 citation 후보 선택 결과입니다."""
 
     answer: str
