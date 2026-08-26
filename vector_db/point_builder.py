@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -41,6 +42,23 @@ class PointInput:
     contextual_text: str
     embedding_cache_key: str
     payload: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class _RTableCanonicalChunk:
+    records: tuple[Mapping[str, Any], ...]
+    canonical: dict[str, Any]
+    size_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class _RTablePointPart:
+    identity_key: str
+    records: tuple[Mapping[str, Any], ...]
+    canonical: dict[str, Any]
+    contextual_text: str
+    row_start_index: int | None
+    row_end_index: int | None
 
 
 def to_neo4j_evidence_id(source_evidence_id: str) -> str:
@@ -222,6 +240,244 @@ def _r_table_canonical(
     return canonical
 
 
+def _compact_json_size_bytes(value: Mapping[str, Any]) -> int:
+    return len(
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+
+
+def _r_table_subset_evidence(
+    evidence: Mapping[str, Any],
+    *,
+    record_count: int,
+) -> dict[str, Any]:
+    payload = evidence.get("payload")
+    if not isinstance(payload, Mapping):
+        raise ValueError("R_TABLE Evidence payload must be a mapping")
+    return {
+        **dict(evidence),
+        "payload": {
+            **dict(payload),
+            "record_count": record_count,
+        },
+    }
+
+
+def _minimum_chunk_counts_by_suffix(
+    weights: Sequence[int],
+    *,
+    capacity: int,
+) -> list[int]:
+    """Return the minimum number of bounded contiguous chunks per suffix."""
+    count = len(weights)
+    next_indexes = [count] * count
+    end = 0
+    running_size = 0
+    for start in range(count):
+        if end < start:
+            end = start
+            running_size = 0
+        while end < count and running_size + weights[end] <= capacity:
+            running_size += weights[end]
+            end += 1
+        next_indexes[start] = end
+        running_size -= weights[start]
+
+    minimum_counts = [0] * (count + 1)
+    for start in range(count - 1, -1, -1):
+        minimum_counts[start] = 1 + minimum_counts[next_indexes[start]]
+    return minimum_counts
+
+
+def _balanced_bounded_groups(
+    records: Sequence[Mapping[str, Any]],
+    weights: Sequence[int],
+    *,
+    capacity: int,
+) -> list[tuple[Mapping[str, Any], ...]]:
+    """Use the minimum chunk count, choosing boundaries nearest remaining averages."""
+    if not records:
+        return []
+    if len(records) != len(weights):
+        raise ValueError("R_TABLE canonical record and size counts must match")
+    if any(weight <= 0 or weight > capacity for weight in weights):
+        raise ValueError("Balanced R_TABLE chunk weights must fit the capacity")
+
+    minimum_counts = _minimum_chunk_counts_by_suffix(
+        weights,
+        capacity=capacity,
+    )
+    suffix_totals = [0] * (len(weights) + 1)
+    for index in range(len(weights) - 1, -1, -1):
+        suffix_totals[index] = suffix_totals[index + 1] + weights[index]
+    remaining_groups = minimum_counts[0]
+    start = 0
+    groups: list[tuple[Mapping[str, Any], ...]] = []
+
+    while remaining_groups > 1:
+        remaining_total = suffix_totals[start]
+        target_size = remaining_total / remaining_groups
+        running_size = 0
+        best_cut: int | None = None
+        best_score: tuple[float, int] | None = None
+        maximum_cut = len(records) - (remaining_groups - 1)
+
+        for cut in range(start + 1, maximum_cut + 1):
+            running_size += weights[cut - 1]
+            if running_size > capacity:
+                break
+            if minimum_counts[cut] > remaining_groups - 1:
+                continue
+            score = (abs(running_size - target_size), -running_size)
+            if best_score is None or score < best_score:
+                best_score = score
+                best_cut = cut
+
+        if best_cut is None:
+            raise ValueError("Unable to build balanced R_TABLE canonical chunks")
+        groups.append(tuple(records[start:best_cut]))
+        start = best_cut
+        remaining_groups -= 1
+
+    groups.append(tuple(records[start:]))
+    return groups
+
+
+def _chunk_r_table_records_by_canonical_size(
+    evidence: Mapping[str, Any],
+    records: Sequence[Mapping[str, Any]],
+    *,
+    max_bytes: int,
+    hard_max_bytes: int,
+) -> list[_RTableCanonicalChunk]:
+    """Split records into balanced compact-canonical UTF-8 byte chunks."""
+    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+        raise ValueError("canonical_max_bytes must be a positive integer")
+    if (
+        not isinstance(hard_max_bytes, int)
+        or isinstance(hard_max_bytes, bool)
+        or hard_max_bytes < max_bytes
+    ):
+        raise ValueError(
+            "canonical_hard_max_bytes must be an integer greater than or equal "
+            "to canonical_max_bytes"
+        )
+
+    ordered_records = tuple(
+        sorted(records, key=lambda record: int(record["record_index"]))
+    )
+    full_canonical = _r_table_canonical(evidence, ordered_records)
+    full_size = _compact_json_size_bytes(full_canonical)
+    if full_size <= max_bytes or not ordered_records:
+        return [
+            _RTableCanonicalChunk(
+                records=ordered_records,
+                canonical=full_canonical,
+                size_bytes=full_size,
+            )
+        ]
+
+    empty_canonical = {**full_canonical, "records": []}
+    base_size = _compact_json_size_bytes(empty_canonical)
+    if base_size > max_bytes:
+        # Repeated table metadata and headers alone cannot fit the limit, so row
+        # partitioning cannot produce a compliant chunk. Preserve the table
+        # boundary only within the explicit indivisible hard limit.
+        if full_size > hard_max_bytes:
+            raise ValueError(
+                "R_TABLE header-only canonical exceeds the hard byte limit"
+            )
+        return [
+            _RTableCanonicalChunk(
+                records=ordered_records,
+                canonical=full_canonical,
+                size_bytes=full_size,
+            )
+        ]
+
+    projected_records = full_canonical["records"]
+    # One comma is charged to every record weight. The fixed portion subtracts
+    # one byte, yielding the exact compact JSON size for every non-empty chunk.
+    capacity = max_bytes - base_size + 1
+    record_weights = [
+        _compact_json_size_bytes(record) + 1 for record in projected_records
+    ]
+    if (
+        full_size <= hard_max_bytes
+        and record_weights
+        and all(weight > capacity for weight in record_weights)
+    ):
+        # Every record would become a slightly oversized singleton under the
+        # target limit. Keep one table Point instead of producing redundant
+        # header-heavy Points, while still respecting the hard limit.
+        return [
+            _RTableCanonicalChunk(
+                records=ordered_records,
+                canonical=full_canonical,
+                size_bytes=full_size,
+            )
+        ]
+    grouped_records: list[tuple[Mapping[str, Any], ...]] = []
+    normal_records: list[Mapping[str, Any]] = []
+    normal_weights: list[int] = []
+
+    def append_balanced_normal_run() -> None:
+        if not normal_records:
+            return
+        grouped_records.extend(
+            _balanced_bounded_groups(
+                normal_records,
+                normal_weights,
+                capacity=capacity,
+            )
+        )
+        normal_records.clear()
+        normal_weights.clear()
+
+    for record, record_weight in zip(
+        ordered_records,
+        record_weights,
+        strict=True,
+    ):
+        if record_weight > capacity:
+            append_balanced_normal_run()
+            grouped_records.append((record,))
+            continue
+        normal_records.append(record)
+        normal_weights.append(record_weight)
+    append_balanced_normal_run()
+
+    chunks: list[_RTableCanonicalChunk] = []
+    for grouped in grouped_records:
+        canonical = _r_table_canonical(evidence, grouped)
+        size_bytes = _compact_json_size_bytes(canonical)
+        if size_bytes > hard_max_bytes:
+            raise ValueError(
+                "R_TABLE indivisible record exceeds the hard byte limit"
+            )
+        chunks.append(
+            _RTableCanonicalChunk(
+                records=grouped,
+                canonical=canonical,
+                size_bytes=size_bytes,
+            )
+        )
+    return chunks
+
+
+def _record_range(
+    records: Sequence[Mapping[str, Any]],
+) -> tuple[int | None, int | None]:
+    if not records:
+        return None, None
+    indexes = sorted(int(record["record_index"]) for record in records)
+    return indexes[0], indexes[-1]
+
+
 def _point_payload(
     *,
     point_kind: str,
@@ -232,6 +488,8 @@ def _point_payload(
     table_id: str | None = None,
     row_start_index: int | None = None,
     row_end_index: int | None = None,
+    chunk_index: int | None = None,
+    chunk_count: int | None = None,
 ) -> dict[str, Any]:
     if point_kind not in POINT_KINDS:
         raise ValueError(f"Unsupported point_kind: {point_kind}")
@@ -258,6 +516,23 @@ def _point_payload(
     if table_id is not None and (not isinstance(table_id, str) or not table_id.strip()):
         raise ValueError("table_id must be a non-empty string or null")
 
+    has_chunk_position = chunk_index is not None or chunk_count is not None
+    if has_chunk_position:
+        if table_id is None:
+            raise ValueError("table_id is required for an R_TABLE chunk Point")
+        if (
+            not isinstance(chunk_index, int)
+            or isinstance(chunk_index, bool)
+            or chunk_index < 0
+            or not isinstance(chunk_count, int)
+            or isinstance(chunk_count, bool)
+            or chunk_count < 2
+            or chunk_index >= chunk_count
+        ):
+            raise ValueError(
+                "chunk_index and chunk_count must define a valid zero-based position"
+            )
+
     retrieval_metadata = {
         "point_kind": point_kind,
         "evidence_id": to_neo4j_evidence_id(evidence_id),
@@ -274,6 +549,9 @@ def _point_payload(
     if has_row_range:
         retrieval_metadata["row_start_index"] = row_start_index
         retrieval_metadata["row_end_index"] = row_end_index
+    if has_chunk_position:
+        retrieval_metadata["chunk_index"] = chunk_index
+        retrieval_metadata["chunk_count"] = chunk_count
     return {
         "retrieval_metadata": retrieval_metadata,
         "contextual_text": contextual_text,
@@ -292,6 +570,8 @@ def _point_input(
     table_id: str | None = None,
     row_start_index: int | None = None,
     row_end_index: int | None = None,
+    chunk_index: int | None = None,
+    chunk_count: int | None = None,
 ) -> PointInput:
     return PointInput(
         id=str(uuid5(POINT_ID_NAMESPACE, identity_key)),
@@ -306,6 +586,8 @@ def _point_input(
             table_id=table_id,
             row_start_index=row_start_index,
             row_end_index=row_end_index,
+            chunk_index=chunk_index,
+            chunk_count=chunk_count,
         ),
     )
 
@@ -435,77 +717,150 @@ def build_point_inputs(
             whole_table_text,
         )
 
-        if decision.strategy is RTableEmbeddingStrategy.WHOLE_TABLE:
-            append_point_input(
-                _point_input(
-                    identity_key=evidence_id,
-                    point_kind="R_TABLE",
-                    evidence_id=evidence_id,
-                    contextual_text=whole_table_text,
-                    canonical=_r_table_canonical(evidence, table_records),
-                    document_context=document_context,
-                    table_id=table_id,
-                )
-            )
-            continue
+        point_parts: list[_RTablePointPart] = []
 
-        if decision.strategy is RTableEmbeddingStrategy.DESCRIPTOR:
-            descriptor_text = build_r_table_descriptor_contextual_text(
+        def append_partition(
+            partition_records: Sequence[Mapping[str, Any]],
+            *,
+            identity_key: str,
+            contextual_text: str | None,
+            descriptor: bool,
+            preserve_row_range: bool,
+        ) -> None:
+            canonical_chunks = _chunk_r_table_records_by_canonical_size(
                 evidence,
-                profile_r_table_columns(evidence, table_records),
+                partition_records,
+                max_bytes=resolved_selector.config.canonical_max_bytes,
+                hard_max_bytes=(
+                    resolved_selector.config.canonical_hard_max_bytes
+                ),
+            )
+            partition_was_split = len(canonical_chunks) > 1
+            for canonical_chunk_index, canonical_chunk in enumerate(
+                canonical_chunks
+            ):
+                chunk_evidence = _r_table_subset_evidence(
+                    evidence,
+                    record_count=len(canonical_chunk.records),
+                )
+                if descriptor:
+                    chunk_contextual_text = (
+                        build_r_table_descriptor_contextual_text(
+                            chunk_evidence,
+                            profile_r_table_columns(
+                                chunk_evidence,
+                                canonical_chunk.records,
+                            ),
+                            corp_name=corp_name,
+                            report_nm=report_nm,
+                            section_path=section_path,
+                        )
+                    )
+                elif partition_was_split or contextual_text is None:
+                    chunk_contextual_text = build_r_table_contextual_text(
+                        chunk_evidence,
+                        canonical_chunk.records,
+                        corp_name=corp_name,
+                        report_nm=report_nm,
+                        section_path=section_path,
+                    )
+                else:
+                    chunk_contextual_text = contextual_text
+
+                row_start_index, row_end_index = _record_range(
+                    canonical_chunk.records
+                )
+                chunk_identity_key = identity_key
+                if partition_was_split:
+                    chunk_identity_key = (
+                        f"{identity_key}:canonical_chunk:"
+                        f"{canonical_chunk_index}:{row_start_index}:{row_end_index}"
+                    )
+                point_parts.append(
+                    _RTablePointPart(
+                        identity_key=chunk_identity_key,
+                        records=canonical_chunk.records,
+                        canonical=canonical_chunk.canonical,
+                        contextual_text=chunk_contextual_text,
+                        row_start_index=(
+                            row_start_index
+                            if preserve_row_range or partition_was_split
+                            else None
+                        ),
+                        row_end_index=(
+                            row_end_index
+                            if preserve_row_range or partition_was_split
+                            else None
+                        ),
+                    )
+                )
+
+        if decision.strategy is RTableEmbeddingStrategy.WHOLE_TABLE:
+            append_partition(
+                table_records,
+                identity_key=evidence_id,
+                contextual_text=whole_table_text,
+                descriptor=False,
+                preserve_row_range=False,
+            )
+        elif decision.strategy is RTableEmbeddingStrategy.DESCRIPTOR:
+            append_partition(
+                table_records,
+                identity_key=f"{evidence_id}:descriptor",
+                contextual_text=None,
+                descriptor=True,
+                preserve_row_range=False,
+            )
+        elif decision.strategy is RTableEmbeddingStrategy.ROW_GROUP:
+            row_groups = build_r_table_row_groups(
+                evidence,
+                table_records,
                 corp_name=corp_name,
                 report_nm=report_nm,
                 section_path=section_path,
+                max_tokens=resolved_selector.config.row_group_max_tokens,
+                token_counter=resolved_selector.token_counter,
             )
-            append_point_input(
-                _point_input(
-                    identity_key=f"{evidence_id}:descriptor",
-                    point_kind="R_TABLE",
-                    evidence_id=evidence_id,
-                    contextual_text=descriptor_text,
-                    canonical=_r_table_canonical(evidence, table_records),
-                    document_context=document_context,
-                    table_id=table_id,
+            if not row_groups:
+                raise ValueError(
+                    "R_TABLE row-group strategy requires at least one record"
                 )
-            )
-            continue
-
-        if decision.strategy is not RTableEmbeddingStrategy.ROW_GROUP:
-            raise ValueError(f"Unsupported R_TABLE strategy: {decision.strategy}")
-
-        row_groups = build_r_table_row_groups(
-            evidence,
-            table_records,
-            corp_name=corp_name,
-            report_nm=report_nm,
-            section_path=section_path,
-            max_tokens=resolved_selector.config.row_group_max_tokens,
-            token_counter=resolved_selector.token_counter,
-        )
-        if not row_groups:
-            raise ValueError("R_TABLE row-group strategy requires at least one record")
-        for group in row_groups:
-            group_records = [
-                record
-                for record in table_records
-                if group.row_start_index
-                <= int(record["record_index"])
-                <= group.row_end_index
-            ]
-            append_point_input(
-                _point_input(
+            for group in row_groups:
+                group_records = [
+                    record
+                    for record in table_records
+                    if group.row_start_index
+                    <= int(record["record_index"])
+                    <= group.row_end_index
+                ]
+                append_partition(
+                    group_records,
                     identity_key=(
                         f"{evidence_id}:row_group:"
                         f"{group.row_start_index}:{group.row_end_index}"
                     ),
+                    contextual_text=group.contextual_text,
+                    descriptor=False,
+                    preserve_row_range=True,
+                )
+        else:
+            raise ValueError(f"Unsupported R_TABLE strategy: {decision.strategy}")
+
+        chunk_count = len(point_parts) if len(point_parts) > 1 else None
+        for chunk_index, part in enumerate(point_parts):
+            append_point_input(
+                _point_input(
+                    identity_key=part.identity_key,
                     point_kind="R_TABLE",
                     evidence_id=evidence_id,
-                    contextual_text=group.contextual_text,
-                    canonical=_r_table_canonical(evidence, group_records),
+                    contextual_text=part.contextual_text,
+                    canonical=part.canonical,
                     document_context=document_context,
-                    table_id=group.table_id,
-                    row_start_index=group.row_start_index,
-                    row_end_index=group.row_end_index,
+                    table_id=table_id,
+                    row_start_index=part.row_start_index,
+                    row_end_index=part.row_end_index,
+                    chunk_index=chunk_index if chunk_count is not None else None,
+                    chunk_count=chunk_count,
                 )
             )
 

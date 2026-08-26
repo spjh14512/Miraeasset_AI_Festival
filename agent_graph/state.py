@@ -16,6 +16,20 @@ class PlanDraft(BaseModel):
     source: RetrievalSource = Field(description="검색에 사용할 retrieval source")
     query: str = Field(..., min_length=1, description="검색할 자연어 정보 요구")
     purpose: str = Field(..., min_length=1, description="검색 결과가 필요한 이유")
+    dependencies: list[str] = Field(
+        default_factory=list,
+        description="이 Plan의 query 생성에 사용할 기존 RetrievalResult의 result_id 목록",
+    )
+
+    @field_validator("dependencies")
+    @classmethod
+    def validate_dependencies(cls, value: list[str]) -> list[str]:
+        dependencies = [result_id.strip() for result_id in value]
+        if any(not result_id for result_id in dependencies):
+            raise ValueError("dependencies에는 비어 있는 result_id를 사용할 수 없습니다.")
+        if len(dependencies) != len(set(dependencies)):
+            raise ValueError("dependencies에는 중복 result_id를 사용할 수 없습니다.")
+        return dependencies
 
 
 class Plan(PlanDraft):
@@ -66,6 +80,8 @@ class PlannerOutput(BaseModel):
             raise ValueError("retrieve 결정에는 plan이 필요합니다.")
         if decision != "retrieve" and self.plans:
             raise ValueError("direct 또는 clarify 결정에는 plan이 없어야 합니다.")
+        if any(plan.dependencies for plan in self.plans):
+            raise ValueError("Planner가 생성하는 최초 plan에는 dependencies가 없어야 합니다.")
         return self
 
 
@@ -158,8 +174,8 @@ class AiAnswer(BaseModel):
 class AnswerGeneratorOutput(BaseModel):
     """Answer Generator가 생성하는 답변과 citation 후보 선택 결과입니다."""
 
-    answer: str
-    citation_reference_ids: list[str] = Field(default_factory=list)
+    answer: str = Field(..., description="사용자에게 제공할 최종 답변 메시지")
+    citation_reference_ids: list[str] = Field(..., description="답변을 뒷받침하는 근거의 reference_id. citation_candidates 안에서 선택한다.", default_factory=list)
 
 
 RetrievalStatus = Literal["CONTINUE", "COMPLETE", "INSUFFICIENT"]
@@ -179,6 +195,7 @@ class AgentState(TypedDict, total=False):
     retrieval_results: NotRequired[
         Annotated[list[RetrievalResult], merge_results]
     ]
+    retrieved_qdrant_point_ids: NotRequired[list[str]]
     retrieval_status: NotRequired[RetrievalStatus]
     retrieval_finish_reason: NotRequired[str]
     selected_evidence: NotRequired[list[EvidenceSelection]]

@@ -50,17 +50,18 @@ def build_text_contextual_text(
     if not isinstance(heading_path, (list, tuple)):
         raise ValueError("TEXT Evidence payload.heading_path must be a sequence")
 
-    disclosure_context = _context_values((corp_name, report_nm))
     section_context = _context_values(section_path, heading_path)
-    if not disclosure_context and not section_context:
+    document_lines: list[str] = []
+    if corp_name.strip():
+        document_lines.append(f"회사 : {corp_name.strip()}")
+    if report_nm.strip():
+        document_lines.append(f"공시 : {report_nm.strip()}")
+    if section_context:
+        document_lines.append(f"섹션 : {CONTEXT_SEPARATOR.join(section_context)}")
+    if not document_lines:
         raise ValueError("At least one document or section context value is required")
 
-    header = "\n".join(
-        (
-            f"공시 : {' '.join(disclosure_context)}",
-            f"섹션 : {CONTEXT_SEPARATOR.join(section_context)}",
-        )
-    )
+    header = "\n".join(document_lines)
     return header + BODY_SEPARATOR + text.strip()
 
 

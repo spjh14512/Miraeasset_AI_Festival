@@ -3,6 +3,8 @@ schema_version: "r-table-embedding.v1"
 r_table_embedding:
   whole_table_max_tokens: 1500
   row_group_max_tokens: 1500
+  canonical_max_bytes: 32768
+  canonical_hard_max_bytes: 65536
   long_text_min_characters: 40
   semantic_text_ratio_threshold: 0.2
 

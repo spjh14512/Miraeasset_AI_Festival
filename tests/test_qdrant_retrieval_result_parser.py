@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from qdrant_client.http.models import QueryResponse, ScoredPoint
 
 from agent_graph.retrieval_result_parser import (
@@ -24,6 +25,7 @@ def _point(
         "evidence_id": "d1:src0:s0:e0",
         "corp_name": "삼성전자",
         "corp_code": "00126380",
+        "report_nm": "사업보고서 (2023.12)",
         **(extra_metadata or {}),
     }
     return ScoredPoint(
@@ -32,7 +34,12 @@ def _point(
         score=score,
         payload={
             "retrieval_metadata": retrieval_metadata,
-            "contextual_text": "삼성전자 사업보고서 검색 문맥",
+            "contextual_text": (
+                "회사 : 삼성전자\n"
+                "공시 : 사업보고서 (2023.12)\n"
+                "섹션 : III. 재무에 관한 사항 > 1. 요약재무정보\n\n"
+                "검색 문맥"
+            ),
             "canonical": canonical,
         },
     )
@@ -80,6 +87,10 @@ def test_r_table_defaults_to_summary_without_records():
     parsed = parse_r_table_point(_r_table_point())
 
     assert parsed["type"] == "r_table"
+    assert parsed["metadata"]["retrieval_context"]["corp_name"] == "삼성전자"
+    assert parsed["metadata"]["table_id"] == "table-1"
+    assert "reference" not in parsed
+    assert "retrieval_context" not in parsed
     assert parsed["columns"] == ["성명", "관계", "관계 [2]"]
     assert parsed["available_record_count"] == 2
     assert "records" not in parsed
@@ -119,9 +130,94 @@ def test_parse_qdrant_point_dispatches_text_and_kv_table():
     )
 
     assert text["type"] == "text"
-    assert text["text"] == "신규 시설을 구축합니다."
+    assert text["content"] == "신규 시설을 구축합니다."
     assert kv_table["type"] == "kv_table"
     assert kv_table["entries"] == [{"key": "사업장", "value": "평택"}]
+    assert kv_table["metadata"]["retrieval_context"]["corp_name"] == "삼성전자"
+    assert "reference" not in kv_table
+    assert "retrieval_context" not in kv_table
+
+
+def test_parse_qdrant_response_selects_kv_entries_by_point_id():
+    point = _point(
+        "KV_TABLE",
+        {
+            "entries": [
+                {"key": "유동자산", "value": "100"},
+                {"key": "비유동자산", "value": "200"},
+            ]
+        },
+    )
+
+    result = parse_qdrant_response(
+        QueryResponse(points=[point]),
+        plan_id="plan_1",
+        query="유동자산",
+        selected_item_ids={str(point.id): {0}},
+    )
+
+    assert result.items[0]["entries"] == [
+        {"key": "유동자산", "value": "100"}
+    ]
+
+
+def test_qdrant_item_compacts_common_context_and_reference():
+    item = parse_qdrant_point(
+        _point("TEXT", {"text": "신규 시설을 구축합니다."})
+    )
+
+    assert item["metadata"]["retrieval_context"] == {
+        "corp_name": "삼성전자",
+        "report_name": "사업보고서 (2023.12)",
+        "section_path": ["III. 재무에 관한 사항", "1. 요약재무정보"],
+    }
+    assert "point_id" not in item
+    assert "context" not in item
+    assert "reference" not in item
+    assert "retrieval_context" not in item
+    assert "text" not in item
+    assert "point_kind" not in item["metadata"]
+    assert "corp_name" not in item["metadata"]
+    assert "report_nm" not in item["metadata"]
+
+
+def test_qdrant_reference_combines_base_year_and_month():
+    reference = parse_qdrant_point(
+        _point(
+            "TEXT",
+            {"text": "신규 시설을 구축합니다."},
+            extra_metadata={"base_year": 2025, "base_month": 3},
+        )
+    )["metadata"]
+
+    assert reference["base_date"] == "2025-03"
+    assert "base_year" not in reference
+    assert "base_month" not in reference
+
+
+def test_qdrant_reference_omits_null_base_date():
+    reference = parse_qdrant_point(
+        _point(
+            "TEXT",
+            {"text": "신규 시설을 구축합니다."},
+            extra_metadata={"base_year": None, "base_month": None},
+        )
+    )["metadata"]
+
+    assert "base_date" not in reference
+    assert "base_year" not in reference
+    assert "base_month" not in reference
+
+
+def test_qdrant_reference_rejects_partial_base_date():
+    with pytest.raises(ValueError, match="함께 존재"):
+        parse_qdrant_point(
+            _point(
+                "TEXT",
+                {"text": "신규 시설을 구축합니다."},
+                extra_metadata={"base_year": 2025, "base_month": None},
+            )
+        )
 
 
 def test_parse_qdrant_point_derives_citation_parent_ids():
@@ -133,7 +229,7 @@ def test_parse_qdrant_point_derives_citation_parent_ids():
         },
     )
 
-    reference = parse_qdrant_point(point)["reference"]
+    reference = parse_qdrant_point(point)["metadata"]
 
     assert reference["disclosure_id"] == "d20240306000686"
     assert reference["section_id"] == "d20240306000686:src0:s27"
@@ -148,7 +244,9 @@ def test_parse_qdrant_response_returns_one_result_and_uses_table_selection():
         plan_id="plan_2",
         query="삼성전자 특별관계자",
         r_table_detail="records",
-        r_table_record_indexes={"table-1": {0}},
+        selected_item_ids={
+            "00000000-0000-0000-0000-000000000001": {0}
+        },
     )
 
     assert result.result_id == "retrieval:plan_2"

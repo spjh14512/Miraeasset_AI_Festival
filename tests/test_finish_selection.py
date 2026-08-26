@@ -13,6 +13,12 @@ from agent_graph.tools import (
 )
 
 
+def _message_payload(state: dict) -> dict:
+    content = build_answer_generator_human_message(state).content
+    json_dump = content.split("[입력]\n\n", 1)[1].split("\n\n\n[출력]", 1)[0]
+    return json.loads(json_dump)
+
+
 def _result(result_id: str, item_count: int = 2) -> RetrievalResult:
     return RetrievalResult(
         result_id=result_id,
@@ -136,7 +142,7 @@ def test_answer_message_contains_only_selected_items():
         "state": state,
     }))
 
-    payload = json.loads(build_answer_generator_human_message(state).content)
+    payload = _message_payload(state)
 
     assert len(payload["selected_retrieval_results"]) == 1
     selected = payload["selected_retrieval_results"][0]

@@ -4,16 +4,16 @@ schema_version: "qdrant-live-schema.v1"
 # instance. Runtime counts are a snapshot and are not schema constraints.
 inspection:
   source: "Qdrant localhost instance"
-  observed_on: "2026-08-24"
+  observed_on: "2026-08-26"
   collection_status: "green"
   optimizer_status: "ok"
-  points_count: 28882
-  indexed_vectors_count: 27980
+  points_count: 28927
+  indexed_vectors_count: 29382
   segments_count: 4
   point_kind_counts:
     TEXT: 14187
     KV_TABLE: 789
-    R_TABLE: 13906
+    R_TABLE: 13951
 
 collection:
   name: "dart_evidence"
@@ -54,6 +54,7 @@ point:
       R_TABLE_WHOLE: "{source_evidence_id}"
       R_TABLE_DESCRIPTOR: "{source_evidence_id}:descriptor"
       R_TABLE_ROW_GROUP: "{source_evidence_id}:row_group:{row_start_index}:{row_end_index}"
+      R_TABLE_CANONICAL_CHUNK: "{parent_identity_key}:canonical_chunk:{partition_chunk_index}:{row_start_index}:{row_end_index}"
   vectors:
     dense:
       name: "evidence_dense"
@@ -73,6 +74,17 @@ point:
         batch_size: 32
         device: "cuda:0"
         source: "project configuration; embedding settings are not stored by Qdrant"
+  canonical_chunking:
+    applies_to: "R_TABLE"
+    max_bytes: 32768
+    indivisible_hard_max_bytes: 65536
+    size_definition: "compact JSON serialized with ensure_ascii=false, UTF-8 bytes"
+    boundary: "contiguous records; headers and non-empty table metadata repeat in every chunk"
+    balancing: "minimum feasible chunk count with boundaries nearest the remaining average byte size"
+    indivisible_fallback: "preserve one whole-table Point only when headers or every singleton record cannot meet 32 KiB and the full canonical is at most 64 KiB"
+    contextual_text:
+      structured_numeric: "re-profile each chunk and build its descriptor independently"
+      semantic_textual: "render the actual records contained in each chunk"
 
 payload:
   required_fields:
@@ -157,23 +169,39 @@ payload:
           required: "R_TABLE only"
           nullable: false
           omitted_for: ["TEXT", "KV_TABLE"]
-          observed_point_count: 13906
+          observed_point_count: 13951
           payload_index: true
           index_path: "retrieval_metadata.table_id"
         row_start_index:
           type: "integer"
-          required: "R_TABLE row-group only"
+          required: "R_TABLE row-group or canonical chunk only"
           nullable: false
           minimum: 0
-          observed_point_count: 479
+          observed_point_count: 549
           payload_index: false
         row_end_index:
           type: "integer"
-          required: "R_TABLE row-group only"
+          required: "R_TABLE row-group or canonical chunk only"
           nullable: false
           minimum: 0
           constraint: "row_end_index >= row_start_index"
-          observed_point_count: 479
+          observed_point_count: 549
+          payload_index: false
+        chunk_index:
+          type: "integer"
+          required: "R_TABLE tables producing multiple Points only"
+          nullable: false
+          minimum: 0
+          numbering: "zero-based across all Points produced from the table"
+          observed_point_count: 70
+          payload_index: false
+        chunk_count:
+          type: "integer"
+          required: "R_TABLE tables producing multiple Points only"
+          nullable: false
+          minimum: 2
+          constraint: "chunk_index < chunk_count"
+          observed_point_count: 70
           payload_index: false
     contextual_text:
       type: "text"
@@ -251,35 +279,36 @@ payload:
                   required: true
           record_scope:
             whole_table: "all table records"
-            descriptor: "all table records"
+            descriptor: "all records, or the current canonical chunk records when size-split"
             row_group: "records in the inclusive row_start_index..row_end_index range"
+            canonical_chunk: "records in the inclusive row_start_index..row_end_index range"
 
 # These are the nine payload indexes returned by Qdrant collection inspection.
 payload_indexes:
   - path: "retrieval_metadata.point_kind"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.evidence_id"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.corp_name"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.corp_code"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.industry"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.sector"
     type: "keyword"
-    indexed_points: 28882
+    indexed_points: 28927
   - path: "retrieval_metadata.base_year"
     type: "integer"
-    indexed_points: 28094
+    indexed_points: 28139
   - path: "retrieval_metadata.base_month"
     type: "integer"
-    indexed_points: 28094
+    indexed_points: 28139
   - path: "retrieval_metadata.table_id"
     type: "keyword"
-    indexed_points: 13906
+    indexed_points: 13951

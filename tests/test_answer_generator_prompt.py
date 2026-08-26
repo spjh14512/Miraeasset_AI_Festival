@@ -10,3 +10,5 @@ def test_answer_generator_prompt_matches_answer_draft_reference_selection():
     assert "citation_reference_ids" in prompt
     assert "빈 목록" in prompt
     assert "AnswerGeneratorOutput" in prompt
+    assert "TEXT는 `content`" in prompt
+    assert "metadata.retrieval_context" in prompt

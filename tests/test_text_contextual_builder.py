@@ -23,7 +23,8 @@ def test_builds_document_section_context_and_original_text():
     )
 
     assert result == (
-        "공시 : 삼성전자 사업보고서\n"
+        "회사 : 삼성전자\n"
+        "공시 : 사업보고서\n"
         "섹션 : 사업의 내용 > 시설 및 설비\n\n"
         "당사는 2025년 평택 사업장에 신규 생산시설을 구축할 예정입니다."
     )
@@ -46,7 +47,8 @@ def test_appends_heading_path_and_removes_adjacent_duplicates():
     )
 
     assert result == (
-        "공시 : 삼성전자 사업보고서\n"
+        "회사 : 삼성전자\n"
+        "공시 : 사업보고서\n"
         "섹션 : 사업의 내용 > 시설 및 설비 > 생산 능력\n\n"
         "신규 시설을 구축합니다."
     )

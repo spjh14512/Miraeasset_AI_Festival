@@ -19,8 +19,13 @@ from neo4j import GraphDatabase
 from qdrant_client import QdrantClient, models
 
 from . import system_prompts as sp
+from .compactor import compact_qdrant_point, point_requires_compaction
 from .llm import get_llm
-from .retrieval_result_parser import parse_neo4j_response, parse_qdrant_response
+from .retrieval_result_parser import (
+    extract_qdrant_points,
+    parse_neo4j_response,
+    parse_qdrant_response,
+)
 from .state import (
     AgentState,
     AiAnswer,
@@ -179,12 +184,7 @@ class QdrantQuery(BaseModel):
         default_factory=list,
         description="Plan에 명시된 조건으로 만든 indexed payload filter 목록",
     )
-    limit: int = Field(
-        default=10,
-        ge=1,
-        le=100,
-        description="반환할 최대 검색 결과 수",
-    )
+    limit: SkipJsonSchema[int] = 3
     score_threshold: float | None = Field(
         default=None,
         ge=-1.0,
@@ -207,6 +207,12 @@ class QdrantQuery(BaseModel):
             raise ValueError("filter mode에는 score_threshold를 사용할 수 없습니다.")
         if len(self.point_kinds) != len(set(self.point_kinds)):
             raise ValueError("point_kinds에는 중복 값을 사용할 수 없습니다.")
+        if (
+            not isinstance(self.limit, int)
+            or isinstance(self.limit, bool)
+            or not 1 <= self.limit <= 100
+        ):
+            raise ValueError("limit은 1 이상 100 이하의 정수여야 합니다.")
 
         filter_keys = [item.key for item in self.filters]
         if len(filter_keys) != len(set(filter_keys)):
@@ -247,15 +253,79 @@ def _get_query_llm() -> Any:
         method="function_calling",
     )
 
+
+def _resolve_plan_dependencies(
+    plan: Plan,
+    state: AgentState,
+) -> list[RetrievalResult]:
+    """Plan의 dependency ID를 기존 RetrievalResult로 해석합니다.
+
+    입력 예시:
+        plan.dependencies == ["result_plan_1"]
+        state["retrieval_results"] == [RetrievalResult(result_id="result_plan_1", ...)]
+
+    출력 예시:
+        [RetrievalResult(result_id="result_plan_1", ...)]
+    """
+
+    results_by_id = {
+        result.result_id: result
+        for result in state.get("retrieval_results", [])
+    }
+    missing = [
+        result_id
+        for result_id in plan.dependencies
+        if result_id not in results_by_id
+    ]
+    if missing:
+        raise ValueError(
+            f"Plan dependency RetrievalResult를 찾지 못했습니다: {missing}"
+        )
+    return [results_by_id[result_id] for result_id in plan.dependencies]
+
+
+def _build_query_builder_human_message(
+    plan: Plan,
+    user_question: str,
+    dependencies: list[RetrievalResult],
+) -> HumanMessage:
+    """Builder가 사용할 질문, Plan, dependency 결과를 JSON message로 만듭니다.
+
+    입력 예시:
+        plan=Plan(plan_id="plan_2", dependencies=["result_plan_1"], ...)
+        user_question="삼성전자의 해당 공시에서 매출액을 알려줘"
+        dependencies=[RetrievalResult(result_id="result_plan_1", ...)]
+
+    출력 예시:
+        HumanMessage(content='{"user_question": ..., "plan": ..., "dependency_results": [...] }')
+    """
+
+    return HumanMessage(
+        content=json.dumps(
+            {
+                "user_question": user_question,
+                "plan": plan.model_dump(mode="json"),
+                "dependency_results": [
+                    result.model_dump(mode="json")
+                    for result in dependencies
+                ],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
 @tool
 def retrieve_search(
     plan_id: str,
     state: Annotated[AgentState, InjectedState],
+    limit: int = 3,
 ) -> dict:
     """지정한 plan을 실행하고 retrieval 결과가 포함된 state update를 반환합니다.
 
     args:
         plan_id(str): 실행할 Plan의 ID
+        limit(int): Qdrant에서 조회할 누적 상위 point 수. 최초 검색은 3, 추가 검색은 5 단위로 늘립니다. Neo4j 검색에는 적용하지 않습니다.
 
     return:
         dict: 실행 완료된 plan을 제거하고 검색 결과를 추가한 state update
@@ -270,18 +340,76 @@ def retrieve_search(
         raise ValueError(f"plan id가 '{plan_id}'인 Plan 객체를 찾지 못했습니다.")
 
     plan = plans[idx]
+    dependencies = _resolve_plan_dependencies(plan, state)
 
     if (plan.source == "neo4j"):
         # Neo4j Retrieval
-        neo4j_cypher = cypher_builder(plan)
+        neo4j_cypher = cypher_builder(
+            plan,
+            user_question=state["question_text"],
+            dependencies=dependencies,
+        )
         print("-- Neo4j에서 다음 Cypher를 실행합니다.: --", neo4j_cypher, "\n\n")
         retrieval_result = cypher_executor(neo4j_cypher, plan.plan_id)
 
     elif (plan.source == "qdrant"):
         # Qdrant Retrieval
-        qdrant_query = query_builder(plan)
+        if (
+            not isinstance(limit, int)
+            or isinstance(limit, bool)
+            or limit > 100
+            or (limit != 3 and (limit < 5 or limit % 5 != 0))
+        ):
+            raise ValueError(
+                "Qdrant limit은 3 또는 5 이상 100 이하의 5 배수여야 합니다."
+            )
+        qdrant_query = query_builder(
+            plan,
+            user_question=state["question_text"],
+            dependencies=dependencies,
+        )
+        qdrant_query.limit = limit
         print("-- Qdrant에서 다음 Query를 실행합니다.: --", qdrant_query, "\n\n")
-        retrieval_result = query_executor(qdrant_query, plan.plan_id)
+        raw_result = query_executor(qdrant_query)
+        raw_points = list(extract_qdrant_points(raw_result))
+        previous_point_ids = list(dict.fromkeys(
+            state.get("retrieved_qdrant_point_ids", [])
+        ))
+        seen_point_ids = set(previous_point_ids)
+        points = []
+        new_point_ids: list[str] = []
+        for point in raw_points:
+            point_id = getattr(point, "id", None)
+            if point_id is None:
+                raise ValueError("Qdrant point에 id가 없습니다.")
+            point_id = str(point_id)
+            if point_id in seen_point_ids:
+                continue
+            seen_point_ids.add(point_id)
+            new_point_ids.append(point_id)
+            points.append(point)
+
+        selected_item_ids: dict[str, list[int]] = {}
+        for point in points:
+            if not point_requires_compaction(point):
+                continue
+            point_id = getattr(point, "id", None)
+            if point_id is None:
+                raise ValueError("Compaction 대상 Qdrant point에 id가 없습니다.")
+            selected_item_ids[str(point_id)] = compact_qdrant_point(point, plan)
+        retrieval_result = parse_qdrant_response(
+            points,
+            plan_id=plan.plan_id,
+            query=qdrant_query.model_dump_json(exclude={"query_vector"}),
+            r_table_detail="records",
+            selected_item_ids=selected_item_ids,
+            metadata={
+                "mode": qdrant_query.mode,
+                "requested_limit": limit,
+                "raw_point_count": len(raw_points),
+                "duplicate_point_count": len(raw_points) - len(points),
+            },
+        )
 
     else:
         raise ValueError("retrieval source가 neo4j 또는 qdrant가 아닙니다.")
@@ -293,18 +421,23 @@ def retrieve_search(
         }
     })
 
-    return {
+    update = {
         "plans": plans[:idx] + plans[idx + 1:],
         "retrieval_results": [retrieval_result],
     }
+    if plan.source == "qdrant":
+        update["retrieved_qdrant_point_ids"] = previous_point_ids + new_point_ids
+    return update
 
 def cypher_builder(
     plan: Plan,
     *,
+    user_question: str,
+    dependencies: list[RetrievalResult],
     neo4j_schema: str | None = None,
     llm: Any | None = None,
 ) -> CypherQuery:
-    """입력받은 Plan으로부터 read-only Neo4j Cypher 요청을 생성한다."""
+    """사용자 질문, Plan, dependency 결과로 read-only Cypher를 생성한다."""
 
     cypher_llm = (
         _get_cypher_llm()
@@ -317,8 +450,16 @@ def cypher_builder(
     schema = neo4j_schema if neo4j_schema is not None else _load_neo4j_schema()
     result = cypher_llm.invoke(
         [
-            SystemMessage(content = sp.CYPHER_SYSTEM_PROMPT.format(neo4j_schema=schema)),
-            HumanMessage(content = plan.model_dump_json()),
+            SystemMessage(
+                content=sp.CYPHER_BUILDER_SYSTEM_PROMPT.format(
+                    neo4j_schema=schema
+                )
+            ),
+            _build_query_builder_human_message(
+                plan,
+                user_question,
+                dependencies,
+            ),
         ]
     )
 
@@ -331,10 +472,12 @@ def cypher_builder(
 def query_builder(
     plan: Plan,
     *,
+    user_question: str,
+    dependencies: list[RetrievalResult],
     qdrant_schema: str | None = None,
     llm: Any | None = None,
 ) -> QdrantQuery:
-    """입력받은 Plan으로부터 Qdrant retrieval 요청을 생성한다."""
+    """사용자 질문, Plan, dependency 결과로 Qdrant 요청을 생성한다."""
 
     query_llm = (
         _get_query_llm()
@@ -352,11 +495,15 @@ def query_builder(
     result = query_llm.invoke(
         [
             SystemMessage(
-                content=sp.QDRANT_QUERY_SYSTEM_PROMPT.format(
+                content=sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT.format(
                     qdrant_query_schema=query_schema,
                 )
             ),
-            HumanMessage(content = plan.model_dump_json())
+            _build_query_builder_human_message(
+                plan,
+                user_question,
+                dependencies,
+            )
         ]
     )
 
@@ -389,7 +536,7 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
     )
     
 
-def query_executor(qdrant_query: QdrantQuery, plan_id: str) -> RetrievalResult:
+def query_executor(qdrant_query: QdrantQuery) -> Any:
 
     must = [
         models.FieldCondition(
@@ -436,17 +583,7 @@ def query_executor(qdrant_query: QdrantQuery, plan_id: str) -> RetrievalResult:
     except Exception as error:
         raise RuntimeError("Qdrant 쿼리 실행 중 오류 발생!") from error
 
-    include_r_table_records = any(
-        condition.key == "retrieval_metadata.table_id"
-        for condition in qdrant_query.filters
-    )
-    return parse_qdrant_response(
-        result,
-        plan_id=plan_id,
-        query=qdrant_query.model_dump_json(exclude={"query_vector"}),
-        r_table_detail="records" if include_r_table_records else "summary",
-        metadata={"mode": qdrant_query.mode}
-    )
+    return result
 
 @tool
 def create_plan(
@@ -457,13 +594,17 @@ def create_plan(
     """추가적인 Plan 생성이 필요할 때 사용합니다. 새로운 Plan이 추가된 state update를 반환합니다.
 
     args:
-        new_plan(PlanDraft): 새롭게 추가할 Plan의 내용입니다. plan_id는 tool에서 자동으로 생성하고 관리하므로 절대 임의로 생성하지 마세요.
+        new_plan(PlanDraft): 새롭게 추가할 Plan의 source, query, purpose, dependencies입니다. plan_id는 tool에서 자동으로 생성하고 관리하므로 절대 임의로 생성하지 마세요.
         position(str): 새로운 Plan을 추가할 위치입니다. Plan은 기본적으로 앞에 위치할수록 우선순위가 높습니다. 맨 앞에 추가하고 싶다면 이 값을 "HEAD"로 지정하세요. plans에 포함된 특정 Plan의 바로 뒤에 두고 싶다면 이 값을 그 Plan의 plan_id로 지정하세요.
 
     return:
         dict: plans에 new_plan이 추가된 state update
     """
 
+    _resolve_plan_dependencies(
+        Plan(plan_id="pending", **new_plan.model_dump()),
+        state,
+    )
     plans = list(state.get("plans", []))
 
     next_plan_seq = state.get("next_plan_seq", 100)
@@ -499,7 +640,7 @@ def modify_plan(
 
     args:
         plan_id(str): 수정할 Plan의 plan_id입니다.
-        modified_plan(PlanDraft): 변경할 source, query, purpose입니다. plan_id는 기존 값을 유지합니다.
+        modified_plan(PlanDraft): 변경할 source, query, purpose, dependencies입니다. plan_id는 기존 값을 유지합니다.
 
     return:
         dict: 지정한 Plan이 수정된 plans state update
@@ -516,6 +657,11 @@ def modify_plan(
     )
     if anchor is None:
         raise ValueError(f"plan을 찾지 못했습니다: {plan_id}")
+
+    _resolve_plan_dependencies(
+        Plan(plan_id=plan_id, **modified_plan.model_dump()),
+        state,
+    )
 
     plans[anchor] = Plan(
         plan_id=plan_id,
@@ -957,7 +1103,7 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
         }]
 
     출력 예시:
-        HumanMessage(content='{"user_question": "...", "selected_retrieval_results": [...]}')
+        HumanMessage(content='아래 입력을 근거로 ...\n\n[입력]\n\n{...}\n\n[출력]\n\n...')
     """
 
     results = {
@@ -997,11 +1143,23 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
         "citation_candidates": build_citation_candidates(state)
     }
 
+    json_dump = json.dumps(
+        payload,
+        ensure_ascii=False,
+        indent=2,
+    )
     return HumanMessage(
-        content=json.dumps(
-            payload,
-            ensure_ascii=False,
-            indent=2,
+        content=(
+            "아래 입력을 근거로 최종 answer와 citation_reference_ids를 생성하고\n\n"
+            "AnswerGeneratorOutput 형식으로 반환하세요.\n\n\n"
+            "[입력]\n\n"
+            f"{json_dump}\n\n\n"
+            "[출력]\n\n"
+            "입력으로 제공된 question과 retrieval_results만을 근거로 최종 답변을 생성하세요.\n\n"
+            "- answer에는 사용자의 질문에 직접 답하세요.\n"
+            "- retrieval_results에 없는 사실을 추측해서 추가하지 마세요.\n"
+            "- citation_reference_ids에는 citation_candidates에서 실제 답변 생성에 "
+            "사용한 항목의 reference_id 만을 선택하세요"
         )
     )
 

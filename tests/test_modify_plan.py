@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from agent_graph.state import Plan
+from agent_graph.state import Plan, RetrievalResult
 from agent_graph.tools import execute_tool_call, modify_plan
 
 
@@ -81,3 +81,42 @@ def test_execute_tool_call_dispatches_modify_plan():
 
     assert update["plans"][1].source == "neo4j"
     assert update["plans"][1].plan_id == "plan_2"
+
+
+def test_modify_plan_accepts_existing_retrieval_result_dependency():
+    state = _state()
+    state["retrieval_results"] = [RetrievalResult(
+        result_id="retrieval:plan_0",
+        plan_id="plan_0",
+        source="neo4j",
+        query="MATCH ...",
+        items=[],
+        result_count=0,
+    )]
+
+    update = modify_plan.invoke({
+        "plan_id": "plan_1",
+        "modified_plan": {
+            "source": "qdrant",
+            "query": "확인된 Evidence 검색",
+            "purpose": "실제 내용 확인",
+            "dependencies": ["retrieval:plan_0"],
+        },
+        "state": state,
+    })
+
+    assert update["plans"][0].dependencies == ["retrieval:plan_0"]
+
+
+def test_modify_plan_rejects_unknown_dependency():
+    with pytest.raises(ValueError, match="retrieval:missing"):
+        modify_plan.invoke({
+            "plan_id": "plan_1",
+            "modified_plan": {
+                "source": "qdrant",
+                "query": "확인된 Evidence 검색",
+                "purpose": "실제 내용 확인",
+                "dependencies": ["retrieval:missing"],
+            },
+            "state": _state(),
+        })

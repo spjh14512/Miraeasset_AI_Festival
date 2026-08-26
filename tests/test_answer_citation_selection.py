@@ -17,6 +17,12 @@ from agent_graph.tools import (
 )
 
 
+def _message_payload(state: dict) -> dict:
+    content = build_answer_generator_human_message(state).content
+    json_dump = content.split("[입력]\n\n", 1)[1].split("\n\n\n[출력]", 1)[0]
+    return json.loads(json_dump)
+
+
 def _state(items: list[dict]):
     return {
         "question_id": "question-1",
@@ -94,7 +100,7 @@ def test_does_not_treat_internal_reference_as_citation():
     }])
 
     assert build_citation_candidates(state) == []
-    payload = json.loads(build_answer_generator_human_message(state).content)
+    payload = _message_payload(state)
     assert payload["citation_candidates"] == []
 
 

@@ -55,15 +55,24 @@ class RTableStrategyConfig:
     row_group_max_tokens: int
     long_text_min_characters: int
     semantic_text_ratio_threshold: float
+    canonical_max_bytes: int = 32 * 1024
+    canonical_hard_max_bytes: int = 64 * 1024
 
     def __post_init__(self) -> None:
         for name, value in (
             ("whole_table_max_tokens", self.whole_table_max_tokens),
             ("row_group_max_tokens", self.row_group_max_tokens),
+            ("canonical_max_bytes", self.canonical_max_bytes),
+            ("canonical_hard_max_bytes", self.canonical_hard_max_bytes),
             ("long_text_min_characters", self.long_text_min_characters),
         ):
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"{name} must be a positive integer")
+        if self.canonical_hard_max_bytes < self.canonical_max_bytes:
+            raise ValueError(
+                "canonical_hard_max_bytes must be greater than or equal to "
+                "canonical_max_bytes"
+            )
         ratio = self.semantic_text_ratio_threshold
         if (
             not isinstance(ratio, (int, float))
@@ -129,6 +138,8 @@ def load_r_table_strategy_config(
     expected_fields = {
         "whole_table_max_tokens",
         "row_group_max_tokens",
+        "canonical_max_bytes",
+        "canonical_hard_max_bytes",
         "long_text_min_characters",
         "semantic_text_ratio_threshold",
     }
@@ -140,6 +151,8 @@ def load_r_table_strategy_config(
     return RTableStrategyConfig(
         whole_table_max_tokens=values["whole_table_max_tokens"],
         row_group_max_tokens=values["row_group_max_tokens"],
+        canonical_max_bytes=values["canonical_max_bytes"],
+        canonical_hard_max_bytes=values["canonical_hard_max_bytes"],
         long_text_min_characters=values["long_text_min_characters"],
         semantic_text_ratio_threshold=values["semantic_text_ratio_threshold"],
     )

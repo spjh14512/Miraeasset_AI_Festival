@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from dataclasses import replace
 from uuid import uuid5
@@ -116,6 +117,8 @@ def _selector(
     *,
     whole_table_max_tokens: int = 1500,
     row_group_max_tokens: int = 1500,
+    canonical_max_bytes: int = 32 * 1024,
+    canonical_hard_max_bytes: int = 64 * 1024,
     long_text_min_characters: int = 40,
     semantic_text_ratio_threshold: float = 0.2,
 ) -> RTableEmbeddingStrategySelector:
@@ -123,6 +126,8 @@ def _selector(
         config=RTableStrategyConfig(
             whole_table_max_tokens=whole_table_max_tokens,
             row_group_max_tokens=row_group_max_tokens,
+            canonical_max_bytes=canonical_max_bytes,
+            canonical_hard_max_bytes=canonical_hard_max_bytes,
             long_text_min_characters=long_text_min_characters,
             semantic_text_ratio_threshold=semantic_text_ratio_threshold,
         ),
@@ -281,6 +286,144 @@ def test_structured_oversized_r_table_builds_descriptor_with_all_records():
     assert descriptor.id == str(uuid5(POINT_ID_NAMESPACE, f"{EVIDENCE_ID}:descriptor"))
 
 
+def test_large_structured_r_table_builds_chunk_specific_descriptors():
+    rows = [
+        [f"사업부문-{index}", str(index + 1) * 140]
+        for index in range(4)
+    ]
+    point_inputs = build_point_inputs(
+        _fragment(rows, headers=[["구분"], ["금액"]]),
+        document_context=DOCUMENT_CONTEXT,
+        section_context=SECTION_CONTEXT,
+        r_table_strategy_selector=_selector(
+            lambda text: 1501,
+            canonical_max_bytes=360,
+        ),
+    )
+
+    chunks = point_inputs[2:]
+    assert len(chunks) == 4
+    assert [
+        item.payload["retrieval_metadata"]["chunk_index"] for item in chunks
+    ] == [0, 1, 2, 3]
+    assert all(
+        item.payload["retrieval_metadata"]["chunk_count"] == 4
+        for item in chunks
+    )
+    assert all(
+        item.payload["retrieval_metadata"]["table_id"] == TABLE_ID
+        for item in chunks
+    )
+    assert [
+        (
+            item.payload["retrieval_metadata"]["row_start_index"],
+            item.payload["retrieval_metadata"]["row_end_index"],
+        )
+        for item in chunks
+    ] == [(0, 0), (1, 1), (2, 2), (3, 3)]
+    assert [
+        record["record_index"]
+        for item in chunks
+        for record in item.payload["canonical"]["records"]
+    ] == [0, 1, 2, 3]
+
+    for index, item in enumerate(chunks):
+        assert f"구분 : 사업부문-{index}" in item.contextual_text
+        assert rows[index][1] not in item.contextual_text
+        assert len(
+            json.dumps(
+                item.payload["canonical"],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ) <= 360
+    assert len({item.embedding_cache_key for item in chunks}) == 4
+
+
+def test_canonical_chunks_use_minimum_count_with_balanced_sizes():
+    rows = [["공통 항목", "100"] for _ in range(10)]
+    fragment = _fragment(rows, headers=[["구분"], ["금액"]])
+    r_payload = fragment["evidence_list"][2]["payload"]
+    four_record_canonical = {
+        "table_metadata": {"title": r_payload["title"]},
+        "headers": r_payload["headers"],
+        "records": [
+            {"record_index": index, "values": rows[index]}
+            for index in range(4)
+        ],
+    }
+    four_record_size = len(
+        json.dumps(
+            four_record_canonical,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+
+    point_inputs = build_point_inputs(
+        fragment,
+        document_context=DOCUMENT_CONTEXT,
+        section_context=SECTION_CONTEXT,
+        r_table_strategy_selector=_selector(
+            lambda text: 1501,
+            canonical_max_bytes=four_record_size,
+        ),
+    )
+
+    chunks = point_inputs[2:]
+    assert [
+        len(item.payload["canonical"]["records"]) for item in chunks
+    ] == [3, 4, 3]
+    assert [
+        record["record_index"]
+        for item in chunks
+        for record in item.payload["canonical"]["records"]
+    ] == list(range(10))
+    assert all(
+        len(
+            json.dumps(
+                item.payload["canonical"],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        <= four_record_size
+        for item in chunks
+    )
+
+
+def test_header_heavy_table_uses_one_indivisible_fallback_point():
+    rows = [["항목-0", "100"], ["항목-1", "200"], ["항목-2", "300"]]
+    fragment = _fragment(
+        rows,
+        headers=[["구분"], ["매우 긴 계층형 헤더 " * 20]],
+    )
+
+    point_inputs = build_point_inputs(
+        fragment,
+        document_context=DOCUMENT_CONTEXT,
+        section_context=SECTION_CONTEXT,
+        r_table_strategy_selector=_selector(
+            lambda text: 1501,
+            canonical_max_bytes=200,
+            canonical_hard_max_bytes=4096,
+        ),
+    )
+
+    replacement = point_inputs[2]
+    canonical_size = len(
+        json.dumps(
+            replacement.payload["canonical"],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+    assert len(point_inputs[2:]) == 1
+    assert 200 < canonical_size <= 4096
+    assert "chunk_index" not in replacement.payload["retrieval_metadata"]
+    assert "chunk_count" not in replacement.payload["retrieval_metadata"]
+
+
 def test_semantic_oversized_r_table_stores_only_each_row_group_records():
     long_text = "생산시설 증설 계획과 공정 전환 일정에 관한 상세 설명입니다. " * 2
     fragment = _fragment(
@@ -323,6 +466,14 @@ def test_semantic_oversized_r_table_stores_only_each_row_group_records():
         str(uuid5(POINT_ID_NAMESPACE, f"{EVIDENCE_ID}:row_group:0:1")),
         str(uuid5(POINT_ID_NAMESPACE, f"{EVIDENCE_ID}:row_group:2:3")),
     ]
+    assert [
+        item.payload["retrieval_metadata"]["chunk_index"]
+        for item in row_groups
+    ] == [0, 1]
+    assert all(
+        item.payload["retrieval_metadata"]["chunk_count"] == 2
+        for item in row_groups
+    )
 
 
 def test_point_ids_are_deterministic_and_evidence_specific():
