@@ -130,6 +130,6 @@ uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 
 ### Qdrant insert
 ```powershell
-uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
+uv run python -m vector_db.insert_points --limit <공시_개수> --random-seed <시드> --batch-size 100
 ```
 
