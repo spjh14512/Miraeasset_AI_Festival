@@ -14,6 +14,7 @@ class DocumentSyntax(StrEnum):
 
 
 class ContextRole(StrEnum):
+    HEADING = "HEADING"
     TITLE = "TITLE"
     UNIT = "UNIT"
     CAPTION = "CAPTION"
@@ -95,6 +96,15 @@ class EvidenceContext:
     def blocks_by_role(self, role: ContextRole) -> tuple[EvidenceContextBlock, ...]:
         return tuple(block for block in self.blocks if block.role == role)
 
+    def _unique_texts(self, role: ContextRole) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(block.text for block in self.blocks_by_role(role))
+        )
+
+    @property
+    def headings(self) -> tuple[str, ...]:
+        return self._unique_texts(ContextRole.HEADING)
+
     @property
     def block_title(self) -> str | None:
         titles = self.blocks_by_role(ContextRole.TITLE)
@@ -102,15 +112,15 @@ class EvidenceContext:
 
     @property
     def units(self) -> tuple[str, ...]:
-        return tuple(block.text for block in self.blocks_by_role(ContextRole.UNIT))
+        return self._unique_texts(ContextRole.UNIT)
 
     @property
     def captions(self) -> tuple[str, ...]:
-        return tuple(block.text for block in self.blocks_by_role(ContextRole.CAPTION))
+        return self._unique_texts(ContextRole.CAPTION)
 
     @property
     def notes(self) -> tuple[str, ...]:
-        return tuple(block.text for block in self.blocks_by_role(ContextRole.NOTE))
+        return self._unique_texts(ContextRole.NOTE)
 
     def to_dict(self) -> dict[str, Any]:
         return {

@@ -153,3 +153,103 @@ def test_parenthesized_heading_is_split_from_consolidated_entity_body():
             "연결실체의 연결재무제표는 역사적원가에 의하여 작성되었습니다.",
         ),
     ]
+
+
+def test_concatenated_heading_and_parenthesized_siblings_split_in_order():
+    segments = _segments(
+        "<P>1. 대주주등에 대한 신용공여 등가. 채무보증 현황"
+        "(1) 국내법인 : 해당사항 없음(2) 해외법인</P>"
+    )
+
+    assert [(item.role, item.text, item.heading_level) for item in segments] == [
+        (SemanticTextRole.HEADING, "1. 대주주등에 대한 신용공여 등", 1),
+        (SemanticTextRole.HEADING, "가. 채무보증 현황", 3),
+        (SemanticTextRole.HEADING, "(1) 국내법인 :", 4),
+        (SemanticTextRole.BODY, "해당사항 없음", None),
+        (SemanticTextRole.HEADING, "(2) 해외법인", 4),
+    ]
+
+
+def test_standalone_enumeration_and_numbered_sentence_remain_body():
+    standalone = _segments("<P>(1)</P>")
+    sentence = _segments(
+        "<P>(2) 당분기말 현재 연결회사의 약정사항은 다음과 같습니다.</P>"
+    )
+
+    assert [(item.role, item.text) for item in standalone] == [
+        (SemanticTextRole.BODY, "(1)")
+    ]
+    assert [(item.role, item.text) for item in sentence] == [
+        (
+            SemanticTextRole.TABLE_CAPTION,
+            "(2) 당분기말 현재 연결회사의 약정사항은 다음과 같습니다.",
+        )
+    ]
+
+
+def test_bold_company_bullet_is_a_heading_and_numbering_nests_below_korean():
+    company = _segments('<P USERMARK="B">ㅇ ㈜케이티</P>')
+    korean = _segments("<P>다. 담보제공 내역</P>")
+    parenthesized = _segments("<P>(2) 해외법인</P>")
+
+    assert company[0].role == SemanticTextRole.HEADING
+    assert company[0].heading_level == 4
+    assert korean[0].heading_level == 3
+    assert parenthesized[0].heading_level == 4
+
+
+def test_bold_numbered_subject_prefix_stays_with_its_sentence_body():
+    segments = _segments(
+        '<P><SPAN USERMARK="B">(8) 연결그룹은</SPAN>'
+        '(주)효성과 브랜드사용료 약정을 체결하고 있습니다.</P>'
+    )
+
+    assert [(item.role, item.text) for item in segments] == [
+        (
+            SemanticTextRole.BODY,
+            "(8) 연결그룹은(주)효성과 브랜드사용료 약정을 체결하고 있습니다.",
+        )
+    ]
+
+
+def test_heading_ending_with_definition_is_not_mistaken_for_a_subject_prefix():
+    segments = _segments(
+        "<P>(2) 기업회계기준서 개정 - 회계추정치의 정의</P>"
+    )
+
+    assert [(item.role, item.text) for item in segments] == [
+        (
+            SemanticTextRole.HEADING,
+            "(2) 기업회계기준서 개정 - 회계추정치의 정의",
+        )
+    ]
+
+
+def test_numbered_sentence_ending_in_parenthesized_reference_is_body():
+    segments = _segments(
+        "<P>나. 상기 유형자산 중 일부 토지와 건물은 연결그룹의 차입금과 "
+        "관련하여 담보로 제공되어 있습니다(주석 17 참조).</P>"
+    )
+
+    assert [(item.role, item.text) for item in segments] == [
+        (
+            SemanticTextRole.BODY,
+            "나. 상기 유형자산 중 일부 토지와 건물은 연결그룹의 차입금과 "
+            "관련하여 담보로 제공되어 있습니다(주석 17 참조).",
+        )
+    ]
+
+
+def test_corporate_suffix_is_not_a_parenthesized_korean_heading():
+    segments = _segments(
+        "<P>다. 상기 합병상대회사인 HD현대미포(주)의 최근 사업연도 "
+        "재무내용은 2024년말 연결재무제표 기준입니다.</P>"
+    )
+
+    assert [(item.role, item.text) for item in segments] == [
+        (
+            SemanticTextRole.BODY,
+            "다. 상기 합병상대회사인 HD현대미포(주)의 최근 사업연도 "
+            "재무내용은 2024년말 연결재무제표 기준입니다.",
+        )
+    ]

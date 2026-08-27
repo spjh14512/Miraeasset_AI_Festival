@@ -35,6 +35,42 @@ def test_semantic_mutation_is_detected() -> None:
     assert [failure.code for failure in failures] == ["SEMANTIC_ASSERTION_FAILED"]
 
 
+def test_negative_path_assertion_guards_against_stale_heading_context() -> None:
+    fragment = _fragment()
+    fragment["evidence_list"][0]["payload"]["heading_path"] = ["다. 담보제공 내역"]
+    case = {
+        "case_id": "STALE_HEADING",
+        "section_ids": ["section:1:src0:s1"],
+        "assertions": [
+            {
+                "op": "evidence_path_not_contains",
+                "evidence_id": "evidence:1:src0:s1:e0",
+                "path": ["payload", "heading_path"],
+                "value": "(2) 해외법인",
+            }
+        ],
+    }
+
+    assert evaluate_case(case, {"section:1:src0:s1": fragment}) == []
+
+
+def test_negative_path_assertion_accepts_an_absent_optional_context_path() -> None:
+    case = {
+        "case_id": "NO_HEADING",
+        "section_ids": ["section:1:src0:s1"],
+        "assertions": [
+            {
+                "op": "evidence_path_not_contains",
+                "evidence_id": "evidence:1:src0:s1:e0",
+                "path": ["payload", "heading_path"],
+                "value": "잘못된 제목",
+            }
+        ],
+    }
+
+    assert evaluate_case(case, {"section:1:src0:s1": _fragment()}) == []
+
+
 def test_duplicate_normalizer_ignores_source_copy_whitespace() -> None:
     left = _fragment("보고기 간 말 (단위 : 백만원) .")
     right = _fragment("보고기간 말 (단위 : 백만원).")

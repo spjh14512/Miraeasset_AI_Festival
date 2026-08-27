@@ -9,7 +9,12 @@ from typing import Any, Mapping, Sequence
 import xml.etree.ElementTree as ET
 
 from converters.common.document_loader import DocumentLoadStatus, load_document
-from converters.common.source_models import DocumentContext, EvidenceContext, SourceRef
+from converters.common.source_models import (
+    ContextRole,
+    DocumentContext,
+    EvidenceContext,
+    SourceRef,
+)
 from converters.common.source_resolver import SourceResolver
 from converters.evidence_builder.fragment_models import (
     EvidenceFragment,
@@ -21,6 +26,7 @@ from converters.evidence_builder.fragment_models import (
 from converters.evidence_builder.semantic_text_segmenter import (
     SemanticTextRole,
     SemanticTextSegment,
+    heading_level_for_text,
     segment_paragraph,
 )
 from converters.paragraph_parser.paragraph_models import (
@@ -312,6 +318,7 @@ def _with_semantic_context(
     *,
     heading_path: Sequence[str],
     leading_captions: Sequence[str] = (),
+    trailing_notes: Sequence[str] = (),
 ) -> dict[str, Any]:
     result = dict(payload)
     if heading_path:
@@ -326,6 +333,16 @@ def _with_semantic_context(
         captions.append(caption)
     if captions:
         result["captions"] = captions
+    parser_notes = result.pop("notes", ())
+    notes: list[str] = []
+    seen_notes: set[str] = set()
+    for note in (*parser_notes, *trailing_notes):
+        if note in seen_notes:
+            continue
+        seen_notes.add(note)
+        notes.append(note)
+    if notes:
+        result["notes"] = notes
     return result
 
 
@@ -397,32 +414,34 @@ def _captions_by_table(
         if candidates:
             resolved = tuple(reversed(candidates))
             captions[index] = resolved
-            cursor = index + 1
-            while cursor < len(blocks):
-                following = blocks[cursor]
-                following_value = following.parsed.value
-                if following.segment is not None:
-                    break
-                if not isinstance(following_value, CanonicalTable):
-                    break
-                if (
-                    following_value.table_type == TableType.LAYOUT_TABLE
-                    or (
-                        following_value.table_type == TableType.UNKNOWN
-                        and _fallback_unknown(following_value) is None
-                    )
-                ):
-                    cursor += 1
-                    continue
-                if following_value.table_type in {
-                    TableType.KV_TABLE,
-                    TableType.R_TABLE,
-                }:
-                    captions.setdefault(cursor, resolved)
-                    cursor += 1
-                    continue
-                break
     return captions, consumed
+
+
+def _notes_by_table(
+    blocks: Sequence[_SemanticBlock],
+) -> tuple[dict[int, tuple[SemanticTextSegment, ...]], set[int]]:
+    notes: dict[int, tuple[SemanticTextSegment, ...]] = {}
+    consumed: set[int] = set()
+    for index, block in enumerate(blocks):
+        value = block.parsed.value
+        if (
+            block.segment is not None
+            or not isinstance(value, CanonicalTable)
+            or value.table_type == TableType.LAYOUT_TABLE
+        ):
+            continue
+        candidates: list[SemanticTextSegment] = []
+        cursor = index + 1
+        while cursor < len(blocks):
+            candidate = blocks[cursor].segment
+            if candidate is None or candidate.role != SemanticTextRole.NOTE:
+                break
+            candidates.append(candidate)
+            consumed.add(cursor)
+            cursor += 1
+        if candidates:
+            notes[index] = tuple(candidates)
+    return notes, consumed
 
 
 def _parse_blocks(
@@ -584,6 +603,7 @@ def build_section_fragment(
         "TEXT_SEGMENT": 0,
         "TEXT_HEADING_CONTEXT": 0,
         "TEXT_TABLE_CAPTION_CONTEXT": 0,
+        "TEXT_TABLE_NOTE_CONTEXT": 0,
         "TEXT_REFERENCE_NOTICE": 0,
         "KV_TABLE": 0,
         "R_TABLE": 0,
@@ -596,6 +616,14 @@ def build_section_fragment(
         "DUPLICATE_SKIPPED": 0,
         "IMAGE_SKIPPED": skipped_images,
     }
+    stats["TEXT_TABLE_CAPTION_CONTEXT"] = len(
+        {
+            block.source_ref
+            for bundle in resolution.tables
+            for block in bundle.table.context.blocks_by_role(ContextRole.CAPTION)
+            if block.source_ref in consumed_refs
+        }
+    )
 
     def append_evidence(
         evidence_type: EvidenceType,
@@ -622,6 +650,7 @@ def build_section_fragment(
 
     semantic_blocks = _semantic_blocks(parsed, consumed_refs=consumed_refs)
     captions_by_table, consumed_caption_indexes = _captions_by_table(semantic_blocks)
+    notes_by_table, consumed_note_indexes = _notes_by_table(semantic_blocks)
     stats["TEXT_SEGMENT"] = sum(
         block.segment is not None for block in semantic_blocks
     )
@@ -631,10 +660,15 @@ def build_section_fragment(
         return tuple(text for _, text in heading_stack)
 
     def update_heading(segment: SemanticTextSegment) -> None:
-        level = segment.heading_level or 4
+        update_heading_text(
+            segment.text,
+            segment.heading_level or heading_level_for_text(segment.text),
+        )
+
+    def update_heading_text(text: str, level: int) -> None:
         while heading_stack and heading_stack[-1][0] >= level:
             heading_stack.pop()
-        heading_stack.append((level, segment.text))
+        heading_stack.append((level, text))
 
     def heading_has_target(index: int) -> bool:
         for later in semantic_blocks[index + 1 :]:
@@ -661,6 +695,10 @@ def build_section_fragment(
                 continue
             if semantic_index in consumed_caption_indexes:
                 stats["TEXT_TABLE_CAPTION_CONTEXT"] += 1
+                previous_text = None
+                continue
+            if semantic_index in consumed_note_indexes:
+                stats["TEXT_TABLE_NOTE_CONTEXT"] += 1
                 previous_text = None
                 continue
             if (
@@ -718,8 +756,16 @@ def build_section_fragment(
 
         bundle = bundles.get(semantic_block.parsed_block_index)
         table = bundle.table if bundle is not None else value
+        for heading_block in table.context.blocks_by_role(ContextRole.HEADING):
+            update_heading_text(
+                heading_block.text,
+                heading_level_for_text(heading_block.text),
+            )
+            stats["TEXT_HEADING_CONTEXT"] += 1
         caption_segments = captions_by_table.get(semantic_index, ())
         caption_texts = tuple(segment.text for segment in caption_segments)
+        note_segments = notes_by_table.get(semantic_index, ())
+        note_texts = tuple(segment.text for segment in note_segments)
         table_references = _unique_references(
             tuple(
                 reference
@@ -732,6 +778,11 @@ def build_section_fragment(
                 reference
                 for caption_segment in caption_segments
                 for reference in caption_segment.references
+            )
+            + tuple(
+                reference
+                for note_segment in note_segments
+                for reference in note_segment.references
             )
         )
         if table.table_type == TableType.UNKNOWN:
@@ -786,6 +837,7 @@ def build_section_fragment(
                     fallback_payload,
                     heading_path=current_heading_path(),
                     leading_captions=caption_texts,
+                    trailing_notes=note_texts,
                 )
                 signature = _semantic_json(
                     {
@@ -829,6 +881,7 @@ def build_section_fragment(
                 _context_payload(table),
                 heading_path=current_heading_path(),
                 leading_captions=caption_texts,
+                trailing_notes=note_texts,
             )
             payload.update(
                 {
@@ -871,6 +924,7 @@ def build_section_fragment(
                 signature_payload,
                 heading_path=current_heading_path(),
                 leading_captions=caption_texts,
+                trailing_notes=note_texts,
             )
             signature = _semantic_json(
                 {
@@ -918,6 +972,7 @@ def build_section_fragment(
             _context_payload(table),
             heading_path=current_heading_path(),
             leading_captions=caption_texts,
+            trailing_notes=note_texts,
         )
         payload.update(
             {

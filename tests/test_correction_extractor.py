@@ -3,8 +3,14 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from converters.common.source_models import DocumentContext, DocumentSyntax
-from converters.correction_extractor.correction_extractor import extract_correction
-from converters.correction_extractor.correction_models import CorrectionStatus
+from converters.correction_extractor.correction_extractor import (
+    extract_correction,
+    resolve_correction_target,
+)
+from converters.correction_extractor.correction_models import (
+    CorrectionStatus,
+    CorrectionTargetCandidate,
+)
 
 
 def _context(rcept_no: str = "20241118000171") -> DocumentContext:
@@ -100,6 +106,59 @@ def test_current_rcept_no_does_not_depend_on_correction_date():
     assert result.source_document.rcept_no == "20240925000218"
     assert result.correction is not None
     assert result.correction.correction_date == "2024-11-18"
+
+
+def test_original_disclosure_is_resolved_from_date_name_company_and_group():
+    extracted = extract_correction(_xml_correction(), context=_context())
+
+    resolved = resolve_correction_target(
+        extracted,
+        (
+            CorrectionTargetCandidate(
+                rcept_no="20240725000123",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(자기주식취득결정)",
+                company_key="SM",
+                doc_group="major",
+            ),
+            CorrectionTargetCandidate(
+                rcept_no="20240725000999",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(타법인주식취득결정)",
+                company_key="SM",
+                doc_group="major",
+            ),
+        ),
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no == "20240725000123"
+    assert not any(issue.code.startswith("CORRECTION_TARGET_") for issue in resolved.issues)
+
+
+def test_ambiguous_original_disclosures_are_not_guessed():
+    extracted = extract_correction(_xml_correction(), context=_context())
+    candidates = tuple(
+        CorrectionTargetCandidate(
+            rcept_no=rcept_no,
+            submission_date="2024-07-25",
+            document_name="[기재정정] 주요사항보고서(자기주식취득결정)",
+            company_key="SM",
+            doc_group="major",
+        )
+        for rcept_no in ("20240725000123", "20240725000456")
+    )
+
+    resolved = resolve_correction_target(
+        extracted,
+        candidates,
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no is None
+    assert resolved.issues[-1].code == "CORRECTION_TARGET_AMBIGUOUS"
 
 
 def test_xml_element_input_is_not_mutated():

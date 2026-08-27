@@ -52,6 +52,7 @@ class RowType(StrEnum):
 class LayoutRole(StrEnum):
     TITLE = "TITLE"
     UNIT = "UNIT"
+    CAPTION = "CAPTION"
     NOTE = "NOTE"
     NAVIGATION = "NAVIGATION"
 

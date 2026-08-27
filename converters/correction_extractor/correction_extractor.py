@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 import re
 from typing import Iterable
@@ -17,6 +17,7 @@ from converters.correction_extractor.correction_models import (
     CorrectionIssue,
     CorrectionMetadata,
     CorrectionStatus,
+    CorrectionTargetCandidate,
 )
 from converters.table_parser.table_parser import build_logical_grid
 
@@ -632,4 +633,87 @@ def extract_correction(
     return _failed(context, selected_syntax, f"Unsupported syntax: {selected_syntax}")
 
 
-__all__ = ["extract_correction"]
+def _normalized_document_name(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = re.sub(r"^\s*\[[^]]*정정[^]]*\]\s*", "", value)
+    normalized = re.sub(r"[^0-9A-Za-z가-힣]", "", cleaned).casefold()
+    return normalized or None
+
+
+def resolve_correction_target(
+    extraction: CorrectionExtraction,
+    candidates: Iterable[CorrectionTargetCandidate],
+    *,
+    company_key: str | None = None,
+) -> CorrectionExtraction:
+    """Resolve the original receipt from a caller-supplied disclosure index.
+
+    Correction blocks normally identify the original document by its submission
+    date and name, not by receipt number. Inline ``REFNO`` links are intentionally
+    not considered here because many of them are only viewer navigation links.
+    """
+    correction = extraction.correction
+    if correction is None or correction.target_rcept_no is not None:
+        return extraction
+    original_date = correction.original_submission_date
+    if original_date is None:
+        return replace(
+            extraction,
+            issues=extraction.issues
+            + (
+                CorrectionIssue(
+                    code="CORRECTION_TARGET_NOT_RESOLVED",
+                    message="Original submission date is unavailable.",
+                ),
+            ),
+        )
+
+    target_name = _normalized_document_name(correction.target_document_name)
+    eligible: list[CorrectionTargetCandidate] = []
+    for candidate in candidates:
+        if candidate.rcept_no == extraction.source_document.rcept_no:
+            continue
+        if _normalize_date(candidate.submission_date) != original_date:
+            continue
+        if (
+            extraction.source_document.doc_group
+            and candidate.doc_group
+            and candidate.doc_group != extraction.source_document.doc_group
+        ):
+            continue
+        if company_key is not None and candidate.company_key != company_key:
+            continue
+        candidate_name = _normalized_document_name(candidate.document_name)
+        if target_name is not None and candidate_name != target_name:
+            continue
+        eligible.append(candidate)
+
+    unique = {candidate.rcept_no: candidate for candidate in eligible}
+    if len(unique) == 1:
+        target_rcept_no = next(iter(unique))
+        return replace(
+            extraction,
+            correction=replace(correction, target_rcept_no=target_rcept_no),
+        )
+
+    return replace(
+        extraction,
+        issues=extraction.issues
+        + (
+            CorrectionIssue(
+                code=(
+                    "CORRECTION_TARGET_AMBIGUOUS"
+                    if len(unique) > 1
+                    else "CORRECTION_TARGET_NOT_FOUND"
+                ),
+                message=(
+                    f"Found {len(unique)} original disclosure candidates for "
+                    f"{original_date}."
+                ),
+            ),
+        ),
+    )
+
+
+__all__ = ["extract_correction", "resolve_correction_target"]

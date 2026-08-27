@@ -522,6 +522,19 @@ def test_two_cell_footnote_table_is_layout_note():
     }
 
 
+def test_split_cell_base_date_table_is_layout_caption():
+    result = parse_table_fragment(
+        """<TABLE><TR><TD>(기준일 : </TD><TD>2026년 3월 31일</TD>
+        <TD>)</TD><TD></TD></TR></TABLE>"""
+    )
+
+    assert result.table_type.value == "LAYOUT_TABLE"
+    assert result.content == {
+        "layout_role": "CAPTION",
+        "values": ["(기준일 : 2026년 3월 31일)"],
+    }
+
+
 def test_unknown_table_is_not_forced_into_kv_or_record():
     table = ET.fromstring(
         "<TABLE><TR><TD>A</TD></TR><TR><TD>B</TD><TD>C</TD></TR></TABLE>"
