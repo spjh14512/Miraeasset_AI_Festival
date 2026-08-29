@@ -1,9 +1,17 @@
 from typing import Annotated, Any, Literal
 from typing_extensions import NotRequired, Required, TypedDict
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 RetrievalSource = Literal["qdrant", "neo4j"]
+RetrievalResultStatus = Literal[
+    "SUCCESS",
+    "NO_RESULTS",
+    "ERROR",
+    "TIMEOUT",
+    "DUPLICATES_ONLY",
+    "INVALID_QUERY",
+]
 QuestionDecision = Literal["retrieve", "direct", "clarify"]
 
 
@@ -16,10 +24,7 @@ class PlanDraft(BaseModel):
     source: RetrievalSource = Field(description="검색에 사용할 retrieval source")
     query: str = Field(..., min_length=1, description="검색할 자연어 정보 요구")
     purpose: str = Field(..., min_length=1, description="검색 결과가 필요한 이유")
-    dependencies: list[str] = Field(
-        default_factory=list,
-        description="이 Plan의 query 생성에 사용할 기존 RetrievalResult의 result_id 목록",
-    )
+    dependencies: list[str] = Field(..., description="이 Plan의 query 생성에 사용할 기존 RetrievalResult의 result_id 목록")
 
     @field_validator("dependencies")
     @classmethod
@@ -39,7 +44,10 @@ class Plan(PlanDraft):
 
     @classmethod
     def from_plan_draft(cls, plan_draft: PlanDraft, seq: int):
-        return cls(**plan_draft.model_dump(), plan_id="plan_" + str(seq))
+        return cls(
+            **plan_draft.model_dump(exclude={"plan_id"}),
+            plan_id="plan_" + str(seq),
+        )
 
 
 class QuestionAnalysis(BaseModel):
@@ -68,21 +76,11 @@ class QuestionAnalysis(BaseModel):
 
 
 class PlannerOutput(BaseModel):
-    """Planner가 한 번의 호출로 생성하는 질문 분석과 검색 계획입니다."""
+    """Planner가 한 번의 호출로 생성하는 질문 분석 결과입니다."""
+
+    model_config = ConfigDict(extra="forbid")
 
     question_analysis: QuestionAnalysis
-    plans: list[PlanDraft] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def validate_plans(self) -> "PlannerOutput":
-        decision = self.question_analysis.decision
-        if decision == "retrieve" and not self.plans:
-            raise ValueError("retrieve 결정에는 plan이 필요합니다.")
-        if decision != "retrieve" and self.plans:
-            raise ValueError("direct 또는 clarify 결정에는 plan이 없어야 합니다.")
-        if any(plan.dependencies for plan in self.plans):
-            raise ValueError("Planner가 생성하는 최초 plan에는 dependencies가 없어야 합니다.")
-        return self
 
 
 class RetrievalResult(BaseModel):
@@ -92,41 +90,17 @@ class RetrievalResult(BaseModel):
     result_id: str
     plan_id: str
     source: RetrievalSource
+    status: RetrievalResultStatus | None = None
     query: str
     items: list[dict[str, Any]] = Field(default_factory=list)
     result_count: int = Field(ge=0)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-
-class EvidenceSelection(BaseModel):
-    """Answer Generator에 전달할 RetrievalResult와 item 범위를 나타냅니다.
-
-    입력 예시:
-        {
-            "result_id": "retrieval:plan_1",
-            "item_indexes": [0, 2],
-            "reason": "질문의 핵심 수치를 포함합니다."
-        }
-
-    ``item_indexes=None``은 해당 RetrievalResult의 모든 item을 선택합니다.
-    """
-
-    result_id: str = Field(..., min_length=1)
-    item_indexes: list[int] | None = None
-    reason: str = Field(..., min_length=1)
-
-    @field_validator("item_indexes")
-    @classmethod
-    def validate_item_indexes(cls, indexes: list[int] | None) -> list[int] | None:
-        if indexes is None:
-            return None
-        if not indexes:
-            raise ValueError("item_indexes는 비어 있을 수 없습니다.")
-        if any(index < 0 for index in indexes):
-            raise ValueError("item_indexes는 0 이상의 정수여야 합니다.")
-        if len(indexes) != len(set(indexes)):
-            raise ValueError("item_indexes에 중복 값을 사용할 수 없습니다.")
-        return indexes
+    @model_validator(mode="after")
+    def set_default_status(self) -> "RetrievalResult":
+        if self.status is None:
+            self.status = "SUCCESS" if self.result_count > 0 else "NO_RESULTS"
+        return self
 
 
 def merge_results(
@@ -172,10 +146,19 @@ class AiAnswer(BaseModel):
 
 
 class AnswerGeneratorOutput(BaseModel):
-    """Answer Generator가 생성하는 답변과 citation 후보 선택 결과입니다."""
+    """검색 결과가 충분하거나 부족한 모든 경우에 최종 답변을 제출하는 function입니다.
+
+    근거가 없으면 확인할 수 없다는 답변과 빈 used_result_ids 목록을 반환합니다.
+    """
 
     answer: str = Field(..., description="사용자에게 제공할 최종 답변 메시지")
-    citation_reference_ids: list[str] = Field(..., description="답변을 뒷받침하는 근거의 reference_id. citation_candidates 안에서 선택한다.", default_factory=list)
+    used_result_ids: list[str] = Field(
+        ...,
+        description=(
+            "답변 생성에 실제로 사용한 retrieval_results의 result_id 목록"
+        ),
+        default_factory=list,
+    )
 
 
 RetrievalStatus = Literal["CONTINUE", "COMPLETE", "INSUFFICIENT"]
@@ -188,7 +171,6 @@ class AgentState(TypedDict, total=False):
 
     # Question analysis and planning
     question_analysis: NotRequired[QuestionAnalysis]
-    plans: NotRequired[list[Plan]]
     next_plan_seq: NotRequired[int]
 
     # Parallel retrieval accumulation
@@ -198,7 +180,7 @@ class AgentState(TypedDict, total=False):
     retrieved_qdrant_point_ids: NotRequired[list[str]]
     retrieval_status: NotRequired[RetrievalStatus]
     retrieval_finish_reason: NotRequired[str]
-    selected_evidence: NotRequired[list[EvidenceSelection]]
+    selected_result_ids: NotRequired[list[str]]
 
     # Output
     ai_answer: AiAnswer

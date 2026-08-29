@@ -147,6 +147,26 @@ def _find_section_title(
     return visit(section, section_path)
 
 
+def _find_atoc_table_group_title(
+    table_group: ET.Element,
+    table_group_path: str,
+    syntax: DocumentSyntax,
+    exclusions: _Exclusions,
+) -> tuple[str | None, SourceRef | None]:
+    """Return a direct TABLE-GROUP title explicitly exposed in the DART TOC."""
+    for child, child_path in _child_paths(table_group, table_group_path):
+        if (
+            _tag(child) != "TITLE"
+            or child.attrib.get("ATOC", "").strip().upper() != "Y"
+            or exclusions.contains(child, child_path)
+        ):
+            continue
+        title = _element_text(child)
+        if title:
+            return title, _source_ref(child, child_path, syntax)
+    return None, None
+
+
 def _scan_blocks(
     root: ET.Element,
     root_path: str,
@@ -516,6 +536,41 @@ def _explicit_sections(
                     )
                 builders.append(builder)
                 visit(child, child_path, builder, current_titles)
+            elif child_tag == "TABLE-GROUP" and parent_builder is not None:
+                title, title_ref = _find_atoc_table_group_title(
+                    child,
+                    child_path,
+                    syntax,
+                    exclusions,
+                )
+                if title is None:
+                    visit(child, child_path, parent_builder, parent_titles)
+                    continue
+                group_ref = _source_ref(child, child_path, syntax)
+                parent_builder.blocks = [
+                    block
+                    for block in parent_builder.blocks
+                    if group_ref not in block.source_refs
+                ]
+                builder = _SectionBuilder(
+                    id=f"s{len(builders)}",
+                    parent_section_id=parent_builder.id,
+                    order=len(builders),
+                    level=parent_builder.level + 1,
+                    boundary_kind=SectionBoundaryKind.IMPLICIT,
+                    title=title,
+                    section_path=parent_titles + (title,),
+                    source_ref=group_ref,
+                    title_source_ref=title_ref,
+                    blocks=[
+                        SectionBlockRef(
+                            block_type=SectionBlockType.TABLE_GROUP,
+                            order=0,
+                            source_refs=(group_ref,),
+                        )
+                    ],
+                )
+                builders.append(builder)
             else:
                 visit(child, child_path, parent_builder, parent_titles)
 

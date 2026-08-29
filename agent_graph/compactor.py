@@ -6,14 +6,14 @@ from functools import lru_cache
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import system_prompts as sp
-from .llm import get_llm
+from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
 from .state import Plan
 
 
-DEFAULT_CONTENT_CHARACTER_LIMIT = 6_000
+DEFAULT_CONTENT_CHARACTER_LIMIT = 200
 COMPACTABLE_POINT_KINDS = {"KV_TABLE", "R_TABLE"}
 
 
@@ -60,12 +60,9 @@ def _point_payload(point: Any) -> Mapping[str, Any]:
 
 
 def _point_kind(payload: Mapping[str, Any]) -> str:
-    retrieval_metadata = payload.get("retrieval_metadata")
-    if not isinstance(retrieval_metadata, Mapping):
-        raise ValueError("Qdrant payload.retrieval_metadata must be a mapping")
-    point_kind = retrieval_metadata.get("point_kind")
+    point_kind = payload.get("point_kind")
     if not isinstance(point_kind, str):
-        raise ValueError("Qdrant retrieval_metadata.point_kind must be a string")
+        raise ValueError("Qdrant payload.point_kind must be a string")
     return point_kind
 
 
@@ -187,35 +184,53 @@ def compact_qdrant_point(
     """
 
     compactor_input, available_item_ids = _compactor_input(point, plan)
-    result = (llm or _get_compactor_llm()).invoke(
-        [
-            SystemMessage(content=sp.QDRANT_POINT_COMPACTOR_SYSTEM_PROMPT),
-            HumanMessage(
-                content=json.dumps(
-                    compactor_input,
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                )
-            ),
-        ]
-    )
-    output = (
-        result
-        if isinstance(result, CompactorOutput)
-        else CompactorOutput.model_validate(result)
-    )
-
-    available = set(available_item_ids)
-    invalid_item_ids = [
-        item_id for item_id in output.item_ids if item_id not in available
+    compactor_llm = llm or _get_compactor_llm()
+    messages = [
+        SystemMessage(content=sp.QDRANT_POINT_COMPACTOR_SYSTEM_PROMPT),
+        HumanMessage(
+            content=json.dumps(
+                compactor_input,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+        ),
     ]
-    if invalid_item_ids:
-        raise ValueError(
-            "Compactor가 point에 없는 item ID를 반환했습니다: "
-            + ", ".join(map(str, invalid_item_ids))
-        )
-    selected = set(output.item_ids)
-    return [item_id for item_id in available_item_ids if item_id in selected]
+    available = set(available_item_ids)
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            result = compactor_llm.invoke(messages)
+            output = (
+                result
+                if isinstance(result, CompactorOutput)
+                else CompactorOutput.model_validate(result)
+            )
+            invalid_item_ids = [
+                item_id
+                for item_id in output.item_ids
+                if item_id not in available
+            ]
+            if invalid_item_ids:
+                raise ValueError(
+                    "Compactor가 point에 없는 item ID를 반환했습니다: "
+                    + ", ".join(map(str, invalid_item_ids))
+                )
+            selected = set(output.item_ids)
+            break
+        except (ValidationError, ValueError, TypeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "CompactorOutput",
+                error,
+            )))
+
+    selected_item_ids = [
+        item_id for item_id in available_item_ids if item_id in selected
+    ]
+    print("[Compactor 호출 결과]")
+    print("선택 :", selected_item_ids)
+
+    return selected_item_ids
 
 
 __all__ = [

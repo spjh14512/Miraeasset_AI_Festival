@@ -1,7 +1,9 @@
-"""Convert contextual text to dense vectors with local BGE-M3 inference."""
+"""Convert contextual text to BGE-M3 dense and lexical sparse vectors."""
 
 from __future__ import annotations
 
+import logging
+import math
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -26,6 +28,49 @@ EMBEDDING_MAX_LENGTH = 3000
 
 class LocalEmbeddingError(RuntimeError):
     """Raised when local BGE-M3 inference cannot produce valid embeddings."""
+
+
+@dataclass(frozen=True, slots=True)
+class SparseEmbedding:
+    indices: tuple[int, ...]
+    values: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class HybridEmbedding:
+    dense: tuple[float, ...]
+    sparse: SparseEmbedding
+
+
+@lru_cache(maxsize=1)
+def _configure_quiet_embedding_output() -> None:
+    """Hide third-party embedding progress and routine logs, but keep exceptions."""
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    os.environ.setdefault("TQDM_DISABLE", "1")
+
+    for logger_name in (
+        "FlagEmbedding",
+        "transformers",
+        "huggingface_hub",
+        "sentence_transformers",
+    ):
+        logging.getLogger(logger_name).setLevel(logging.ERROR)
+
+    try:
+        from transformers.utils import logging as transformers_logging
+
+        transformers_logging.set_verbosity_error()
+        transformers_logging.disable_progress_bar()
+    except ImportError:
+        pass
+
+    try:
+        from huggingface_hub.utils import disable_progress_bars
+
+        disable_progress_bars()
+    except ImportError:
+        pass
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +137,7 @@ def _bge_m3_model_class() -> Any:
 
 
 def _build_model(model_name: str, model_cache_dir: str) -> Any:
+    _configure_quiet_embedding_output()
     torch = _torch_module()
     if not torch.cuda.is_available():
         raise LocalEmbeddingError(
@@ -168,6 +214,72 @@ def _parse_dense_vectors(
     return parsed
 
 
+def _parse_sparse_vectors(
+    result: Any,
+    *,
+    expected_count: int,
+) -> list[SparseEmbedding]:
+    if not isinstance(result, dict):
+        raise LocalEmbeddingError("FlagEmbedding returned an invalid result")
+
+    lexical_weights = result.get("lexical_weights")
+    if not isinstance(lexical_weights, list) or len(lexical_weights) != expected_count:
+        raise LocalEmbeddingError(
+            "FlagEmbedding returned an unexpected number of sparse vectors"
+        )
+
+    parsed: list[SparseEmbedding] = []
+    for weights in lexical_weights:
+        if not isinstance(weights, dict):
+            raise LocalEmbeddingError(
+                "FlagEmbedding lexical_weights must contain mappings"
+            )
+        values_by_index: dict[int, float] = {}
+        for raw_index, raw_weight in weights.items():
+            if isinstance(raw_index, bool):
+                raise LocalEmbeddingError(
+                    "FlagEmbedding sparse token IDs must be integers"
+                )
+            if isinstance(raw_index, int):
+                index = raw_index
+            elif isinstance(raw_index, str) and raw_index.isdigit():
+                index = int(raw_index)
+            else:
+                raise LocalEmbeddingError(
+                    "FlagEmbedding sparse token IDs must be integers"
+                )
+            if index < 0:
+                raise LocalEmbeddingError(
+                    "FlagEmbedding sparse token IDs must be non-negative"
+                )
+            if (
+                not isinstance(raw_weight, Real)
+                or isinstance(raw_weight, bool)
+                or not math.isfinite(float(raw_weight))
+            ):
+                raise LocalEmbeddingError(
+                    "FlagEmbedding sparse weights must be finite numbers"
+                )
+            weight = float(raw_weight)
+            if weight == 0.0:
+                continue
+            if index in values_by_index:
+                raise LocalEmbeddingError(
+                    "FlagEmbedding returned duplicate sparse token IDs"
+                )
+            values_by_index[index] = weight
+        if not values_by_index:
+            raise LocalEmbeddingError("FlagEmbedding returned an empty sparse vector")
+        pairs = sorted(values_by_index.items())
+        parsed.append(
+            SparseEmbedding(
+                indices=tuple(index for index, _ in pairs),
+                values=tuple(weight for _, weight in pairs),
+            )
+        )
+    return parsed
+
+
 def texts_to_vectors(texts: Sequence[str]) -> list[list[float]]:
     """Embed contextual texts locally in batches on the configured CUDA GPU."""
     validated_texts = _validated_texts(texts)
@@ -193,6 +305,42 @@ def texts_to_vectors(texts: Sequence[str]) -> list[list[float]]:
     )
 
 
+def texts_to_hybrid_vectors(texts: Sequence[str]) -> list[HybridEmbedding]:
+    """Create dense and BGE-M3 lexical sparse vectors in one model call."""
+    validated_texts = _validated_texts(texts)
+    settings = _load_settings()
+    model = _load_model(settings.model_name, settings.model_cache_dir)
+
+    try:
+        result = model.encode(
+            validated_texts,
+            batch_size=EMBEDDING_BATCH_SIZE,
+            max_length=EMBEDDING_MAX_LENGTH,
+            return_dense=True,
+            return_sparse=True,
+            return_colbert_vecs=False,
+        )
+    except Exception as error:
+        raise LocalEmbeddingError("Local BGE-M3 hybrid embedding failed") from error
+
+    dense_vectors = _parse_dense_vectors(
+        result,
+        expected_count=len(validated_texts),
+        expected_dimension=settings.vector_dimension,
+    )
+    sparse_vectors = _parse_sparse_vectors(
+        result,
+        expected_count=len(validated_texts),
+    )
+    return [
+        HybridEmbedding(
+            dense=tuple(dense),
+            sparse=sparse,
+        )
+        for dense, sparse in zip(dense_vectors, sparse_vectors, strict=True)
+    ]
+
+
 def text_to_vector(text: str) -> list[float]:
     """Embed one contextual text while preserving the existing callable API."""
     if not isinstance(text, str) or not text.strip():
@@ -200,11 +348,22 @@ def text_to_vector(text: str) -> list[float]:
     return texts_to_vectors([text])[0]
 
 
+def text_to_hybrid_vector(text: str) -> HybridEmbedding:
+    """Create one dense+sparse embedding from the same contextual text."""
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("text must be a non-empty string")
+    return texts_to_hybrid_vectors([text])[0]
+
+
 __all__ = [
     "CUDA_DEVICE",
     "EMBEDDING_BATCH_SIZE",
     "EMBEDDING_MAX_LENGTH",
+    "HybridEmbedding",
     "LocalEmbeddingError",
+    "SparseEmbedding",
+    "text_to_hybrid_vector",
     "text_to_vector",
+    "texts_to_hybrid_vectors",
     "texts_to_vectors",
 ]

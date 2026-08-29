@@ -19,21 +19,22 @@ from vector_db.r_table_strategy_selector import (
     RTableEmbeddingStrategySelector,
     RTableStrategyConfig,
 )
+from vector_db.text2vector import HybridEmbedding, SparseEmbedding
 
 
 TABLE_ID = "rtable:20250318000123:src0:s12:t0"
 EVIDENCE_ID = "evidence:20250318000123:src0:s12:e2"
-POINT_PAYLOAD_FIELDS = {"retrieval_metadata", "contextual_text", "canonical"}
-BASE_RETRIEVAL_METADATA_FIELDS = {
+POINT_PAYLOAD_FIELDS = {
     "point_kind",
+    "disclosure_id",
+    "section_id",
     "evidence_id",
     "corp_name",
-    "corp_code",
-    "industry",
-    "sector",
-    "report_nm",
-    "base_year",
-    "base_month",
+    "report_name",
+    "section_name",
+    "rcept_date",
+    "contextual_text",
+    "canonical",
 }
 
 DOCUMENT_CONTEXT = {
@@ -42,14 +43,20 @@ DOCUMENT_CONTEXT = {
     "industry": "IT",
     "sector": "반도체와 반도체장비",
     "report_nm": "2025년 사업보고서",
-    "base_year": 2025,
-    "base_month": 12,
+    "rcept_date": "20250318",
 }
 
 SECTION_CONTEXT = {
     "section_id": "section:20250318000123:src0:s12",
     "section_path": ["사업의 내용", "시설 및 설비"],
 }
+
+
+def _hybrid(*dense: float) -> HybridEmbedding:
+    return HybridEmbedding(
+        dense=tuple(dense),
+        sparse=SparseEmbedding(indices=(1, 42), values=(0.2, 0.8)),
+    )
 
 
 def _fragment(
@@ -146,34 +153,51 @@ def test_builds_text_kv_and_one_point_for_a_small_r_table():
         _fragment(),
         document_context=DOCUMENT_CONTEXT,
         section_context=SECTION_CONTEXT,
-        vectorizer=lambda text: embedded_texts.append(text) or [0.1, 0.2],
+        vectorizer=lambda text: embedded_texts.append(text) or _hybrid(0.1, 0.2),
         r_table_strategy_selector=_whole_table_selector(),
     )
 
     assert [
-        point["payload"]["retrieval_metadata"]["point_kind"] for point in points
+        point["payload"]["point_kind"] for point in points
     ] == ["TEXT", "KV_TABLE", "R_TABLE"]
     assert len(embedded_texts) == 3
-    assert all(point["vector"] == {"evidence_dense": [0.1, 0.2]} for point in points)
+    assert all(
+        point["vector"] == {
+            "evidence_dense": [0.1, 0.2],
+            "evidence_sparse": {
+                "indices": [1, 42],
+                "values": [0.2, 0.8],
+            },
+        }
+        for point in points
+    )
     assert len({point["id"] for point in points}) == 3
     assert [
-        point["payload"]["retrieval_metadata"]["evidence_id"]
+        point["payload"]["evidence_id"]
         for point in points
     ] == [
         "d20250318000123:src0:s12:e0",
         "d20250318000123:src0:s12:e1",
         "d20250318000123:src0:s12:e2",
     ]
+    assert all(
+        point["payload"]["disclosure_id"] == "d20250318000123"
+        for point in points
+    )
+    assert all(
+        point["payload"]["section_id"] == "d20250318000123:src0:s12"
+        for point in points
+    )
     assert "사업장 : 평택" in points[2]["payload"]["contextual_text"]
     assert "사업장 : 화성" in points[2]["payload"]["contextual_text"]
 
 
-def test_payload_has_nested_retrieval_text_and_minimal_canonical_data():
+def test_payload_has_flat_retrieval_fields_and_minimal_canonical_data():
     points = build_qdrant_points(
         _fragment(),
         document_context=DOCUMENT_CONTEXT,
         section_context=SECTION_CONTEXT,
-        vectorizer=lambda text: [0.0],
+        vectorizer=lambda text: _hybrid(0.0),
         r_table_strategy_selector=_whole_table_selector(),
     )
 
@@ -193,14 +217,30 @@ def test_payload_has_nested_retrieval_text_and_minimal_canonical_data():
             {"record_index": 1, "values": ["화성", "200"]},
         ],
     }
-    assert set(points[0]["payload"]["retrieval_metadata"]) == (
-        BASE_RETRIEVAL_METADATA_FIELDS
+    assert all("chunking" not in point["payload"] for point in points)
+    assert all(
+        point["payload"]["section_name"] == "사업의 내용 > 시설 및 설비"
+        for point in points
     )
-    assert set(points[1]["payload"]["retrieval_metadata"]) == (
-        BASE_RETRIEVAL_METADATA_FIELDS
+    assert all(point["payload"]["rcept_date"] == "20250318" for point in points)
+
+
+def test_section_name_appends_evidence_heading_path():
+    fragment = _fragment()
+    fragment["evidence_list"][0]["payload"]["heading_path"] = [
+        "시설 및 설비",
+        "신규 투자",
+    ]
+
+    point_inputs = build_point_inputs(
+        fragment,
+        document_context=DOCUMENT_CONTEXT,
+        section_context=SECTION_CONTEXT,
+        r_table_strategy_selector=_whole_table_selector(),
     )
-    assert set(points[2]["payload"]["retrieval_metadata"]) == (
-        BASE_RETRIEVAL_METADATA_FIELDS | {"table_id"}
+
+    assert point_inputs[0].payload["section_name"] == (
+        "사업의 내용 > 시설 및 설비 > 신규 투자"
     )
 
 
@@ -270,12 +310,8 @@ def test_structured_oversized_r_table_builds_descriptor_with_all_records():
     )
 
     descriptor = point_inputs[2]
-    retrieval_metadata = descriptor.payload["retrieval_metadata"]
-    assert retrieval_metadata["point_kind"] == "R_TABLE"
-    assert retrieval_metadata["table_id"] == TABLE_ID
-    assert "row_start_index" not in retrieval_metadata
-    assert "row_end_index" not in retrieval_metadata
-    assert set(retrieval_metadata) == BASE_RETRIEVAL_METADATA_FIELDS | {"table_id"}
+    assert descriptor.payload["point_kind"] == "R_TABLE"
+    assert "chunking" not in descriptor.payload
     assert descriptor.payload["canonical"]["records"] == [
         {"record_index": 0, "values": ["평택", "100"]},
         {"record_index": 1, "values": ["화성", "200"]},
@@ -304,20 +340,20 @@ def test_large_structured_r_table_builds_chunk_specific_descriptors():
     chunks = point_inputs[2:]
     assert len(chunks) == 4
     assert [
-        item.payload["retrieval_metadata"]["chunk_index"] for item in chunks
+        item.payload["chunking"]["chunk_index"] for item in chunks
     ] == [0, 1, 2, 3]
     assert all(
-        item.payload["retrieval_metadata"]["chunk_count"] == 4
+        item.payload["chunking"]["chunk_count"] == 4
         for item in chunks
     )
     assert all(
-        item.payload["retrieval_metadata"]["table_id"] == TABLE_ID
+        item.payload["chunking"]["table_id"] == TABLE_ID
         for item in chunks
     )
     assert [
         (
-            item.payload["retrieval_metadata"]["row_start_index"],
-            item.payload["retrieval_metadata"]["row_end_index"],
+            item.payload["chunking"]["row_start_index"],
+            item.payload["chunking"]["row_end_index"],
         )
         for item in chunks
     ] == [(0, 0), (1, 1), (2, 2), (3, 3)]
@@ -420,8 +456,7 @@ def test_header_heavy_table_uses_one_indivisible_fallback_point():
     )
     assert len(point_inputs[2:]) == 1
     assert 200 < canonical_size <= 4096
-    assert "chunk_index" not in replacement.payload["retrieval_metadata"]
-    assert "chunk_count" not in replacement.payload["retrieval_metadata"]
+    assert "chunking" not in replacement.payload
 
 
 def test_semantic_oversized_r_table_stores_only_each_row_group_records():
@@ -445,13 +480,13 @@ def test_semantic_oversized_r_table_stores_only_each_row_group_records():
     assert len(row_groups) == 2
     assert [
         (
-            item.payload["retrieval_metadata"]["row_start_index"],
-            item.payload["retrieval_metadata"]["row_end_index"],
+            item.payload["chunking"]["row_start_index"],
+            item.payload["chunking"]["row_end_index"],
         )
         for item in row_groups
     ] == [(0, 1), (2, 3)]
     assert all(
-        item.payload["retrieval_metadata"]["table_id"] == TABLE_ID
+        item.payload["chunking"]["table_id"] == TABLE_ID
         for item in row_groups
     )
     assert [
@@ -467,11 +502,11 @@ def test_semantic_oversized_r_table_stores_only_each_row_group_records():
         str(uuid5(POINT_ID_NAMESPACE, f"{EVIDENCE_ID}:row_group:2:3")),
     ]
     assert [
-        item.payload["retrieval_metadata"]["chunk_index"]
+        item.payload["chunking"]["chunk_index"]
         for item in row_groups
     ] == [0, 1]
     assert all(
-        item.payload["retrieval_metadata"]["chunk_count"] == 2
+        item.payload["chunking"]["chunk_count"] == 2
         for item in row_groups
     )
 
@@ -480,7 +515,7 @@ def test_point_ids_are_deterministic_and_evidence_specific():
     kwargs = {
         "document_context": DOCUMENT_CONTEXT,
         "section_context": SECTION_CONTEXT,
-        "vectorizer": lambda text: [0.0],
+        "vectorizer": lambda text: _hybrid(0.0),
         "r_table_strategy_selector": _whole_table_selector(),
     }
 
@@ -515,7 +550,7 @@ def test_embedding_and_point_assembly_are_separate_and_cache_ready():
 
     embeddings = embed_point_inputs(
         [point_inputs[0], duplicate_input],
-        vectorizer=lambda text: calls.append(text) or [0.5],
+        vectorizer=lambda text: calls.append(text) or _hybrid(0.5),
     )
     points = assemble_qdrant_points(
         [point_inputs[0], duplicate_input],
@@ -525,8 +560,14 @@ def test_embedding_and_point_assembly_are_separate_and_cache_ready():
     assert len(calls) == 1
     assert point_inputs[0].embedding_cache_key == duplicate_input.embedding_cache_key
     assert [point["vector"] for point in points] == [
-        {"evidence_dense": [0.5]},
-        {"evidence_dense": [0.5]},
+        {
+            "evidence_dense": [0.5],
+            "evidence_sparse": {"indices": [1, 42], "values": [0.2, 0.8]},
+        },
+        {
+            "evidence_dense": [0.5],
+            "evidence_sparse": {"indices": [1, 42], "values": [0.2, 0.8]},
+        },
     ]
 
 
@@ -538,7 +579,7 @@ def test_rejects_mismatched_section_context():
             _fragment(),
             document_context=DOCUMENT_CONTEXT,
             section_context=section,
-            vectorizer=lambda text: [0.0],
+            vectorizer=lambda text: _hybrid(0.0),
             r_table_strategy_selector=_whole_table_selector(),
         )
 
@@ -560,6 +601,6 @@ def test_rejects_orphan_records():
             fragment,
             document_context=DOCUMENT_CONTEXT,
             section_context=SECTION_CONTEXT,
-            vectorizer=lambda text: [0.0],
+            vectorizer=lambda text: _hybrid(0.0),
             r_table_strategy_selector=_whole_table_selector(),
         )

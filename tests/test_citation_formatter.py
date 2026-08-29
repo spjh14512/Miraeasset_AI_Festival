@@ -117,6 +117,25 @@ def test_formats_and_deduplicates_citations_by_document_and_section(tmp_path):
     )
 
 
+def test_formats_citation_as_user_visible_path(tmp_path):
+    document_manifest_path, driver = _paths(tmp_path)
+
+    assert format_citations(
+        [Citation(
+            disclosure_id="d20240306000686",
+            section_id="d20240306000686:src0:s27",
+            evidence_id="d20240306000686:src0:s27:e8",
+        )],
+        document_manifest_path=document_manifest_path,
+        driver=driver,
+        style="path",
+    ) == [
+        "[사업보고서 (2023.12)(20240306000686) > "
+        "IV. 이사의 경영진단 및 분석의견 > "
+        "3. 재무상태 및 영업실적(연결기준) > 가. 연결 재무상태]"
+    ]
+
+
 def test_formats_disclosure_level_citation_without_section(tmp_path):
     document_manifest_path, driver = _paths(tmp_path)
 

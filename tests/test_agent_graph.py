@@ -5,22 +5,10 @@ from pydantic import ValidationError
 
 from agent_graph.graph import planner, route_after_analysis
 from agent_graph.state import (
-    Plan,
     PlanDraft,
     PlannerOutput,
     QuestionAnalysis,
-    RetrievalResult,
 )
-from agent_graph.tools import create_plan
-
-
-def _plan() -> Plan:
-    return Plan(
-        plan_id="plan_1",
-        source="qdrant",
-        query="삼성전자 2025년 시설 투자",
-        purpose="관련 Evidence를 검색합니다.",
-    )
 
 
 def _plan_draft() -> PlanDraft:
@@ -28,29 +16,33 @@ def _plan_draft() -> PlanDraft:
         source="qdrant",
         query="삼성전자 2025년 시설 투자",
         purpose="관련 Evidence를 검색합니다.",
+        dependencies=[],
     )
 
 
-def test_retrieve_decision_requires_at_least_one_plan():
-    with pytest.raises(ValidationError, match="plan"):
-        PlannerOutput(
-            question_analysis=QuestionAnalysis(
-                decision="retrieve",
-                normalized_question="삼성전자 시설 투자를 알려줘",
-                decision_reason="공시 Evidence가 필요합니다.",
-            ),
-        )
+def test_retrieve_decision_does_not_create_a_plan():
+    output = PlannerOutput(
+        question_analysis=QuestionAnalysis(
+            decision="retrieve",
+            normalized_question="삼성전자 시설 투자를 알려줘",
+            decision_reason="공시 Evidence가 필요합니다.",
+        ),
+    )
+
+    assert output.model_dump() == {
+        "question_analysis": output.question_analysis.model_dump()
+    }
 
 
-def test_direct_decision_rejects_plans():
-    with pytest.raises(ValidationError, match="없어야 합니다"):
+def test_planner_output_rejects_plans_for_every_decision():
+    with pytest.raises(ValidationError, match="plans"):
         PlannerOutput(
             question_analysis=QuestionAnalysis(
                 decision="direct",
                 normalized_question="안녕하세요",
                 decision_reason="일반적인 인사입니다.",
             ),
-            plans=[_plan()],
+            plans=[_plan_draft()],
         )
 
 
@@ -125,7 +117,7 @@ class _FakeLlm:
         return self.structured
 
 
-def test_planner_returns_separate_analysis_and_plans():
+def test_planner_returns_analysis_without_plans():
     expected_analysis = QuestionAnalysis(
         decision="retrieve",
         normalized_question="삼성전자 시설 투자를 알려줘",
@@ -133,7 +125,6 @@ def test_planner_returns_separate_analysis_and_plans():
     )
     expected = PlannerOutput(
         question_analysis=expected_analysis,
-        plans=[_plan_draft()],
     )
     llm = _FakeLlm(expected)
 
@@ -147,8 +138,8 @@ def test_planner_returns_separate_analysis_and_plans():
 
     assert update == {
         "question_analysis": expected_analysis,
-        "plans": [_plan()],
-        "next_plan_seq": 2,
+        "next_plan_seq": 1,
+        "retrieval_status": "CONTINUE",
     }
     assert llm.schema is PlannerOutput
     assert llm.method == "function_calling"
@@ -163,8 +154,8 @@ def test_planner_rejects_an_empty_question():
         )
 
 
-def test_planner_rejects_dependencies_on_initial_plans():
-    with pytest.raises(ValidationError, match="dependencies"):
+def test_planner_rejects_initial_plan_payload():
+    with pytest.raises(ValidationError, match="plans"):
         PlannerOutput(
             question_analysis=QuestionAnalysis(
                 decision="retrieve",
@@ -179,79 +170,3 @@ def test_planner_rejects_dependencies_on_initial_plans():
             )],
         )
 
-
-def test_create_plan_assigns_id_and_inserts_after_position():
-    state = {
-        "question_id": "question-1",
-        "question_text": "질문",
-        "plans": [_plan()],
-        "retrieval_results": [],
-        "next_plan_seq": 2,
-    }
-
-    update = create_plan.invoke(
-        {
-            "new_plan": {
-                "source": "neo4j",
-                "query": "후속 관계 검색",
-                "purpose": "후속 검색 대상 식별",
-            },
-            "position": "plan_1",
-            "state": state,
-        }
-    )
-
-    assert [plan.plan_id for plan in update["plans"]] == ["plan_1", "plan_2"]
-    assert update["next_plan_seq"] == 3
-    assert state["plans"] == [_plan()]
-
-
-def test_create_plan_accepts_existing_retrieval_result_dependency():
-    dependency = RetrievalResult(
-        result_id="retrieval:plan_0",
-        plan_id="plan_0",
-        source="neo4j",
-        query="MATCH ...",
-        items=[],
-        result_count=0,
-    )
-    state = {
-        "question_id": "question-1",
-        "question_text": "질문",
-        "plans": [_plan()],
-        "retrieval_results": [dependency],
-        "next_plan_seq": 2,
-    }
-
-    update = create_plan.invoke({
-        "new_plan": {
-            "source": "qdrant",
-            "query": "확인된 Evidence 검색",
-            "purpose": "실제 내용 확인",
-            "dependencies": ["retrieval:plan_0"],
-        },
-        "position": "plan_1",
-        "state": state,
-    })
-
-    assert update["plans"][1].dependencies == ["retrieval:plan_0"]
-
-
-def test_create_plan_rejects_unknown_dependency():
-    with pytest.raises(ValueError, match="retrieval:missing"):
-        create_plan.invoke({
-            "new_plan": {
-                "source": "qdrant",
-                "query": "확인된 Evidence 검색",
-                "purpose": "실제 내용 확인",
-                "dependencies": ["retrieval:missing"],
-            },
-            "position": "plan_1",
-            "state": {
-                "question_id": "question-1",
-                "question_text": "질문",
-                "plans": [_plan()],
-                "retrieval_results": [],
-                "next_plan_seq": 2,
-            },
-        })

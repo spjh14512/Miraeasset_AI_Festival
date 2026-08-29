@@ -252,9 +252,9 @@
       "tags": ["J"],
       "profiles": ["full"],
       "document_ids": ["periodic_20250314001704"],
-      "section_ids": ["section:20250314001704:src0:s17", "section:20250314001704:src2:s3"],
+      "section_ids": ["section:20250314001704:src0:s21", "section:20250314001704:src2:s3"],
       "assertions": [
-        {"op": "pair_relation", "left_section_id": "section:20250314001704:src0:s17", "right_section_id": "section:20250314001704:src2:s3", "relation": "SEMANTIC_NOT_EQUAL"}
+        {"op": "pair_relation", "left_section_id": "section:20250314001704:src0:s21", "right_section_id": "section:20250314001704:src2:s3", "relation": "SEMANTIC_NOT_EQUAL"}
       ]
     },
     {
@@ -263,9 +263,9 @@
       "tags": ["J"],
       "profiles": ["full"],
       "document_ids": ["periodic_20240314001585"],
-      "section_ids": ["section:20240314001585:src0:s17", "section:20240314001585:src2:s3"],
+      "section_ids": ["section:20240314001585:src0:s21", "section:20240314001585:src2:s3"],
       "assertions": [
-        {"op": "pair_relation", "left_section_id": "section:20240314001585:src0:s17", "right_section_id": "section:20240314001585:src2:s3", "relation": "SEMANTIC_EQUAL"}
+        {"op": "pair_relation", "left_section_id": "section:20240314001585:src0:s21", "right_section_id": "section:20240314001585:src2:s3", "relation": "SEMANTIC_EQUAL"}
       ]
     },
     {
@@ -288,10 +288,10 @@
       "tags": ["F"],
       "profiles": ["full"],
       "document_ids": ["periodic_20260324000822"],
-      "section_ids": ["section:20260324000822:src0:s46"],
+      "section_ids": ["section:20260324000822:src0:s54"],
       "assertions": [
         {"op": "section_counts", "evidence": 1, "records": 347},
-        {"op": "table_title_not_navigation", "table_id": "rtable:20260324000822:src0:s46:t0"}
+        {"op": "table_title_not_navigation", "table_id": "rtable:20260324000822:src0:s54:t0"}
       ]
     },
     {

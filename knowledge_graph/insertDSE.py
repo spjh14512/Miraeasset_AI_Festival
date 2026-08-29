@@ -12,6 +12,7 @@ import os
 import random
 from collections import defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -120,15 +121,14 @@ def disclosure_metadata_rows(data_root: Path) -> dict[str, dict[str, Any]]:
     return rows
 
 
-def optional_integer(value: Any, *, field: str, rcept_no: str) -> int | None:
-    if value is None or value == "":
-        return None
-    if isinstance(value, bool):
-        raise ValueError(f"{field} must be an integer for {rcept_no}")
+def parse_rcept_date(value: Any, *, rcept_no: str):
+    text = str(value or "").strip()
     try:
-        return int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field} must be an integer for {rcept_no}") from exc
+        return datetime.strptime(text, "%Y%m%d").date()
+    except ValueError as exc:
+        raise ValueError(
+            f"rcept_dt must use YYYYMMDD for disclosure {rcept_no}: {value!r}"
+        ) from exc
 
 
 def allocation_by_group(limit: int) -> dict[str, int]:
@@ -264,14 +264,8 @@ def build_rows(
         disclosure_properties.update(
             {
                 "report_name": str(document_metadata.get("report_nm", "")),
-                "base_year": optional_integer(
-                    document_metadata.get("base_year"),
-                    field="base_year",
-                    rcept_no=rcept_no,
-                ),
-                "base_month": optional_integer(
-                    document_metadata.get("base_month"),
-                    field="base_month",
+                "rcept_date": parse_rcept_date(
+                    document_metadata.get("rcept_dt"),
                     rcept_no=rcept_no,
                 ),
                 "_corp_code": corp_code,
@@ -429,6 +423,7 @@ def insert_rows(
             UNWIND $rows AS row
             MERGE (n:Disclosure {id: row.id})
             SET n += properties(row), n._corp_code = null
+            REMOVE n.base_year, n.base_month
             """,
             rows["disclosures"],
             batch_size,

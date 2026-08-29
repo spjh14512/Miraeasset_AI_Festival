@@ -15,17 +15,23 @@ import yaml
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 
-from knowledge_graph.insertDSE import read_jsonl, select_disclosures
+from knowledge_graph.insertDSE import (
+    DISCLOSURE_GROUPS,
+    read_jsonl,
+    select_disclosures,
+    valid_manifest_rows,
+)
 from vector_db.point_builder import (
+    SPARSE_VECTOR_NAME,
     VECTOR_NAME,
     PointInput,
     assemble_qdrant_points,
     build_point_inputs,
 )
-from vector_db.text2vector import texts_to_vectors
+from vector_db.text2vector import HybridEmbedding, texts_to_hybrid_vectors
 
 
-BatchVectorizer = Callable[[Sequence[str]], list[list[float]]]
+BatchVectorizer = Callable[[Sequence[str]], list[HybridEmbedding]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +44,7 @@ class PayloadIndex:
 class QdrantSchema:
     collection_name: str
     vector_name: str
+    sparse_vector_name: str
     vector_dimension: int
     distance: models.Distance
     payload_indexes: tuple[PayloadIndex, ...]
@@ -47,7 +54,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build and insert sampled Evidence Points into Qdrant."
     )
-    parser.add_argument("--limit", type=int, required=True)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--limit", type=int)
+    selection.add_argument(
+        "--all",
+        action="store_true",
+        help="Insert every disclosure with complete Canonical and Evidence outputs.",
+    )
     parser.add_argument(
         "--random-seed",
         type=int,
@@ -88,12 +101,19 @@ def load_qdrant_schema(path: Path) -> QdrantSchema:
     point = _required_mapping(raw, "point")
     vectors = _required_mapping(point, "vectors")
     dense = _required_mapping(vectors, "dense")
+    sparse = _required_mapping(vectors, "sparse")
 
     collection_name = _required_text(collection, "name")
     vector_name = _required_text(dense, "name")
     if vector_name != VECTOR_NAME:
         raise ValueError(
             f"Point builder vector name mismatch: {VECTOR_NAME} != {vector_name}"
+        )
+    sparse_vector_name = _required_text(sparse, "name")
+    if sparse_vector_name != SPARSE_VECTOR_NAME:
+        raise ValueError(
+            "Point builder sparse vector name mismatch: "
+            f"{SPARSE_VECTOR_NAME} != {sparse_vector_name}"
         )
 
     vector_dimension = dense.get("dimension")
@@ -114,30 +134,40 @@ def load_qdrant_schema(path: Path) -> QdrantSchema:
 
     payload = _required_mapping(raw, "payload")
     payload_fields = _required_mapping(payload, "fields")
-    retrieval = _required_mapping(payload_fields, "retrieval_metadata")
-    retrieval_fields = _required_mapping(retrieval, "fields")
     payload_type_map = {
         "keyword": models.PayloadSchemaType.KEYWORD,
         "integer": models.PayloadSchemaType.INTEGER,
     }
     indexes: list[PayloadIndex] = []
-    for field_name, definition in retrieval_fields.items():
-        if not isinstance(definition, Mapping) or not definition.get("payload_index"):
-            continue
-        field_type = definition.get("type")
-        index_path = definition.get("index_path")
-        if field_type not in payload_type_map or not isinstance(index_path, str):
-            raise ValueError(f"Unsupported payload index definition: {field_name}")
-        indexes.append(
-            PayloadIndex(
-                field_name=index_path,
-                field_schema=payload_type_map[field_type],
+
+    def collect_indexes(fields: Mapping[str, Any]) -> None:
+        for field_name, definition in fields.items():
+            if not isinstance(definition, Mapping):
+                raise ValueError(f"Invalid payload field definition: {field_name}")
+            nested_fields = definition.get("fields")
+            if nested_fields is not None:
+                if not isinstance(nested_fields, Mapping):
+                    raise ValueError(f"Invalid nested payload fields: {field_name}")
+                collect_indexes(nested_fields)
+            if not definition.get("payload_index"):
+                continue
+            field_type = definition.get("type")
+            index_path = definition.get("index_path")
+            if field_type not in payload_type_map or not isinstance(index_path, str):
+                raise ValueError(f"Unsupported payload index definition: {field_name}")
+            indexes.append(
+                PayloadIndex(
+                    field_name=index_path,
+                    field_schema=payload_type_map[field_type],
+                )
             )
-        )
+
+    collect_indexes(payload_fields)
 
     return QdrantSchema(
         collection_name=collection_name,
         vector_name=vector_name,
+        sparse_vector_name=sparse_vector_name,
         vector_dimension=vector_dimension,
         distance=distance_by_name[distance_name],
         payload_indexes=tuple(indexes),
@@ -155,7 +185,29 @@ def ensure_collection(client: QdrantClient, schema: QdrantSchema) -> None:
                     distance=schema.distance,
                 )
             },
+            sparse_vectors_config={
+                schema.sparse_vector_name: models.SparseVectorParams()
+            },
         )
+    else:
+        collection = client.get_collection(schema.collection_name)
+        config = getattr(collection, "config", None)
+        params = getattr(config, "params", None)
+        sparse_vectors = getattr(params, "sparse_vectors", None)
+        sparse_vector_names = (
+            set(sparse_vectors)
+            if isinstance(sparse_vectors, Mapping)
+            else set()
+        )
+        if schema.sparse_vector_name not in sparse_vector_names:
+            client.create_vector_name(
+                collection_name=schema.collection_name,
+                vector_name=schema.sparse_vector_name,
+                vector_name_config=models.SparseVectorNameConfig(
+                    sparse=models.SparseVectorConfig(),
+                ),
+                wait=True,
+            )
 
     for payload_index in schema.payload_indexes:
         client.create_payload_index(
@@ -204,15 +256,51 @@ def selected_disclosures(
     return result
 
 
+def all_disclosures(
+    data_root: Path,
+) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
+    """Select every complete disclosure in stable group/receipt order."""
+    section_rows = valid_manifest_rows(
+        data_root / "canonical_section" / "manifest.jsonl"
+    )
+    evidence_rows = valid_manifest_rows(
+        data_root / "evidence_fragment" / "manifest.jsonl"
+    )
+    document_rows = _document_manifest_rows(data_root)
+    selected: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
+    for doc_group, rcept_no in sorted(section_rows.keys() & evidence_rows.keys()):
+        if doc_group not in DISCLOSURE_GROUPS:
+            continue
+        section_manifest = section_rows[(doc_group, rcept_no)]
+        evidence_manifest = evidence_rows[(doc_group, rcept_no)]
+        section_path = data_root / str(section_manifest.get("output_path", ""))
+        evidence_paths = [
+            data_root / str(path)
+            for path in evidence_manifest.get("output_paths", [])
+        ]
+        if (
+            not section_path.is_file()
+            or not evidence_paths
+            or not all(path.is_file() for path in evidence_paths)
+        ):
+            continue
+        document_manifest = document_rows.get((doc_group, rcept_no))
+        if document_manifest is None:
+            raise ValueError(
+                "Complete disclosure is missing from data/manifest.jsonl: "
+                f"{doc_group}/{rcept_no}"
+            )
+        selected.append(
+            (section_manifest, evidence_manifest, document_manifest)
+        )
+    return selected
+
+
 def _document_context(document_manifest: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "corp_name": document_manifest.get("corp_name"),
-        "corp_code": document_manifest.get("corp_code"),
-        "industry": document_manifest.get("industry"),
-        "sector": document_manifest.get("sector"),
         "report_nm": document_manifest.get("report_nm"),
-        "base_year": document_manifest.get("base_year"),
-        "base_month": document_manifest.get("base_month"),
+        "rcept_date": document_manifest.get("rcept_dt"),
     }
 
 
@@ -254,8 +342,8 @@ def iter_fragment_point_inputs(
 def embed_point_inputs_batch(
     point_inputs: Sequence[PointInput],
     *,
-    vectorizer: BatchVectorizer = texts_to_vectors,
-) -> dict[str, list[float]]:
+    vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
+) -> dict[str, HybridEmbedding]:
     """Embed unique contextual texts with the local batch vectorizer."""
     unique_texts: dict[str, str] = {}
     for point_input in point_inputs:
@@ -329,17 +417,21 @@ def run(
     *,
     data_root: Path,
     schema: QdrantSchema,
-    limit: int,
+    limit: int | None,
     random_seed: int | None,
     batch_size: int,
     dry_run: bool,
     client: QdrantClient | None = None,
-    vectorizer: BatchVectorizer = texts_to_vectors,
+    vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
 ) -> dict[str, Any]:
-    selected = selected_disclosures(
-        data_root,
-        limit=limit,
-        random_seed=random_seed,
+    selected = (
+        all_disclosures(data_root)
+        if limit is None
+        else selected_disclosures(
+            data_root,
+            limit=limit,
+            random_seed=random_seed,
+        )
     )
     resolved_client = client
     owns_client = False
@@ -362,8 +454,7 @@ def run(
             ):
                 fragment_count += 1
                 for point_input in point_inputs:
-                    metadata = point_input.payload["retrieval_metadata"]
-                    point_counts[str(metadata["point_kind"])] += 1
+                    point_counts[str(point_input.payload["point_kind"])] += 1
                 if dry_run or not point_inputs:
                     continue
                 embeddings = embed_point_inputs_batch(

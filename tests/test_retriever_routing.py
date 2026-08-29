@@ -12,23 +12,21 @@ class _FakeRetrieverLlm:
     def __init__(self):
         self.bound_tools = None
         self.invoke_count = 0
+        self.calls = []
 
     def bind_tools(self, tools):
         self.bound_tools = tools
         return self
 
-    def invoke(self, _):
+    def invoke(self, messages):
         self.invoke_count += 1
+        self.calls.append(list(messages))
         return SimpleNamespace(tool_calls=[{
             "name": "finish",
             "args": {
                 "status": "COMPLETE",
                 "reason": "필요한 근거를 확보했습니다.",
-                "selected_evidence": [{
-                    "result_id": "retrieval:plan_1",
-                    "item_indexes": [0],
-                    "reason": "질문에 필요한 값을 포함합니다."
-                }]
+                "selected_result_ids": ["retrieval:plan_1"]
             },
         }])
 
@@ -42,6 +40,7 @@ class _RetryingRetrieverLlm(_FakeRetrieverLlm):
         if self.invoke_count < len(self.invalid_tool_calls):
             tool_calls = self.invalid_tool_calls[self.invoke_count]
             self.invoke_count += 1
+            self.calls.append(list(messages))
             return SimpleNamespace(tool_calls=tool_calls)
         return super().invoke(messages)
 
@@ -52,7 +51,7 @@ class _InvalidRetrieverLlm(_FakeRetrieverLlm):
         return SimpleNamespace(tool_calls=[])
 
 
-def _state_without_plans():
+def _retrieval_state():
     return {
         "question_id": "question-1",
         "question_text": "삼성전자의 영문 기업명을 알려줘",
@@ -61,7 +60,6 @@ def _state_without_plans():
             normalized_question="삼성전자의 영문 기업명",
             decision_reason="기업 속성 조회가 필요합니다."
         ),
-        "plans": [],
         "retrieval_status": "CONTINUE",
         "retrieval_results": [
             RetrievalResult(
@@ -83,18 +81,15 @@ def test_route_after_retrieval_returns_registered_retriever_key():
     }) == "retriever"
 
 
-def test_retriever_can_finish_when_plan_list_is_empty():
+def test_retriever_can_finish_with_two_tool_interface():
     llm = _FakeRetrieverLlm()
 
-    update = graph_module.retriever(_state_without_plans(), llm=llm)
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
 
     assert update["retrieval_status"] == "COMPLETE"
-    assert update["selected_evidence"][0].result_id == "retrieval:plan_1"
+    assert update["selected_result_ids"] == ["retrieval:plan_1"]
     assert {tool.name for tool in llm.bound_tools} == {
         "retrieve_search",
-        "create_plan",
-        "delete_plan",
-        "modify_plan",
         "finish",
     }
     assert llm.invoke_count == 1
@@ -103,10 +98,52 @@ def test_retriever_can_finish_when_plan_list_is_empty():
 def test_retriever_retries_when_tool_call_is_missing():
     llm = _RetryingRetrieverLlm([[]])
 
-    update = graph_module.retriever(_state_without_plans(), llm=llm)
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
 
     assert update["retrieval_status"] == "COMPLETE"
     assert llm.invoke_count == 2
+
+
+def test_retriever_retries_unknown_plan_dependency():
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "retrieve_search",
+            "args": {
+                "plan": {
+                    "source": "qdrant",
+                    "query": "확인된 공시의 판매전략",
+                    "purpose": "판매전략 근거 확인",
+                    "dependencies": ["d20240306000686"],
+                },
+                "limit": 5,
+            },
+        }
+    ]])
+
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
+
+    assert update["retrieval_status"] == "COMPLETE"
+    assert llm.invoke_count == 2
+    assert "Plan dependency RetrievalResult" in llm.calls[1][-1].content
+
+
+def test_retriever_retries_unknown_finish_result_id():
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "finish",
+            "args": {
+                "status": "COMPLETE",
+                "reason": "근거를 확보했습니다.",
+                "selected_result_ids": ["retrieval:unknown"],
+            },
+        }
+    ]])
+
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
+
+    assert update["retrieval_status"] == "COMPLETE"
+    assert llm.invoke_count == 2
+    assert "RetrievalResult를 찾지 못했습니다" in llm.calls[1][-1].content
 
 
 def test_retriever_reports_invalid_tool_calls_after_retries():
@@ -116,6 +153,6 @@ def test_retriever_reports_invalid_tool_calls_after_retries():
         ValueError,
         match="재시도 후에도.*호출 개수: 0",
     ):
-        graph_module.retriever(_state_without_plans(), llm=llm)
+        graph_module.retriever(_retrieval_state(), llm=llm)
 
     assert llm.invoke_count == graph_module.MAX_TOOL_CALL_RETRIES + 1

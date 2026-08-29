@@ -65,6 +65,64 @@ def test_explicit_sections_preserve_hierarchy_paths_and_direct_block_order():
     ]
 
 
+def test_atoc_table_group_titles_create_children_of_explicit_section():
+    xml = """<DOCUMENT><BODY>
+    <SECTION-1><TITLE>III. 재무에 관한 사항</TITLE>
+      <SECTION-2><TITLE>3. 연결재무제표 주석</TITLE>
+        <P>주석 서론</P>
+        <TABLE-GROUP ACLASS="{XBRL}NT_C_DX801000">
+          <TITLE ATOC="Y" ATOCID="267">1. 일반사항 (연결)</TITLE>
+          <TABLE><TR><TD>첫 번째 주석</TD></TR></TABLE>
+        </TABLE-GROUP>
+        <TABLE-GROUP>
+          <TITLE ATOC="N">표 제목</TITLE>
+          <TABLE><TR><TD>표 본문</TD></TR></TABLE>
+        </TABLE-GROUP>
+        <TABLE-GROUP ACLASS="{XBRL}NT_C_DX841000">
+          <TITLE ATOC="Y" ATOCID="268">2. 비연결구조화기업 (연결)</TITLE>
+          <TABLE><TR><TD>두 번째 주석</TD></TR></TABLE>
+        </TABLE-GROUP>
+      </SECTION-2>
+    </SECTION-1></BODY></DOCUMENT>"""
+
+    result = chunk_sections(xml, document_context=_document_context())
+
+    assert [section.title for section in result.sections] == [
+        "III. 재무에 관한 사항",
+        "3. 연결재무제표 주석",
+        "1. 일반사항 (연결)",
+        "2. 비연결구조화기업 (연결)",
+    ]
+    parent, first, second = result.sections[1:]
+    assert parent.boundary_kind == SectionBoundaryKind.EXPLICIT
+    assert [block.block_type for block in parent.blocks] == [
+        SectionBlockType.P,
+        SectionBlockType.TABLE_GROUP,
+    ]
+    assert first.parent_section_id == parent.id
+    assert second.parent_section_id == parent.id
+    assert first.level == parent.level + 1
+    assert first.boundary_kind == SectionBoundaryKind.IMPLICIT
+    assert first.section_path == (
+        "III. 재무에 관한 사항",
+        "3. 연결재무제표 주석",
+        "1. 일반사항 (연결)",
+    )
+    assert [block.block_type for block in first.blocks] == [
+        SectionBlockType.TABLE_GROUP
+    ]
+    assert [block.block_type for block in second.blocks] == [
+        SectionBlockType.TABLE_GROUP
+    ]
+    paths = [
+        source_ref.element_path
+        for section in result.sections
+        for block in section.blocks
+        for source_ref in block.source_refs
+    ]
+    assert len(paths) == len(set(paths))
+
+
 def test_every_source_block_belongs_to_only_one_deepest_section():
     xml = """<DOCUMENT><SECTION-1><TITLE>상위</TITLE><P>상위 본문</P>
     <SECTION-2><TITLE>하위</TITLE><P>하위 본문</P><TABLE><TR><TD>A</TD></TR></TABLE>

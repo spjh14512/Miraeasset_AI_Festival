@@ -1,19 +1,10 @@
-schema_version: "qdrant-live-schema.v1"
+schema_version: "qdrant-schema.v2"
 
-# This file describes the collection observed directly from the local Qdrant
-# instance. Runtime counts are a snapshot and are not schema constraints.
-inspection:
-  source: "Qdrant localhost instance"
-  observed_on: "2026-08-26"
-  collection_status: "green"
-  optimizer_status: "ok"
-  points_count: 28927
-  indexed_vectors_count: 29382
-  segments_count: 4
-  point_kind_counts:
-    TEXT: 14187
-    KV_TABLE: 789
-    R_TABLE: 13951
+# Target schema used by the Point builder and insertion code. This edit does not
+# migrate or mutate an existing Qdrant collection.
+deployment:
+  live_payload_migrated: false
+  note: "Existing Qdrant Points and payload indexes are intentionally unchanged."
 
 collection:
   name: "dart_evidence"
@@ -21,33 +12,14 @@ collection:
   replication_factor: 1
   write_consistency_factor: 1
   on_disk_payload: true
-  hnsw_config:
-    m: 16
-    ef_construct: 100
-    full_scan_threshold: 10000
-    max_indexing_threads: 0
-    on_disk: false
-  optimizer_config:
-    deleted_threshold: 0.2
-    vacuum_min_vector_number: 1000
-    default_segment_number: 0
-    indexing_threshold: 10000
-    flush_interval_sec: 5
-  wal_config:
-    wal_capacity_mb: 32
-    wal_segments_ahead: 0
-    wal_retain_closed: 1
-  quantization_config: null
-  strict_mode_config: null
 
 point:
   id:
     type: "uuid"
     required: true
-    observed_version: 5
     policy: "uuid_v5"
     namespace: "9220d409-a029-5497-8ab2-fc39b239ab18"
-    note: "Point UUID identity continues to use the Canonical source Evidence ID."
+    note: "Point UUID identity uses the Canonical source Evidence ID."
     identity_keys:
       TEXT: "{source_evidence_id}"
       KV_TABLE: "{source_evidence_id}"
@@ -61,10 +33,6 @@ point:
       dimension: 1024
       distance: "Cosine"
       required: true
-      storage:
-        on_disk: null
-        datatype: null
-        multivector: false
       embedding:
         model: "bge-m3"
         implementation: "FlagEmbedding.BGEM3FlagModel"
@@ -73,7 +41,27 @@ point:
         max_length: 3000
         batch_size: 32
         device: "cuda:0"
-        source: "project configuration; embedding settings are not stored by Qdrant"
+    sparse:
+      name: "evidence_sparse"
+      type: "sparse"
+      required: true
+      modifier: null
+      embedding:
+        model: "bge-m3"
+        implementation: "FlagEmbedding.BGEM3FlagModel"
+        output_field: "lexical_weights"
+        source_field: "contextual_text"
+        representation: "token ID indices with learned lexical weights"
+        max_length: 3000
+        batch_size: 32
+        device: "cuda:0"
+  hybrid_search:
+    default: true
+    dense_vector: "evidence_dense"
+    sparse_vector: "evidence_sparse"
+    fusion: "RRF"
+    prefetch_limit_multiplier: 5
+    note: "score_threshold applies to the fused RRF score, not the dense cosine score."
   canonical_chunking:
     applies_to: "R_TABLE"
     max_bytes: 32768
@@ -81,234 +69,167 @@ point:
     size_definition: "compact JSON serialized with ensure_ascii=false, UTF-8 bytes"
     boundary: "contiguous records; headers and non-empty table metadata repeat in every chunk"
     balancing: "minimum feasible chunk count with boundaries nearest the remaining average byte size"
-    indivisible_fallback: "preserve one whole-table Point only when headers or every singleton record cannot meet 32 KiB and the full canonical is at most 64 KiB"
     contextual_text:
       structured_numeric: "re-profile each chunk and build its descriptor independently"
       semantic_textual: "render the actual records contained in each chunk"
 
 payload:
   required_fields:
-    - "retrieval_metadata"
+    - "point_kind"
+    - "disclosure_id"
+    - "section_id"
+    - "evidence_id"
+    - "corp_name"
+    - "report_name"
+    - "section_name"
+    - "rcept_date"
     - "contextual_text"
     - "canonical"
   fields:
-    retrieval_metadata:
-      type: "object"
+    point_kind:
+      type: "keyword"
       required: true
-      fields:
-        point_kind:
-          type: "keyword"
-          required: true
-          nullable: false
-          allowed_values: ["TEXT", "KV_TABLE", "R_TABLE"]
-          payload_index: true
-          index_path: "retrieval_metadata.point_kind"
-        evidence_id:
-          type: "keyword"
-          required: true
-          nullable: false
-          format: "d{rcept_no}:src{source_index}:s{section_order}:e{evidence_order}"
-          source_conversion: "replace the Canonical 'evidence:' prefix with 'd'"
-          migration_verified_on: "2026-08-25"
-          payload_index: true
-          index_path: "retrieval_metadata.evidence_id"
-          neo4j_entity: "Evidence"
-          neo4j_property: "id"
-        corp_name:
-          type: "keyword"
-          required: true
-          nullable: false
-          payload_index: true
-          index_path: "retrieval_metadata.corp_name"
-        corp_code:
-          type: "keyword"
-          required: true
-          nullable: false
-          payload_index: true
-          index_path: "retrieval_metadata.corp_code"
-          note: "String value preserves leading zeroes."
-        industry:
-          type: "keyword"
-          required: true
-          nullable: true
-          observed_null_count: 0
-          payload_index: true
-          index_path: "retrieval_metadata.industry"
-        sector:
-          type: "keyword"
-          required: true
-          nullable: true
-          observed_null_count: 0
-          payload_index: true
-          index_path: "retrieval_metadata.sector"
-        report_nm:
-          type: "text"
-          required: true
-          nullable: false
-          payload_index: false
-        base_year:
-          type: "integer"
-          required: true
-          nullable: true
-          observed_null_count: 788
-          observed_range: [2023, 2026]
-          payload_index: true
-          index_path: "retrieval_metadata.base_year"
-        base_month:
-          type: "integer"
-          required: true
-          nullable: true
-          minimum: 1
-          maximum: 12
-          observed_null_count: 788
-          observed_range: [3, 12]
-          payload_index: true
-          index_path: "retrieval_metadata.base_month"
-        table_id:
-          type: "keyword"
-          required: "R_TABLE only"
-          nullable: false
-          omitted_for: ["TEXT", "KV_TABLE"]
-          observed_point_count: 13951
-          payload_index: true
-          index_path: "retrieval_metadata.table_id"
-        row_start_index:
-          type: "integer"
-          required: "R_TABLE row-group or canonical chunk only"
-          nullable: false
-          minimum: 0
-          observed_point_count: 549
-          payload_index: false
-        row_end_index:
-          type: "integer"
-          required: "R_TABLE row-group or canonical chunk only"
-          nullable: false
-          minimum: 0
-          constraint: "row_end_index >= row_start_index"
-          observed_point_count: 549
-          payload_index: false
-        chunk_index:
-          type: "integer"
-          required: "R_TABLE tables producing multiple Points only"
-          nullable: false
-          minimum: 0
-          numbering: "zero-based across all Points produced from the table"
-          observed_point_count: 70
-          payload_index: false
-        chunk_count:
-          type: "integer"
-          required: "R_TABLE tables producing multiple Points only"
-          nullable: false
-          minimum: 2
-          constraint: "chunk_index < chunk_count"
-          observed_point_count: 70
-          payload_index: false
+      nullable: false
+      allowed_values: ["TEXT", "KV_TABLE", "R_TABLE"]
+      payload_index: true
+      index_path: "point_kind"
+    disclosure_id:
+      type: "keyword"
+      required: true
+      nullable: false
+      format: "d{rcept_no}"
+      derivation: "Evidence ID prefix before :src"
+      payload_index: true
+      index_path: "disclosure_id"
+      neo4j_entity: "Disclosure"
+      neo4j_property: "id"
+    section_id:
+      type: "keyword"
+      required: true
+      nullable: false
+      format: "d{rcept_no}:src{source_index}:s{section_order}"
+      derivation: "Evidence ID prefix before :e"
+      payload_index: true
+      index_path: "section_id"
+      neo4j_entity: "Section"
+      neo4j_property: "id"
+    evidence_id:
+      type: "keyword"
+      required: true
+      nullable: false
+      format: "d{rcept_no}:src{source_index}:s{section_order}:e{evidence_order}"
+      source_conversion: "replace the Canonical 'evidence:' prefix with 'd'"
+      payload_index: true
+      index_path: "evidence_id"
+      neo4j_entity: "Evidence"
+      neo4j_property: "id"
+    corp_name:
+      type: "keyword"
+      required: true
+      nullable: false
+      payload_index: true
+      index_path: "corp_name"
+    report_name:
+      type: "text"
+      required: true
+      nullable: false
+      payload_index: false
+    section_name:
+      type: "text"
+      required: true
+      nullable: false
+      construction: "section_path and Evidence heading_path joined with ' > '"
+      payload_index: false
+    rcept_date:
+      type: "keyword"
+      required: true
+      nullable: false
+      format: "YYYYMMDD"
+      source_field: "manifest.rcept_dt"
+      payload_index: true
+      index_path: "rcept_date"
     contextual_text:
       type: "text"
       required: true
       nullable: false
       payload_index: false
-      note: "Exact text used as the dense embedding input."
+      note: "Exact text used for both dense and lexical sparse embedding inputs."
     canonical:
       type: "object"
       required: true
       nullable: false
       payload_index: false
-      table_metadata:
-        type: "object"
-        required: false
-        omission_policy: "Omitted when every table metadata field is empty."
-        fields:
-          title:
-            type: "text"
-            required: false
-          captions:
-            type: "list<text>"
-            required: false
-          units:
-            type: "list<text>"
-            required: false
-          notes:
-            type: "list<text>"
-            required: false
       variants:
         TEXT:
           fields:
-            text:
-              type: "text"
-              required: true
-              nullable: false
+            text: {type: "text", required: true}
         KV_TABLE:
           fields:
             table_metadata:
-              reference: "payload.fields.canonical.table_metadata"
+              type: "object"
               required: false
+              omission_policy: "Omitted when every table metadata field is empty."
             entries:
               type: "list<object>"
               required: true
-              may_be_empty: true
               item_fields:
-                key:
-                  type: "text"
-                  required: true
-                  nullable: false
-                value:
-                  type: "text"
-                  required: true
-                  nullable: false
+                key: {type: "text", required: true}
+                value: {type: "text", required: true}
         R_TABLE:
           fields:
             table_metadata:
-              reference: "payload.fields.canonical.table_metadata"
+              type: "object"
               required: false
-            headers:
-              type: "list<list<text>>"
-              required: true
-              nullable: false
+              omission_policy: "Omitted when every table metadata field is empty."
+            headers: {type: "list<list<text>>", required: true}
             records:
               type: "list<object>"
               required: true
-              nullable: false
               item_fields:
-                record_index:
-                  type: "integer"
-                  required: true
-                  minimum: 0
-                values:
-                  type: "list<text|null>"
-                  required: true
-          record_scope:
-            whole_table: "all table records"
-            descriptor: "all records, or the current canonical chunk records when size-split"
-            row_group: "records in the inclusive row_start_index..row_end_index range"
-            canonical_chunk: "records in the inclusive row_start_index..row_end_index range"
+                record_index: {type: "integer", required: true, minimum: 0}
+                values: {type: "list<text|null>", required: true}
+    chunking:
+      type: "object"
+      required: false
+      applies_when: "One R_TABLE produces two or more Points."
+      omission_policy: "Omitted entirely for TEXT, KV_TABLE, and unchunked R_TABLE Points."
+      fields:
+        table_id:
+          type: "keyword"
+          required: true
+          nullable: false
+          payload_index: true
+          index_path: "chunking.table_id"
+        chunk_index:
+          type: "integer"
+          required: true
+          minimum: 0
+          numbering: "zero-based"
+          payload_index: false
+        chunk_count:
+          type: "integer"
+          required: true
+          minimum: 2
+          payload_index: false
+        row_start_index:
+          type: "integer"
+          required: true
+          minimum: 0
+          payload_index: false
+        row_end_index:
+          type: "integer"
+          required: true
+          minimum: 0
+          constraint: "row_end_index >= row_start_index"
+          payload_index: false
 
-# These are the nine payload indexes returned by Qdrant collection inspection.
+# Indexes expected when a collection is initialized for this target schema.
+# Existing live indexes are not changed by this schema-file edit.
 payload_indexes:
-  - path: "retrieval_metadata.point_kind"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.evidence_id"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.corp_name"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.corp_code"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.industry"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.sector"
-    type: "keyword"
-    indexed_points: 28927
-  - path: "retrieval_metadata.base_year"
-    type: "integer"
-    indexed_points: 28139
-  - path: "retrieval_metadata.base_month"
-    type: "integer"
-    indexed_points: 28139
-  - path: "retrieval_metadata.table_id"
-    type: "keyword"
-    indexed_points: 13951
+  - {path: "point_kind", type: "keyword"}
+  - {path: "disclosure_id", type: "keyword"}
+  - {path: "section_id", type: "keyword"}
+  - {path: "evidence_id", type: "keyword"}
+  - {path: "corp_name", type: "keyword"}
+  - {path: "rcept_date", type: "keyword"}
+  - {path: "chunking.table_id", type: "keyword"}

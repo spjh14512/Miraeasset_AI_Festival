@@ -7,10 +7,16 @@ from typing import Annotated, Any, Literal
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import InjectedState
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from pydantic.json_schema import SkipJsonSchema
 
-from vector_db.text2vector import text_to_vector
+from vector_db.text2vector import HybridEmbedding, text_to_hybrid_vector
 
 from dotenv import load_dotenv
 import os
@@ -20,9 +26,10 @@ from qdrant_client import QdrantClient, models
 
 from . import system_prompts as sp
 from .compactor import compact_qdrant_point, point_requires_compaction
-from .llm import get_llm
+from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
 from .retrieval_result_parser import (
     extract_qdrant_points,
+    parse_and_remove_qdrant_contextual_text,
     parse_neo4j_response,
     parse_qdrant_response,
 )
@@ -31,7 +38,6 @@ from .state import (
     AiAnswer,
     AnswerGeneratorOutput,
     Citation,
-    EvidenceSelection,
     Plan,
     PlanDraft,
     RetrievalResult,
@@ -67,7 +73,9 @@ qdrant_host = os.getenv("QDRANT_HOST") or "localhost"
 qdrant_port = int(os.getenv("QDRANT_PORT") or 6333)
 qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port)
 qdrant_collection_name = os.getenv("QDRANT_COLLECTION_NAME") or "dart_evidence"
-qdrant_vector_name = "evidence_dense"
+qdrant_dense_vector_name = "evidence_dense"
+qdrant_sparse_vector_name = "evidence_sparse"
+HYBRID_PREFETCH_MULTIPLIER = 5
 
 class CypherQuery(BaseModel):
     """실행 가능한 read-only Cypher와 parameter를 분리한 요청입니다."""
@@ -76,45 +84,69 @@ class CypherQuery(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 
-QdrantPointKind = Literal["TEXT", "KV_TABLE", "R_TABLE"]
+class CypherQueryToolArgs(BaseModel):
+    """Clova function calling이 지원하는 단순 field로 만든 Cypher 출력입니다."""
+
+    cypher: str = Field(..., min_length=1, description="실행할 read-only Cypher")
+    parameters_json: str = Field(
+        ...,
+        min_length=2,
+        description="Cypher parameter를 나타내는 JSON object 문자열",
+    )
+
+    @field_validator("parameters_json")
+    @classmethod
+    def validate_parameters_json(cls, value: str) -> str:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError("parameters_json은 유효한 JSON이어야 합니다.") from error
+        if not isinstance(parsed, dict):
+            raise ValueError("parameters_json은 JSON object여야 합니다.")
+        return value
+
+    def to_cypher_query(self) -> CypherQuery:
+        return CypherQuery(
+            cypher=self.cypher,
+            parameters=json.loads(self.parameters_json),
+        )
+
+
 QdrantFilterField = Literal[
-    "retrieval_metadata.evidence_id",
-    "retrieval_metadata.corp_name",
-    "retrieval_metadata.corp_code",
-    "retrieval_metadata.industry",
-    "retrieval_metadata.sector",
-    "retrieval_metadata.base_year",
-    "retrieval_metadata.base_month",
-    "retrieval_metadata.table_id",
+    "disclosure_id",
+    "section_id",
+    "evidence_id",
+    "rcept_date",
+    "chunking.table_id",
 ]
 QDRANT_STRING_FILTER_FIELDS = {
-    "retrieval_metadata.evidence_id",
-    "retrieval_metadata.corp_name",
-    "retrieval_metadata.corp_code",
-    "retrieval_metadata.industry",
-    "retrieval_metadata.sector",
-    "retrieval_metadata.table_id",
+    "disclosure_id",
+    "section_id",
+    "evidence_id",
+    "rcept_date",
+    "chunking.table_id",
 }
-QDRANT_INTEGER_FILTER_FIELDS = {
-    "retrieval_metadata.base_year",
-    "retrieval_metadata.base_month",
-}
+QDRANT_INTEGER_FILTER_FIELDS: set[str] = set()
+
+
+class RepeatedNoResultsFilterError(ValueError):
+    """NO_RESULTS가 발생한 Qdrant filter 조합을 다시 생성했을 때 발생합니다."""
 
 
 class QdrantFilter(BaseModel):
     """하나의 indexed Qdrant payload 조건입니다."""
 
     key: QdrantFilterField = Field(
-        description="허용 목록에 포함된 indexed retrieval_metadata 경로",
+        description="허용 목록에 포함된 indexed payload 경로",
     )
     match: str | int | None = Field(
         default=None,
         description="정확 일치시킬 string 또는 integer scalar 값. list는 허용하지 않음",
     )
-    gt: int | None = Field(default=None, description="초과 조건. 연도 또는 월에만 사용")
-    gte: int | None = Field(default=None, description="이상 조건. 연도 또는 월에만 사용")
-    lt: int | None = Field(default=None, description="미만 조건. 연도 또는 월에만 사용")
-    lte: int | None = Field(default=None, description="이하 조건. 연도 또는 월에만 사용")
+    gt: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
+    gte: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
+    lt: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
+    lte: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
 
     @model_validator(mode="after")
     def validate_filter(self) -> "QdrantFilter":
@@ -137,20 +169,11 @@ class QdrantFilter(BaseModel):
                 raise ValueError(f"{self.key}의 match는 integer여야 합니다.")
 
         if has_range and self.key not in QDRANT_INTEGER_FILTER_FIELDS:
-            raise ValueError("range filter는 base_year와 base_month에만 사용할 수 있습니다.")
+            raise ValueError("현재 Qdrant payload filter에는 range를 사용할 수 없습니다.")
         if self.gt is not None and self.gte is not None:
             raise ValueError("range filter에는 gt와 gte를 함께 사용할 수 없습니다.")
         if self.lt is not None and self.lte is not None:
             raise ValueError("range filter에는 lt와 lte를 함께 사용할 수 없습니다.")
-
-        if self.key == "retrieval_metadata.base_month":
-            values = [
-                value
-                for value in (self.match, *range_values.values())
-                if value is not None
-            ]
-            if any(not isinstance(value, int) or not 1 <= value <= 12 for value in values):
-                raise ValueError("base_month 값은 1 이상 12 이하여야 합니다.")
 
         lower = self.gt if self.gt is not None else self.gte
         upper = self.lt if self.lt is not None else self.lte
@@ -172,19 +195,12 @@ class QdrantQuery(BaseModel):
         default=None,
         description="vector mode에서 embedding할 자연어 검색문. filter mode에서는 null",
     )
-    query_vector: SkipJsonSchema[list[float] | None] = None
-    point_kinds: list[QdrantPointKind] = Field(
-        default_factory=lambda: ["TEXT", "KV_TABLE", "R_TABLE"],
-        min_length=1,
-        description=(
-            "검색할 point 종류. point_kind는 filter가 아니라 반드시 이 필드에 지정"
-        ),
-    )
+    query_vector: SkipJsonSchema[HybridEmbedding | None] = None
     filters: list[QdrantFilter] = Field(
         default_factory=list,
         description="Plan에 명시된 조건으로 만든 indexed payload filter 목록",
     )
-    limit: SkipJsonSchema[int] = 3
+    limit: SkipJsonSchema[int] = 5
     score_threshold: float | None = Field(
         default=None,
         ge=-1.0,
@@ -205,8 +221,6 @@ class QdrantQuery(BaseModel):
             raise ValueError("filter mode에는 query_vector를 사용할 수 없습니다.")
         if self.mode == "filter" and self.score_threshold is not None:
             raise ValueError("filter mode에는 score_threshold를 사용할 수 없습니다.")
-        if len(self.point_kinds) != len(set(self.point_kinds)):
-            raise ValueError("point_kinds에는 중복 값을 사용할 수 없습니다.")
         if (
             not isinstance(self.limit, int)
             or isinstance(self.limit, bool)
@@ -217,11 +231,63 @@ class QdrantQuery(BaseModel):
         filter_keys = [item.key for item in self.filters]
         if len(filter_keys) != len(set(filter_keys)):
             raise ValueError("동일한 key의 filter를 여러 번 사용할 수 없습니다.")
-        if "retrieval_metadata.table_id" in filter_keys and self.point_kinds != ["R_TABLE"]:
-            raise ValueError("table_id filter에는 point_kinds=['R_TABLE']을 사용해야 합니다.")
-
         self.query_text = query_text
         return self
+
+
+class QdrantQueryToolArgs(BaseModel):
+    """CLOVA function calling용 단순 field Qdrant query 출력입니다."""
+
+    mode: Literal["vector", "filter"] = Field(
+        description="의미 검색은 vector, 식별자 정확 조회는 filter",
+    )
+    query_text: str = Field(
+        description="vector 검색문. filter mode에서는 빈 문자열",
+    )
+    filters_json: str = Field(
+        ...,
+        min_length=2,
+        description="Qdrant filter object 목록을 나타내는 JSON array 문자열",
+    )
+    score_threshold_json: str = Field(
+        ...,
+        min_length=1,
+        description="score threshold 숫자 또는 null을 나타내는 JSON 문자열",
+    )
+
+    @field_validator("filters_json")
+    @classmethod
+    def validate_filters_json(cls, value: str) -> str:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError("filters_json은 유효한 JSON이어야 합니다.") from error
+        if not isinstance(parsed, list):
+            raise ValueError("filters_json은 JSON array여야 합니다.")
+        return value
+
+    @field_validator("score_threshold_json")
+    @classmethod
+    def validate_score_threshold_json(cls, value: str) -> str:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(
+                "score_threshold_json은 유효한 JSON이어야 합니다."
+            ) from error
+        if parsed is not None and (
+            not isinstance(parsed, (int, float)) or isinstance(parsed, bool)
+        ):
+            raise ValueError("score_threshold_json은 숫자 또는 null이어야 합니다.")
+        return value
+
+    def to_qdrant_query(self) -> QdrantQuery:
+        return QdrantQuery(
+            mode=self.mode,
+            query_text=self.query_text.strip() or None,
+            filters=json.loads(self.filters_json),
+            score_threshold=json.loads(self.score_threshold_json),
+        )
 
 
 @lru_cache(maxsize=1)
@@ -239,7 +305,7 @@ def _get_cypher_llm() -> Any:
     """공용 LLM에 Cypher structured output을 한 번 binding합니다."""
 
     return get_llm().with_structured_output(
-        CypherQuery,
+        CypherQueryToolArgs,
         method="function_calling",
     )
 
@@ -249,7 +315,7 @@ def _get_query_llm() -> Any:
     """공용 LLM에 Qdrant query structured output을 한 번 binding합니다."""
 
     return get_llm().with_structured_output(
-        QdrantQuery,
+        QdrantQueryToolArgs,
         method="function_calling",
     )
 
@@ -258,7 +324,7 @@ def _resolve_plan_dependencies(
     plan: Plan,
     state: AgentState,
 ) -> list[RetrievalResult]:
-    """Plan의 dependency ID를 기존 RetrievalResult로 해석합니다.
+    """Plan에 명시적으로 저장된 dependency를 RetrievalResult로 해석합니다.
 
     입력 예시:
         plan.dependencies == ["result_plan_1"]
@@ -289,7 +355,7 @@ def _build_query_builder_human_message(
     user_question: str,
     dependencies: list[RetrievalResult],
 ) -> HumanMessage:
-    """Builder가 사용할 질문, Plan, dependency 결과를 JSON message로 만듭니다.
+    """Builder가 사용할 질문, Plan, 이전 결과를 JSON message로 만듭니다.
 
     입력 예시:
         plan=Plan(plan_id="plan_2", dependencies=["result_plan_1"], ...)
@@ -297,15 +363,18 @@ def _build_query_builder_human_message(
         dependencies=[RetrievalResult(result_id="result_plan_1", ...)]
 
     출력 예시:
-        HumanMessage(content='{"user_question": ..., "plan": ..., "dependency_results": [...] }')
+        HumanMessage(content='{"user_question": ..., "plan": ..., "previous_results": [...] }')
     """
 
     return HumanMessage(
         content=json.dumps(
             {
                 "user_question": user_question,
-                "plan": plan.model_dump(mode="json"),
-                "dependency_results": [
+                "plan": plan.model_dump(
+                    mode="json",
+                    exclude={"dependencies"},
+                ),
+                "previous_results": [
                     result.model_dump(mode="json")
                     for result in dependencies
                 ],
@@ -317,117 +386,204 @@ def _build_query_builder_human_message(
 
 @tool
 def retrieve_search(
-    plan_id: str,
+    plan: PlanDraft,
     state: Annotated[AgentState, InjectedState],
-    limit: int = 3,
+    limit: int = 5,
 ) -> dict:
-    """지정한 plan을 실행하고 retrieval 결과가 포함된 state update를 반환합니다.
+    """전달받은 단일 plan을 즉시 실행하고 retrieval 결과를 state에 추가합니다.
 
     args:
-        plan_id(str): 실행할 Plan의 ID
-        limit(int): Qdrant에서 조회할 누적 상위 point 수. 최초 검색은 3, 추가 검색은 5 단위로 늘립니다. Neo4j 검색에는 적용하지 않습니다.
+        plan(PlanDraft): 즉시 실행할 source, query, purpose, dependencies
+        limit(int): Qdrant에서 조회할 누적 상위 point 수. 최초 검색은 5, 추가 검색은 5 단위로 늘립니다. Neo4j 검색에는 적용하지 않습니다.
 
     return:
-        dict: 실행 완료된 plan을 제거하고 검색 결과를 추가한 state update
+        dict: 자동 할당된 plan_id와 검색 결과를 포함한 state update
     """
 
-    plans = state["plans"]
-    idx = next(
-        (i for i, plan in enumerate(plans) if plan.plan_id == plan_id),
-        None,
-    )
-    if idx is None:
-        raise ValueError(f"plan id가 '{plan_id}'인 Plan 객체를 찾지 못했습니다.")
+    next_plan_seq = state.get("next_plan_seq", 1)
+    executable_plan = Plan.from_plan_draft(plan, next_plan_seq)
+    dependencies = _resolve_plan_dependencies(executable_plan, state)
 
-    plan = plans[idx]
-    dependencies = _resolve_plan_dependencies(plan, state)
+    try:
+        retrieval_result, previous_point_ids, new_point_ids = _execute_retrieval_plan(
+            executable_plan,
+            state=state,
+            dependencies=dependencies,
+            limit=limit,
+        )
+    except (ValidationError, RepeatedNoResultsFilterError) as error:
+        retrieval_result = _build_failed_retrieval_result(
+            executable_plan,
+            status="INVALID_QUERY",
+            error=error,
+            stage="query_builder",
+        )
+        previous_point_ids, new_point_ids = [], []
+    except RuntimeError as error:
+        retrieval_result = _build_failed_retrieval_result(
+            executable_plan,
+            status=_classify_execution_error(error),
+            error=error,
+            stage="query_executor",
+        )
+        previous_point_ids = (
+            list(dict.fromkeys(state.get("retrieved_qdrant_point_ids", [])))
+            if executable_plan.source == "qdrant"
+            else []
+        )
+        new_point_ids = []
 
-    if (plan.source == "neo4j"):
-        # Neo4j Retrieval
+    retrieval_result = retrieval_result.model_copy(update={
+        "metadata": {
+            **retrieval_result.metadata,
+            "plan_purpose": executable_plan.purpose
+        }
+    })
+
+    update = {
+        "next_plan_seq": next_plan_seq + 1,
+        "retrieval_results": [retrieval_result],
+    }
+    if executable_plan.source == "qdrant":
+        update["retrieved_qdrant_point_ids"] = previous_point_ids + new_point_ids
+    return update
+
+
+def _execute_retrieval_plan(
+    plan: Plan,
+    *,
+    state: AgentState,
+    dependencies: list[RetrievalResult],
+    limit: int,
+) -> tuple[RetrievalResult, list[str], list[str]]:
+    if plan.source == "neo4j":
         neo4j_cypher = cypher_builder(
             plan,
             user_question=state["question_text"],
             dependencies=dependencies,
         )
         print("-- Neo4j에서 다음 Cypher를 실행합니다.: --", neo4j_cypher, "\n\n")
-        retrieval_result = cypher_executor(neo4j_cypher, plan.plan_id)
+        try:
+            result = cypher_executor(neo4j_cypher, plan.plan_id)
+        except RuntimeError as error:
+            error.retrieval_query = neo4j_cypher.cypher
+            raise
+        return result, [], []
 
-    elif (plan.source == "qdrant"):
-        # Qdrant Retrieval
-        if (
-            not isinstance(limit, int)
-            or isinstance(limit, bool)
-            or limit > 100
-            or (limit != 3 and (limit < 5 or limit % 5 != 0))
-        ):
-            raise ValueError(
-                "Qdrant limit은 3 또는 5 이상 100 이하의 5 배수여야 합니다."
-            )
-        qdrant_query = query_builder(
-            plan,
-            user_question=state["question_text"],
-            dependencies=dependencies,
-        )
-        qdrant_query.limit = limit
-        print("-- Qdrant에서 다음 Query를 실행합니다.: --", qdrant_query, "\n\n")
-        raw_result = query_executor(qdrant_query)
-        raw_points = list(extract_qdrant_points(raw_result))
-        previous_point_ids = list(dict.fromkeys(
-            state.get("retrieved_qdrant_point_ids", [])
-        ))
-        seen_point_ids = set(previous_point_ids)
-        points = []
-        new_point_ids: list[str] = []
-        for point in raw_points:
-            point_id = getattr(point, "id", None)
-            if point_id is None:
-                raise ValueError("Qdrant point에 id가 없습니다.")
-            point_id = str(point_id)
-            if point_id in seen_point_ids:
-                continue
-            seen_point_ids.add(point_id)
-            new_point_ids.append(point_id)
-            points.append(point)
-
-        selected_item_ids: dict[str, list[int]] = {}
-        for point in points:
-            if not point_requires_compaction(point):
-                continue
-            point_id = getattr(point, "id", None)
-            if point_id is None:
-                raise ValueError("Compaction 대상 Qdrant point에 id가 없습니다.")
-            selected_item_ids[str(point_id)] = compact_qdrant_point(point, plan)
-        retrieval_result = parse_qdrant_response(
-            points,
-            plan_id=plan.plan_id,
-            query=qdrant_query.model_dump_json(exclude={"query_vector"}),
-            r_table_detail="records",
-            selected_item_ids=selected_item_ids,
-            metadata={
-                "mode": qdrant_query.mode,
-                "requested_limit": limit,
-                "raw_point_count": len(raw_points),
-                "duplicate_point_count": len(raw_points) - len(points),
-            },
-        )
-
-    else:
+    if plan.source != "qdrant":
         raise ValueError("retrieval source가 neo4j 또는 qdrant가 아닙니다.")
+    if (
+        not isinstance(limit, int)
+        or isinstance(limit, bool)
+        or limit > 100
+        or limit < 5
+        or limit % 5 != 0
+    ):
+        raise ValueError(
+            "Qdrant limit은 5 이상 100 이하의 5 배수여야 합니다."
+        )
 
-    retrieval_result = retrieval_result.model_copy(update={
-        "metadata": {
-            **retrieval_result.metadata,
-            "plan_purpose": plan.purpose
-        }
-    })
+    qdrant_query = query_builder(
+        plan,
+        user_question=state["question_text"],
+        dependencies=dependencies,
+    )
+    qdrant_query.limit = limit
+    print("-- Qdrant에서 Query retrieval을 실행합니다. --\n\n")
+    try:
+        raw_result = query_executor(qdrant_query)
+    except RuntimeError as error:
+        error.retrieval_query = qdrant_query.model_dump_json(
+            exclude={"query_vector"}
+        )
+        raise
+    raw_points = list(extract_qdrant_points(raw_result))
+    previous_point_ids = list(dict.fromkeys(
+        state.get("retrieved_qdrant_point_ids", [])
+    ))
+    seen_point_ids = set(previous_point_ids)
+    points = []
+    new_point_ids: list[str] = []
+    for point in raw_points:
+        point_id = getattr(point, "id", None)
+        if point_id is None:
+            raise ValueError("Qdrant point에 id가 없습니다.")
+        point_id = str(point_id)
+        if point_id in seen_point_ids:
+            continue
+        seen_point_ids.add(point_id)
+        new_point_ids.append(point_id)
+        points.append(point)
 
-    update = {
-        "plans": plans[:idx] + plans[idx + 1:],
-        "retrieval_results": [retrieval_result],
-    }
-    if plan.source == "qdrant":
-        update["retrieved_qdrant_point_ids"] = previous_point_ids + new_point_ids
-    return update
+    for point in points:
+        parse_and_remove_qdrant_contextual_text(point)
+
+    selected_item_ids: dict[str, list[int]] = {}
+    for point in points:
+        if not point_requires_compaction(point):
+            continue
+        point_id = getattr(point, "id", None)
+        if point_id is None:
+            raise ValueError("Compaction 대상 Qdrant point에 id가 없습니다.")
+        selected_item_ids[str(point_id)] = compact_qdrant_point(point, plan)
+    result = parse_qdrant_response(
+        points,
+        plan_id=plan.plan_id,
+        query=qdrant_query.model_dump_json(exclude={"query_vector"}),
+        r_table_detail="records",
+        selected_item_ids=selected_item_ids,
+        metadata={
+            "mode": qdrant_query.mode,
+            "requested_limit": limit,
+            "raw_point_count": len(raw_points),
+            "duplicate_point_count": len(raw_points) - len(points),
+        },
+    )
+    if raw_points and not points:
+        result.status = "DUPLICATES_ONLY"
+    return result, previous_point_ids, new_point_ids
+
+
+def _classify_execution_error(error: BaseException) -> str:
+    current: BaseException | None = error
+    while current is not None:
+        name = type(current).__name__.lower()
+        message = str(current).lower()
+        if isinstance(current, TimeoutError) or "timeout" in name or "timed out" in message:
+            return "TIMEOUT"
+        if (
+            "syntax" in name
+            or "clienterror" in name
+            or "validation" in name
+            or "invalid query" in message
+            or "bad request" in message
+        ):
+            return "INVALID_QUERY"
+        current = current.__cause__
+    return "ERROR"
+
+
+def _build_failed_retrieval_result(
+    plan: Plan,
+    *,
+    status: str,
+    error: BaseException,
+    stage: str,
+) -> RetrievalResult:
+    return RetrievalResult(
+        result_id=f"retrieval:{plan.plan_id}",
+        plan_id=plan.plan_id,
+        source=plan.source,
+        status=status,
+        query=getattr(error, "retrieval_query", plan.query),
+        items=[],
+        result_count=0,
+        metadata={
+            "failure_stage": stage,
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+        },
+    )
 
 def cypher_builder(
     plan: Plan,
@@ -443,31 +599,97 @@ def cypher_builder(
         _get_cypher_llm()
         if llm is None
         else llm.with_structured_output(
-            CypherQuery,
+            CypherQueryToolArgs,
             method="function_calling",
         )
     )
     schema = neo4j_schema if neo4j_schema is not None else _load_neo4j_schema()
-    result = cypher_llm.invoke(
-        [
-            SystemMessage(
-                content=sp.CYPHER_BUILDER_SYSTEM_PROMPT.format(
-                    neo4j_schema=schema
-                )
-            ),
-            _build_query_builder_human_message(
-                plan,
-                user_question,
-                dependencies,
-            ),
-        ]
+    human_message = _build_query_builder_human_message(
+        plan,
+        user_question,
+        dependencies,
     )
+    print("[Cypher Builder human message]:\n" + human_message.content + "\n\n")
+    messages = [
+        SystemMessage(
+            content=sp.CYPHER_BUILDER_SYSTEM_PROMPT.format(
+                neo4j_schema=schema
+            )
+        ),
+        human_message,
+    ]
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            result = cypher_llm.invoke(messages)
+            tool_args = (
+                result
+                if isinstance(result, CypherQueryToolArgs)
+                else CypherQueryToolArgs.model_validate(result)
+            )
+            return tool_args.to_cypher_query()
+        except (ValidationError, ValueError, TypeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "CypherQuery",
+                error,
+            )))
 
-    return (
-        result
-        if isinstance(result, CypherQuery)
-        else CypherQuery.model_validate(result)
-    )
+def _qdrant_filter_signature(filters: Any) -> tuple[str, ...]:
+    """Qdrant filter 순서와 null field를 무시하는 비교용 signature를 만듭니다.
+
+    입력 예시:
+        [{"key": "evidence_id", "match": "evidence-1"}]
+
+    출력 예시:
+        ('{"key":"evidence_id","match":"evidence-1"}',)
+    """
+
+    if not isinstance(filters, list):
+        return ()
+    normalized = []
+    for condition in filters:
+        if isinstance(condition, BaseModel):
+            condition = condition.model_dump(mode="json", exclude_none=True)
+        if not isinstance(condition, dict):
+            continue
+        normalized.append(json.dumps(
+            {key: value for key, value in condition.items() if value is not None},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ))
+    return tuple(sorted(normalized))
+
+
+def _find_repeated_no_results_filters(
+    query: QdrantQuery,
+    dependencies: list[RetrievalResult],
+) -> list[str]:
+    """동일 filter 조합으로 NO_RESULTS였던 dependency ID를 반환합니다.
+
+    입력 예시:
+        query.filters == [{"key": "evidence_id", "match": "evidence-1"}]
+
+    출력 예시:
+        ["retrieval:plan_1"]
+    """
+
+    signature = _qdrant_filter_signature(query.filters)
+    conflicts = []
+    for result in dependencies:
+        if result.source != "qdrant" or result.status != "NO_RESULTS":
+            continue
+        try:
+            previous_query = json.loads(result.query)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if not isinstance(previous_query, dict):
+            continue
+        if _qdrant_filter_signature(previous_query.get("filters")) == signature:
+            conflicts.append(result.result_id)
+    return conflicts
+
 
 def query_builder(
     plan: Plan,
@@ -483,7 +705,7 @@ def query_builder(
         _get_query_llm()
         if llm is None
         else llm.with_structured_output(
-            QdrantQuery,
+            QdrantQueryToolArgs,
             method="function_calling",
         )
     )
@@ -492,28 +714,56 @@ def query_builder(
         if qdrant_schema is not None
         else _load_qdrant_query_schema()
     )
-    result = query_llm.invoke(
-        [
-            SystemMessage(
-                content=sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT.format(
-                    qdrant_query_schema=query_schema,
-                )
-            ),
-            _build_query_builder_human_message(
-                plan,
-                user_question,
-                dependencies,
+    query_builder_human_message = _build_query_builder_human_message(
+        plan,
+        user_question,
+        dependencies,
+    )
+    print(
+        "[query builder human message]:\n",
+        query_builder_human_message.content,
+        "\n\n",
+        sep="",
+    )
+    messages = [
+        SystemMessage(
+            content=sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT.format(
+                qdrant_query_schema=query_schema,
             )
-        ]
-    )
+        ),
+        query_builder_human_message,
+    ]
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            result = query_llm.invoke(messages)
+            tool_args = (
+                result
+                if isinstance(result, QdrantQueryToolArgs)
+                else QdrantQueryToolArgs.model_validate(result)
+            )
+            query = tool_args.to_qdrant_query()
+            conflicts = _find_repeated_no_results_filters(query, dependencies)
+            if conflicts:
+                raise RepeatedNoResultsFilterError(
+                    "NO_RESULTS가 발생한 filter 조합을 반복해서 생성했습니다: "
+                    f"{conflicts}. query_text 변경보다 filter 조건의 제거 또는 "
+                    "완화를 우선하세요."
+                )
+            break
+        except (
+            ValidationError,
+            ValueError,
+            TypeError,
+        ) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "QdrantQuery",
+                error,
+            )))
 
-    query = (
-        result
-        if isinstance(result, QdrantQuery)
-        else QdrantQuery.model_validate(result)
-    )
     if query.mode == "vector":
-        query.query_vector = text_to_vector(query.query_text)
+        query.query_vector = text_to_hybrid_vector(query.query_text)
     return query
 
 
@@ -538,12 +788,7 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
 
 def query_executor(qdrant_query: QdrantQuery) -> Any:
 
-    must = [
-        models.FieldCondition(
-            key="retrieval_metadata.point_kind",
-            match=models.MatchAny(any=qdrant_query.point_kinds)
-        )
-    ]
+    must = []
     for condition in qdrant_query.filters:
         if condition.match is not None:
             must.append(models.FieldCondition(
@@ -558,15 +803,34 @@ def query_executor(qdrant_query: QdrantQuery) -> Any:
                     exclude_none=True
                 ))
             ))
-    query_filter = models.Filter(must=must)
+    query_filter = models.Filter(must=must) if must else None
 
     try:
         if qdrant_query.mode == "vector":
+            embedding = qdrant_query.query_vector
+            if not isinstance(embedding, HybridEmbedding):
+                raise ValueError("vector mode requires a hybrid query embedding")
+            prefetch_limit = qdrant_query.limit * HYBRID_PREFETCH_MULTIPLIER
             result = qdrant_client.query_points(
                 collection_name=qdrant_collection_name,
-                query=qdrant_query.query_vector,
-                using=qdrant_vector_name,
-                query_filter=query_filter,
+                prefetch=[
+                    models.Prefetch(
+                        query=list(embedding.dense),
+                        using=qdrant_dense_vector_name,
+                        filter=query_filter,
+                        limit=prefetch_limit,
+                    ),
+                    models.Prefetch(
+                        query=models.SparseVector(
+                            indices=list(embedding.sparse.indices),
+                            values=list(embedding.sparse.values),
+                        ),
+                        using=qdrant_sparse_vector_name,
+                        filter=query_filter,
+                        limit=prefetch_limit,
+                    ),
+                ],
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
                 limit=qdrant_query.limit,
                 score_threshold=qdrant_query.score_threshold,
                 with_payload=True,
@@ -585,172 +849,60 @@ def query_executor(qdrant_query: QdrantQuery) -> Any:
 
     return result
 
-@tool
-def create_plan(
-    new_plan: PlanDraft,
-    position: str,
-    state: Annotated[AgentState, InjectedState]
-) -> dict:
-    """추가적인 Plan 생성이 필요할 때 사용합니다. 새로운 Plan이 추가된 state update를 반환합니다.
-
-    args:
-        new_plan(PlanDraft): 새롭게 추가할 Plan의 source, query, purpose, dependencies입니다. plan_id는 tool에서 자동으로 생성하고 관리하므로 절대 임의로 생성하지 마세요.
-        position(str): 새로운 Plan을 추가할 위치입니다. Plan은 기본적으로 앞에 위치할수록 우선순위가 높습니다. 맨 앞에 추가하고 싶다면 이 값을 "HEAD"로 지정하세요. plans에 포함된 특정 Plan의 바로 뒤에 두고 싶다면 이 값을 그 Plan의 plan_id로 지정하세요.
-
-    return:
-        dict: plans에 new_plan이 추가된 state update
-    """
-
-    _resolve_plan_dependencies(
-        Plan(plan_id="pending", **new_plan.model_dump()),
-        state,
-    )
-    plans = list(state.get("plans", []))
-
-    next_plan_seq = state.get("next_plan_seq", 100)
-    plan = Plan.from_plan_draft(new_plan, next_plan_seq)
-    next_plan_seq += 1
-
-    position = position.strip()
-    if position == "HEAD":
-        insert_at = 0
-    else:
-        anchor = next(
-            (
-                index
-                for index, existing_plan in enumerate(plans)
-                if existing_plan.plan_id == position
-            ),
-            None,
-        )
-        if anchor is None:
-            raise ValueError(f"position plan을 찾지 못했습니다: {position}")
-        insert_at = anchor + 1
-
-    plans.insert(insert_at, plan)
-    return { "plans": plans, "next_plan_seq": next_plan_seq }
-
-@tool
-def modify_plan(
-    plan_id: str,
-    modified_plan: PlanDraft,
-    state: Annotated[AgentState, InjectedState]
-) -> dict:
-    """아직 실행되지 않은 plan의 내용을 수정합니다.
-
-    args:
-        plan_id(str): 수정할 Plan의 plan_id입니다.
-        modified_plan(PlanDraft): 변경할 source, query, purpose, dependencies입니다. plan_id는 기존 값을 유지합니다.
-
-    return:
-        dict: 지정한 Plan이 수정된 plans state update
-    """
-
-    plans = list(state.get("plans", []))
-    anchor = next(
-        (
-            index
-            for index, existing_plan in enumerate(plans)
-            if existing_plan.plan_id == plan_id
-        ),
-        None,
-    )
-    if anchor is None:
-        raise ValueError(f"plan을 찾지 못했습니다: {plan_id}")
-
-    _resolve_plan_dependencies(
-        Plan(plan_id=plan_id, **modified_plan.model_dump()),
-        state,
-    )
-
-    plans[anchor] = Plan(
-        plan_id=plan_id,
-        **modified_plan.model_dump()
-    )
-    return { "plans": plans }
-
-@tool
-def delete_plan(
-    plan_id: str,
-    state: Annotated[AgentState, InjectedState]
-) -> dict:
-    """아직 실행되지 않은 plan들 중 더 이상 필요 없다고 판단되는 plan을 제거합니다.
-
-    args:
-        plan_id(str): 제거할 plan의 plan_id 입니다.
-
-    return:
-        dict: 해당 plan 제거가 반영된 state update
-    """
-
-    plans = state.get("plans", [])
-    anchor = next(
-        (
-            index
-            for index, existing_plan in enumerate(plans)
-            if existing_plan.plan_id == plan_id
-        ),
-        None,
-    )
-    if anchor is None:
-        pass
-    else:
-        plans.pop(anchor)
-        print(f"[{plan_id}] 플랜을 제거했습니다.")
-
-    return { "plans": plans }
-
 FinishStatus = Literal["COMPLETE", "INSUFFICIENT"]
+
+
+def _validate_finish_selection(
+    status: FinishStatus,
+    selected_result_ids: list[str],
+    state: AgentState,
+) -> None:
+    if status == "COMPLETE" and not selected_result_ids:
+        raise ValueError("COMPLETE에는 최소 하나의 selected_result_ids가 필요합니다.")
+    if any(not result_id.strip() for result_id in selected_result_ids):
+        raise ValueError("selected_result_ids에는 빈 ID를 사용할 수 없습니다.")
+    if len(selected_result_ids) != len(set(selected_result_ids)):
+        raise ValueError("selected_result_ids에는 중복 ID를 사용할 수 없습니다.")
+
+    result_ids = {
+        result.result_id
+        for result in state.get("retrieval_results", [])
+    }
+    missing = [
+        result_id
+        for result_id in selected_result_ids
+        if result_id not in result_ids
+    ]
+    if missing:
+        raise ValueError(f"RetrievalResult를 찾지 못했습니다: {missing}")
+
+
 @tool
 def finish(
     status: FinishStatus,
     reason: str,
-    selected_evidence: list[EvidenceSelection],
+    selected_result_ids: list[str],
     state: Annotated[AgentState, InjectedState]
 ) -> dict:
-    """남아 있는 plan과 관계 없이 더 이상의 retrieval을 멈추고 답변을 생성합니다. 종료 원인은 다음 두 가지 중 하나입니다.
+    """더 이상의 retrieval을 멈추고 답변을 생성합니다. 종료 원인은 다음 두 가지 중 하나입니다.
         - COMPLETE: 지금까지의 retrieval을 통해 사용자의 질문에 답변하기 위해 필요한 충분한 정보를 얻었음.
         - INSUFFICIENT: 충분한 retrieval을 수행했으나, 사용자의 질문에 답변하기 위한 신뢰도 있는 정보를 얻지 못함. 더 이상의 retrieval은 무의미하다 판단.
 
     args:
         status(FinishStatus): 'COMPLETE' 또는 'INSUFFICIENT'
-        reason(str): status를 그렇게 판단한 이유와 사고 과정을 포함한 간략한 한국어 문장
-        selected_evidence(list[EvidenceSelection]): Answer Generator가 사용할 result와 item 범위
+        reason(str): status를 그렇게 판단한 이유를 설명하는 간략한 한국어 문장. INSUFFICIENT라면 추가로 유효한 검색 전략이 없는 이유를 설명하며, 추가 검색이 필요하다고 작성하지 않습니다.
+        selected_result_ids(list[str]): Answer Generator가 사용할 RetrievalResult ID 목록
 
     return:
-        dict: retrieval_status와 검증된 selected_evidence를 포함한 state update
+        dict: retrieval_status와 검증된 selected_result_ids를 포함한 state update
     """
 
-    if status == "COMPLETE" and not selected_evidence:
-        raise ValueError("COMPLETE에는 최소 하나의 selected_evidence가 필요합니다.")
-
-    results = {
-        result.result_id: result
-        for result in state.get("retrieval_results", [])
-    }
-    for selection in selected_evidence:
-        result = results.get(selection.result_id)
-        if result is None:
-            raise ValueError(
-                f"RetrievalResult를 찾지 못했습니다: {selection.result_id}"
-            )
-        if selection.item_indexes is None:
-            continue
-        invalid_indexes = [
-            index
-            for index in selection.item_indexes
-            if index >= len(result.items)
-        ]
-        if invalid_indexes:
-            raise ValueError(
-                f"item index 범위를 벗어났습니다: {selection.result_id} "
-                f"{invalid_indexes}"
-            )
+    _validate_finish_selection(status, selected_result_ids, state)
 
     return {
         "retrieval_status": status,
         "retrieval_finish_reason": reason,
-        "selected_evidence": selected_evidence
+        "selected_result_ids": selected_result_ids
     }
     
 
@@ -758,7 +910,6 @@ def finish(
 def build_retriever_human_message(state: AgentState) -> HumanMessage:
     payload = {
         "user_question": state["question_text"],
-        "plans": [plan.model_dump(mode="json") for plan in state["plans"]],
         "retrieval_results": [
             result.model_dump(mode="json")
             for result in state.get("retrieval_results", [])
@@ -815,101 +966,183 @@ def _extract_citations(value: Any) -> list[Citation]:
     return citations
 
 
-def build_citation_candidates(state: AgentState) -> list[dict[str, Any]]:
-    """선택된 retrieval item에서 LLM이 선택할 수 있는 Citation 후보를 만듭니다.
+def _find_first_named_value(value: Any, keys: set[str]) -> Any:
+    if isinstance(value, dict):
+        for key, nested_value in value.items():
+            if key in keys and nested_value not in (None, "", []):
+                return nested_value
+        for nested_value in value.values():
+            found = _find_first_named_value(nested_value, keys)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for nested_value in value:
+            found = _find_first_named_value(nested_value, keys)
+            if found is not None:
+                return found
+    return None
+
+
+def _build_answer_context(item: dict[str, Any]) -> str:
+    metadata = item.get("metadata")
+    retrieval_context = (
+        metadata.get("retrieval_context")
+        if isinstance(metadata, dict)
+        else None
+    )
+    context_source = (
+        retrieval_context
+        if isinstance(retrieval_context, dict)
+        else item
+    )
+    corp_name = _find_first_named_value(context_source, {"corp_name"})
+    report_name = _find_first_named_value(
+        context_source,
+        {"report_name", "report_nm"},
+    )
+    section_path = _find_first_named_value(context_source, {"section_path"})
+    heading_path = _find_first_named_value(context_source, {"heading_path"})
+
+    context_parts = [
+        value.strip()
+        for value in (corp_name, report_name)
+        if isinstance(value, str) and value.strip()
+    ]
+    for path in (section_path, heading_path):
+        if isinstance(path, str) and path.strip():
+            path = [path]
+        if isinstance(path, list):
+            for part in path:
+                if (
+                    isinstance(part, str)
+                    and part.strip()
+                    and (not context_parts or context_parts[-1] != part.strip())
+                ):
+                    context_parts.append(part.strip())
+    return " > ".join(context_parts)
+
+
+def _build_answer_result_payload(
+    result_id: str,
+    item: dict[str, Any],
+) -> dict[str, Any]:
+    item_type = item.get("type")
+    payload: dict[str, Any] = {
+        "result_id": result_id,
+        "context": _build_answer_context(item),
+    }
+    if item_type == "text":
+        payload["content"] = item.get("content", "")
+    elif item_type == "kv_table":
+        payload["content"] = {"entries": item.get("entries", [])}
+    elif item_type == "r_table":
+        payload["content"] = {"records": item.get("records", [])}
+    elif item_type == "record" and isinstance(item.get("fields"), dict):
+        payload["content"] = item["fields"]
+    else:
+        payload["content"] = {
+            key: value
+            for key, value in item.items()
+            if key not in {"type", "metadata", "score"}
+        }
+
+    if item_type in {"kv_table", "r_table"}:
+        table_info = dict(item.get("table_metadata") or {})
+        for key in (
+            "scope",
+            "available_record_count",
+            "included_record_count",
+            "omitted_record_count",
+        ):
+            if key in item:
+                table_info[key] = item[key]
+        if table_info:
+            payload["table_info"] = table_info
+    return payload
+
+
+def build_answer_result_map(
+    state: AgentState,
+) -> dict[str, dict[str, Any]]:
+    """선택된 RetrievalResult를 item 단위 Answer Generator 결과로 변환합니다.
 
     입력 예시:
-        selected_evidence가 disclosure_id, section_id, evidence_id를 포함한 item을 선택한 AgentState
+        selected_result_ids=["retrieval:plan_1"]인 AgentState
 
     출력 예시:
-        [{
-            "reference_id": "C1",
-            "source_item_reference_id": "R1-I1",
-            "citation": {
-                "disclosure_id": "d1",
-                "section_id": "s1",
-                "evidence_id": "e1"
+        {
+            "answer_result_1": {
+                "payload": {
+                    "result_id": "answer_result_1",
+                    "context": "삼성전자 > 사업보고서 > 재무제표",
+                    "content": "본문"
+                },
+                "item": {"type": "text", ...}
             }
-        }]
+        }
     """
 
     results = {
         result.result_id: result
         for result in state.get("retrieval_results", [])
     }
-    candidates: list[dict[str, Any]] = []
-    seen: set[tuple[str, str | None, str | None]] = set()
-    for result_number, selection in enumerate(
-        state.get("selected_evidence", []),
-        start=1
-    ):
-        result = results[selection.result_id]
-        item_indexes = (
-            range(len(result.items))
-            if selection.item_indexes is None
-            else selection.item_indexes
-        )
-        for item_index in item_indexes:
-            for citation in _extract_citations(result.items[item_index]):
-                key = (
-                    citation.disclosure_id,
-                    citation.section_id,
-                    citation.evidence_id,
-                )
-                if key in seen:
-                    continue
-                seen.add(key)
-                candidates.append({
-                    "reference_id": f"C{len(candidates) + 1}",
-                    "source_item_reference_id": (
-                        f"R{result_number}-I{item_index + 1}"
-                    ),
-                    "citation": citation.model_dump(
-                        mode="json",
-                        exclude_none=True
-                    )
-                })
-    return candidates
+    answer_result_map: dict[str, dict[str, Any]] = {}
+    for selected_result_id in state.get("selected_result_ids", []):
+        result = results[selected_result_id]
+        for item in result.items:
+            answer_result_id = f"answer_result_{len(answer_result_map) + 1}"
+            answer_result_map[answer_result_id] = {
+                "payload": _build_answer_result_payload(
+                    answer_result_id,
+                    item,
+                ),
+                "item": item,
+            }
+    return answer_result_map
 
 
 def resolve_answer_draft(
     state: AgentState,
     draft: AnswerGeneratorOutput,
 ) -> AiAnswer:
-    """AnswerGeneratorOutput의 reference ID를 검증된 Citation으로 변환합니다.
+    """AnswerGeneratorOutput의 result ID를 검증된 Citation으로 변환합니다.
 
     입력 예시:
-        AnswerGeneratorOutput(answer="답변", citation_reference_ids=["C1"])
+        AnswerGeneratorOutput(answer="답변", used_result_ids=["answer_result_1"])
 
     출력 예시:
         AiAnswer(answer="답변", citation=[Citation(disclosure_id="d1")])
     """
 
-    citation_map = {
-        candidate["reference_id"]: Citation.model_validate(candidate["citation"])
-        for candidate in build_citation_candidates(state)
-    }
-    if not citation_map:
-        return AiAnswer(answer=draft.answer, citation=[])
-
+    answer_result_map = build_answer_result_map(state)
     unknown_ids = [
-        reference_id
-        for reference_id in draft.citation_reference_ids
-        if reference_id not in citation_map
+        result_id
+        for result_id in draft.used_result_ids
+        if result_id not in answer_result_map
     ]
     if unknown_ids:
         raise ValueError(
-            "허용되지 않은 citation reference입니다: "
+            "허용되지 않은 answer result ID입니다: "
             + ", ".join(unknown_ids)
         )
 
     selected_citations: list[Citation] = []
-    seen_reference_ids: set[str] = set()
-    for reference_id in draft.citation_reference_ids:
-        if reference_id in seen_reference_ids:
+    seen_result_ids: set[str] = set()
+    seen_citations: set[tuple[str, str | None, str | None]] = set()
+    for result_id in draft.used_result_ids:
+        if result_id in seen_result_ids:
             continue
-        seen_reference_ids.add(reference_id)
-        selected_citations.append(citation_map[reference_id])
+        seen_result_ids.add(result_id)
+        for citation in _extract_citations(answer_result_map[result_id]["item"]):
+            key = (
+                citation.disclosure_id,
+                citation.section_id,
+                citation.evidence_id,
+            )
+            if key in seen_citations:
+                continue
+            seen_citations.add(key)
+            selected_citations.append(citation)
 
     return AiAnswer(
         answer=draft.answer,
@@ -936,6 +1169,7 @@ def format_citations(
     *,
     document_manifest_path: Path = DOCUMENT_MANIFEST_PATH,
     driver: Any | None = None,
+    style: Literal["sentence", "path"] = "sentence",
 ) -> list[str]:
     """Citation을 사용자에게 보여줄 문서·섹션 단위 문장으로 변환합니다.
 
@@ -952,6 +1186,9 @@ def format_citations(
          "섹션 중 「3. 재무상태 및 영업실적(연결기준) > 가. 연결 재무상태」를 "
          "근거로 사용했습니다."]
     """
+
+    if style not in {"sentence", "path"}:
+        raise ValueError(f"지원하지 않는 citation 표시 형식입니다: {style}")
 
     document_manifest_path = Path(document_manifest_path).resolve()
     documents = _load_jsonl_index(document_manifest_path, "rcept_no")
@@ -1071,6 +1308,16 @@ def format_citations(
         rcept_date = str(document.get("rcept_dt", "")).strip()
         if not corp_name or not report_name:
             raise ValueError(f"공시 metadata가 불완전합니다: {rcept_no}")
+
+        if style == "path":
+            path = [f"{report_name}({rcept_no})"]
+            if section_path is not None:
+                path.extend(section_path)
+            if heading_path is not None:
+                path.extend(heading_path)
+            formatted.append("[" + " > ".join(path) + "]")
+            continue
+
         try:
             published_at = datetime.strptime(rcept_date, "%Y%m%d")
         except ValueError as error:
@@ -1094,53 +1341,23 @@ def format_citations(
 
 # answer generator llm에 현재 state를 전달하기 위해 HumanMessage를 생성하는 함수
 def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
-    """질문과 선택된 retrieval evidence를 Answer Generator 입력으로 변환합니다.
+    """질문과 item 단위 검색 결과를 Answer Generator 입력으로 변환합니다.
 
     입력 예시:
-        selected_evidence=[{
-            "result_id": "retrieval:plan_1",
-            "item_indexes": [0]
-        }]
+        selected_result_ids=["retrieval:plan_1"]
 
     출력 예시:
         HumanMessage(content='아래 입력을 근거로 ...\n\n[입력]\n\n{...}\n\n[출력]\n\n...')
     """
 
-    results = {
-        result.result_id: result
-        for result in state.get("retrieval_results", [])
-    }
-    selected_results = []
-    for result_number, selection in enumerate(
-        state.get("selected_evidence", []),
-        start=1
-    ):
-        result = results[selection.result_id]
-        item_indexes = (
-            range(len(result.items))
-            if selection.item_indexes is None
-            else selection.item_indexes
-        )
-        result_payload = result.model_dump(mode="json", exclude={"items"})
-        result_payload["selection_reason"] = selection.reason
-        result_payload["items"] = [
-            {
-                **result.items[item_index],
-                "item_reference_id": f"R{result_number}-I{item_index + 1}",
-                "item_index": item_index
-            }
-            for item_index in item_indexes
-        ]
-        selected_results.append(result_payload)
-
+    answer_result_map = build_answer_result_map(state)
     payload = {
         "user_question": state["question_text"],
-        "normalized_question": state["question_analysis"].normalized_question,
-        "decision": state["question_analysis"].decision,
-        "retrieval_status": (state["retrieval_status"] if state["question_analysis"].decision == "retrieve" else None),
-        "retrieval_finish_reason": (state["retrieval_finish_reason"] if state["question_analysis"].decision == "retrieve" else None),
-        "selected_retrieval_results": selected_results,
-        "citation_candidates": build_citation_candidates(state)
+        "retrieval_finish_reason": state.get("retrieval_finish_reason"),
+        "retrieval_results": [
+            value["payload"]
+            for value in answer_result_map.values()
+        ],
     }
 
     json_dump = json.dumps(
@@ -1150,7 +1367,7 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
     )
     return HumanMessage(
         content=(
-            "아래 입력을 근거로 최종 answer와 citation_reference_ids를 생성하고\n\n"
+            "아래 입력을 근거로 최종 answer와 used_result_ids를 생성하고\n\n"
             "AnswerGeneratorOutput 형식으로 반환하세요.\n\n\n"
             "[입력]\n\n"
             f"{json_dump}\n\n\n"
@@ -1158,12 +1375,42 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
             "입력으로 제공된 question과 retrieval_results만을 근거로 최종 답변을 생성하세요.\n\n"
             "- answer에는 사용자의 질문에 직접 답하세요.\n"
             "- retrieval_results에 없는 사실을 추측해서 추가하지 마세요.\n"
-            "- citation_reference_ids에는 citation_candidates에서 실제 답변 생성에 "
-            "사용한 항목의 reference_id 만을 선택하세요"
+            "- used_result_ids에는 retrieval_results에서 실제 답변 생성에 사용한 "
+            "항목의 result_id만 선택하세요.\n"
+            "- retrieval_results가 비어 있어도 반드시 AnswerGeneratorOutput 형식으로 "
+            "반환하세요.\n"
+            "- retrieval_results가 비어 있으면 answer에는 검색 결과만으로 확인할 수 "
+            "없다고 명시하고 used_result_ids는 빈 목록으로 반환하세요."
         )
     )
 
 # 하나의 형식으로 모든 tool call을 처리하기 위한 interface 함수
+def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
+    """Retriever의 tool schema와 state 참조를 실행 전에 검증합니다."""
+
+    if not isinstance(tool_call, dict):
+        raise ValueError("tool call은 object 형식이어야 합니다.")
+    name = tool_call.get("name")
+    args = tool_call.get("args", {})
+    if name == "retrieve_search":
+        validated = retrieve_search.tool_call_schema.model_validate(args)
+        executable_plan = Plan.from_plan_draft(
+            validated.plan,
+            state.get("next_plan_seq", 1),
+        )
+        _resolve_plan_dependencies(executable_plan, state)
+        return
+    if name == "finish":
+        validated = finish.tool_call_schema.model_validate(args)
+        _validate_finish_selection(
+            validated.status,
+            validated.selected_result_ids,
+            state,
+        )
+        return
+    raise ValueError(f"지원하지 않는 tool call입니다: {name}")
+
+
 def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
 
     name = tool_call["name"]
@@ -1171,12 +1418,6 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
 
     if name == "retrieve_search":
         return retrieve_search.invoke({**args, "state": state})
-    if name == "create_plan":
-        return create_plan.invoke({**args, "state": state})
-    if name == "modify_plan":
-        return modify_plan.invoke({**args, "state": state})
-    if name == "delete_plan":
-        return delete_plan.invoke({**args, "state": state})
     if name == "finish":
         return finish.invoke({**args, "state": state})
 

@@ -3,13 +3,13 @@ from typing import Any
 
 from langgraph.graph import StateGraph
 from langchain_core.messages import HumanMessage, SystemMessage
+from pydantic import ValidationError
 
 from . import system_prompts as sp
-from .llm import get_llm
+from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
 from .state import (
     AgentState,
     AnswerGeneratorOutput,
-    Plan,
     PlannerOutput,
     QuestionAnalysis,
 )
@@ -17,10 +17,8 @@ from .tools import (
     build_retriever_human_message,
     build_answer_generator_human_message,
     resolve_answer_draft,
-    create_plan,
-    delete_plan,
     execute_tool_call,
-    modify_plan,
+    validate_retriever_tool_call,
     retrieve_search,
     finish
 )
@@ -30,7 +28,7 @@ graph_builder = StateGraph(AgentState)
 
 # DB retrieval 최대 반복 횟수
 MAX_RETRIEVAL_COUNT = 5
-MAX_TOOL_CALL_RETRIES = 2
+MAX_TOOL_CALL_RETRIES = MAX_LLM_RETRIES
 
 
 @lru_cache(maxsize=1)
@@ -46,7 +44,7 @@ def _build_retriever_llm() -> Any:
     """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
 
     return get_llm().bind_tools(
-        [retrieve_search, create_plan, delete_plan, modify_plan, finish],
+        [retrieve_search, finish],
     )
 @lru_cache(maxsize=1)
 def _build_answer_generator_llm() -> Any:
@@ -65,10 +63,8 @@ def planner(
     state: AgentState,
     *,
     llm: Any | None = None,
-) -> dict[str, QuestionAnalysis | list[Plan] | int]:
-    """
-    사용자의 질문을 분석하고 routing 결정과 plan을 생성한다.
-    """
+) -> dict:
+    """사용자의 질문을 분석하고 routing 결정을 생성합니다."""
 
     print("-- planner 노드 호출 --")
 
@@ -84,31 +80,31 @@ def planner(
             method="function_calling",
         )
     )
-    response = planner_llm.invoke(
-        [
-            SystemMessage(content = sp.PLANNER_SYSTEM_PROMPT),
-            HumanMessage(content = question),
-        ]
-    )
+    messages = [
+        SystemMessage(content=sp.PLANNER_SYSTEM_PROMPT),
+        HumanMessage(content=question),
+    ]
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            response = planner_llm.invoke(messages)
+            planner_output = (
+                response
+                if isinstance(response, PlannerOutput)
+                else PlannerOutput.model_validate(response)
+            )
+            break
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "PlannerOutput",
+                error,
+            )))
 
-    print("질문 분석 결과:\n", response, "\n" + "\n\n")
-
-    planner_output = (
-        response
-        if isinstance(response, PlannerOutput)
-        else PlannerOutput.model_validate(response)
-    )
-    next_plan_seq = state.get("next_plan_seq", 1)
-    plans: list[Plan] = []
-    for draft in planner_output.plans:
-        plan = Plan.from_plan_draft(draft, next_plan_seq)
-        next_plan_seq += 1
-        plans.append(plan)
-
+    print("질문 분석 결과:\n", planner_output, "\n" + "\n\n")
     return {
         "question_analysis": planner_output.question_analysis,
-        "plans": plans,
-        "next_plan_seq": next_plan_seq,
+        "next_plan_seq": state.get("next_plan_seq", 1),
         "retrieval_status": "CONTINUE"
     }
 
@@ -120,7 +116,7 @@ def retriever(
 ) -> dict:
     print("retriever 노드 호출")
 
-    tools = [retrieve_search, create_plan, delete_plan, modify_plan, finish]
+    tools = [retrieve_search, finish]
 
     retriever_llm = (
         _build_retriever_llm()
@@ -130,33 +126,34 @@ def retriever(
 
     retriever_human_message = build_retriever_human_message(state)
 
-    print(f"[retriever human message]:\n{retriever_human_message.content.replace("\\n", "\n")}\n\n")
+    print(f"[retriever human message]:\n{retriever_human_message.content.replace("\\n", "\n").replace('\\"', '"')}\n\n")
 
     messages = [
         SystemMessage(content=sp.RETRIEVER_SYSTEM_PROMPT),
         retriever_human_message
     ]
     for attempt in range(MAX_TOOL_CALL_RETRIES + 1):
-        response = retriever_llm.invoke(messages)
-        tool_calls = response.tool_calls
-        if len(tool_calls) == 1:
-            break
-        if attempt < MAX_TOOL_CALL_RETRIES:
-            messages.append(HumanMessage(
-                content=(
+        try:
+            response = retriever_llm.invoke(messages)
+            tool_calls = response.tool_calls
+            if len(tool_calls) != 1:
+                raise ValueError(
                     "응답 본문을 작성하지 말고 현재 상태에 적합한 tool을 "
-                    "정확히 하나만 호출하세요."
+                    "정확히 하나만 호출하세요. "
+                    f"호출 개수: {len(tool_calls)}"
                 )
-            ))
-    else:
-        tool_names = [
-            tool_call.get("name", "<unknown>")
-            for tool_call in tool_calls
-        ]
-        raise ValueError(
-            "재시도 후에도 정확히 하나의 tool을 호출하지 않았습니다. "
-            f"호출 개수: {len(tool_calls)}, tool: {tool_names}"
-        )
+            validate_retriever_tool_call(state, tool_calls[0])
+            break
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_TOOL_CALL_RETRIES:
+                raise ValueError(
+                    "재시도 후에도 유효한 tool을 정확히 하나 생성하지 못했습니다. "
+                    f"마지막 오류: {error}"
+                ) from error
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "Retriever tool call",
+                error,
+            )))
 
     # 실제 함수 실행
     return execute_tool_call(state, tool_calls[0])
@@ -181,22 +178,29 @@ def answer_generator(
         )   
     )
 
-    response = answer_generator_llm.invoke(
-        [
-            SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
-            answer_generator_human_message
-        ]
-    )
+    messages = [
+        SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
+        answer_generator_human_message,
+    ]
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            response = answer_generator_llm.invoke(messages)
+            answer_generator_output = (
+                response
+                if isinstance(response, AnswerGeneratorOutput)
+                else AnswerGeneratorOutput.model_validate(response)
+            )
+            ai_answer = resolve_answer_draft(state, answer_generator_output)
+            break
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "AnswerGeneratorOutput",
+                error,
+            )))
 
-    answer_generator_output = (
-        response
-        if isinstance(response, AnswerGeneratorOutput)
-        else AnswerGeneratorOutput.model_validate(response)
-    )
-
-    return {
-        "ai_answer": resolve_answer_draft(state, answer_generator_output)
-    }
+    return {"ai_answer": ai_answer}
 
 
 def answer_directly(state: AgentState) -> dict:

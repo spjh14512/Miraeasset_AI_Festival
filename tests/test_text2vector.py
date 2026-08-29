@@ -23,11 +23,16 @@ class _Model:
 
     def encode(self, texts, **kwargs):
         self.calls.append((texts, kwargs))
-        return {
+        result = {
             "dense_vecs": [
                 [float(index) for index in range(self.dimension)] for _ in texts
             ]
         }
+        if kwargs.get("return_sparse"):
+            result["lexical_weights"] = [
+                {"42": 0.8, "1": 0.2} for _ in texts
+            ]
+        return result
 
 
 def test_texts_to_vectors_uses_requested_local_batch_settings(monkeypatch):
@@ -73,6 +78,48 @@ def test_text_to_vector_preserves_single_text_api(monkeypatch):
 
     assert len(result) == 1024
     assert model.calls[0][0] == ["contextual text"]
+
+
+def test_texts_to_hybrid_vectors_returns_dense_and_sorted_sparse(monkeypatch):
+    model = _Model()
+    monkeypatch.setattr(
+        text2vector,
+        "_load_model",
+        lambda model_name, model_cache_dir: model,
+    )
+
+    result = text2vector.texts_to_hybrid_vectors(["첫 번째", "두 번째"])
+
+    assert len(result) == 2
+    assert len(result[0].dense) == 1024
+    assert result[0].sparse.indices == (1, 42)
+    assert result[0].sparse.values == (0.2, 0.8)
+    assert model.calls == [
+        (
+            ["첫 번째", "두 번째"],
+            {
+                "batch_size": 32,
+                "max_length": 3000,
+                "return_dense": True,
+                "return_sparse": True,
+                "return_colbert_vecs": False,
+            },
+        )
+    ]
+
+
+def test_text_to_hybrid_vector_preserves_single_text_api(monkeypatch):
+    model = _Model()
+    monkeypatch.setattr(
+        text2vector,
+        "_load_model",
+        lambda model_name, model_cache_dir: model,
+    )
+
+    result = text2vector.text_to_hybrid_vector("contextual text")
+
+    assert len(result.dense) == 1024
+    assert result.sparse.indices == (1, 42)
 
 
 def test_build_model_requires_cuda(monkeypatch):

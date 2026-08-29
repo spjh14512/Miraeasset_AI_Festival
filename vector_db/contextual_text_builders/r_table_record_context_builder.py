@@ -5,6 +5,11 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from vector_db.contextual_text_builders.r_table_header_formatter import (
+    grouped_header_lines,
+    record_header_keys,
+)
+
 
 PATH_SEPARATOR = " > "
 BLOCK_SEPARATOR = "\n\n"
@@ -44,12 +49,7 @@ def _optional_text_list(payload: Mapping[str, Any], field: str) -> list[str]:
 
 
 def _column_lines(headers: Any, values: Any) -> list[str]:
-    if not isinstance(headers, list) or not all(
-        isinstance(header, list)
-        and all(isinstance(part, str) for part in header)
-        for header in headers
-    ):
-        raise ValueError("R_TABLE payload.headers must be a list of string lists")
+    keys = record_header_keys(headers)
     if not isinstance(values, list) or not all(
         value is None or isinstance(value, str) for value in values
     ):
@@ -58,25 +58,11 @@ def _column_lines(headers: Any, values: Any) -> list[str]:
         raise ValueError("R_TABLE headers and values must have the same length")
 
     lines: list[str] = []
-    for header, value in zip(headers, values, strict=True):
+    for key, value in zip(keys, values, strict=True):
         if value is None or value == "":
             continue
-        key = PATH_SEPARATOR.join(part.strip() for part in header)
         lines.append(f"{key} : {value}")
     return lines
-
-
-def _header_paths(headers: Any) -> list[str]:
-    if not isinstance(headers, list) or not all(
-        isinstance(header, list)
-        and all(isinstance(part, str) for part in header)
-        for header in headers
-    ):
-        raise ValueError("R_TABLE payload.headers must be a list of string lists")
-    return [
-        PATH_SEPARATOR.join(part.strip() for part in header if part.strip())
-        for header in headers
-    ]
 
 
 def _validated_payload(evidence: Mapping[str, Any]) -> tuple[Mapping[str, Any], str]:
@@ -129,9 +115,9 @@ def _context_blocks(
         f"주석 : {value}" for value in _optional_text_list(payload, "notes")
     )
     if include_headers:
-        header_paths = [path for path in _header_paths(payload.get("headers")) if path]
-        if header_paths:
-            table_lines.append(f"열 : {' | '.join(header_paths)}")
+        header_lines = grouped_header_lines(payload.get("headers"))
+        if header_lines:
+            table_lines.extend(["컬럼 구조 :", *header_lines])
     return document_lines, table_lines
 
 

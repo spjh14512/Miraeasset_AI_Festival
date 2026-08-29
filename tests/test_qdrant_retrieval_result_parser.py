@@ -20,28 +20,29 @@ def _point(
     score: float = 0.9,
     extra_metadata: dict | None = None,
 ) -> ScoredPoint:
-    retrieval_metadata = {
+    payload = {
         "point_kind": point_kind,
+        "disclosure_id": "d1",
+        "section_id": "d1:src0:s0",
         "evidence_id": "d1:src0:s0:e0",
         "corp_name": "삼성전자",
-        "corp_code": "00126380",
-        "report_nm": "사업보고서 (2023.12)",
-        **(extra_metadata or {}),
+        "report_name": "사업보고서 (2023.12)",
+        "section_name": "III. 재무에 관한 사항 > 1. 요약재무정보",
+        "rcept_date": "20240306",
+        "contextual_text": (
+            "회사 : 삼성전자\n"
+            "공시 : 사업보고서 (2023.12)\n"
+            "섹션 : III. 재무에 관한 사항 > 1. 요약재무정보\n\n"
+            "검색 문맥"
+        ),
+        "canonical": canonical,
     }
+    payload.update(extra_metadata or {})
     return ScoredPoint(
         id=point_id,
         version=1,
         score=score,
-        payload={
-            "retrieval_metadata": retrieval_metadata,
-            "contextual_text": (
-                "회사 : 삼성전자\n"
-                "공시 : 사업보고서 (2023.12)\n"
-                "섹션 : III. 재무에 관한 사항 > 1. 요약재무정보\n\n"
-                "검색 문맥"
-            ),
-            "canonical": canonical,
-        },
+        payload=payload,
     )
 
 
@@ -56,7 +57,15 @@ def _r_table_point() -> ScoredPoint:
                 {"record_index": 1, "values": ["김영희", "임원", "등기"]},
             ],
         },
-        extra_metadata={"table_id": "table-1"},
+        extra_metadata={
+            "chunking": {
+                "table_id": "table-1",
+                "chunk_index": 0,
+                "chunk_count": 2,
+                "row_start_index": 0,
+                "row_end_index": 1,
+            }
+        },
     )
 
 
@@ -178,46 +187,27 @@ def test_qdrant_item_compacts_common_context_and_reference():
     assert "text" not in item
     assert "point_kind" not in item["metadata"]
     assert "corp_name" not in item["metadata"]
-    assert "report_nm" not in item["metadata"]
+    assert "report_name" not in item["metadata"]
 
 
-def test_qdrant_reference_combines_base_year_and_month():
+def test_qdrant_reference_includes_receipt_date():
     reference = parse_qdrant_point(
         _point(
             "TEXT",
             {"text": "신규 시설을 구축합니다."},
-            extra_metadata={"base_year": 2025, "base_month": 3},
+            extra_metadata={"rcept_date": "20250318"},
         )
     )["metadata"]
 
-    assert reference["base_date"] == "2025-03"
-    assert "base_year" not in reference
-    assert "base_month" not in reference
+    assert reference["rcept_date"] == "20250318"
 
 
-def test_qdrant_reference_omits_null_base_date():
-    reference = parse_qdrant_point(
-        _point(
-            "TEXT",
-            {"text": "신규 시설을 구축합니다."},
-            extra_metadata={"base_year": None, "base_month": None},
-        )
-    )["metadata"]
+def test_qdrant_reference_rejects_missing_receipt_date():
+    point = _point("TEXT", {"text": "신규 시설을 구축합니다."})
+    point.payload.pop("rcept_date")
 
-    assert "base_date" not in reference
-    assert "base_year" not in reference
-    assert "base_month" not in reference
-
-
-def test_qdrant_reference_rejects_partial_base_date():
-    with pytest.raises(ValueError, match="함께 존재"):
-        parse_qdrant_point(
-            _point(
-                "TEXT",
-                {"text": "신규 시설을 구축합니다."},
-                extra_metadata={"base_year": 2025, "base_month": None},
-            )
-        )
+    with pytest.raises(ValueError, match="rcept_date"):
+        parse_qdrant_point(point)
 
 
 def test_parse_qdrant_point_derives_citation_parent_ids():
@@ -225,6 +215,8 @@ def test_parse_qdrant_point_derives_citation_parent_ids():
         "TEXT",
         {"text": "유동자산은 4,964,158백만원입니다."},
         extra_metadata={
+            "disclosure_id": "d20240306000686",
+            "section_id": "d20240306000686:src0:s27",
             "evidence_id": "d20240306000686:src0:s27:e8",
         },
     )

@@ -1,5 +1,35 @@
 # 미래에셋 AI 페스티벌 / Team Sortie
 
+## 평가용 API End-point
+
+> Public API End-point: `https://<배포-domain>/answer` (배포 후 실제 주소로 교체)
+
+평가 API는 별도 인증 header 없이 다음 요청을 처리합니다.
+
+```http
+GET /answer?question_id=Q-001&question=평가%20질의
+```
+
+응답은 `application/json`이며 `question_id`, `question`,
+`retrieved_context`, `think_trace`, `answer`의 값은 모두 문자열입니다.
+`retrieved_context`는 `[공시명(공시 ID) > 섹션명 > ...]` 형식으로 반환합니다.
+`think_trace`에는 내부 chain-of-thought 대신 원문 query와 처리 사유만 간결하게
+반환합니다.
+
+로컬 서버는 저장소 root에서 다음과 같이 실행합니다.
+
+```powershell
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+로컬 호출 예시는 다음과 같습니다.
+
+```powershell
+curl.exe --get "http://localhost:8000/answer" `
+  --data-urlencode "question_id=Q-001" `
+  --data-urlencode "question=삼성전자의 설비 투자를 알려줘"
+```
+
 ## DART Disclosure Analyst
 
 DART 공시 원문을 구조화해 Neo4j Knowledge Graph와 Vector Search로 분석하는 프로젝트입니다. 자연어 답변에 사용된 Evidence를 Section과 Disclosure까지 추적할 수 있는 구조를 목표로 합니다.
@@ -132,4 +162,3 @@ uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 ```powershell
 uv run python -m vector_db.insert_points --limit 4 --random-seed 42 --batch-size 100
 ```
-

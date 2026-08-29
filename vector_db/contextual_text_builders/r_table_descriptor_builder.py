@@ -9,9 +9,13 @@ from vector_db.r_table_column_profiler import (
     RTableColumnAnalysis,
     RTableColumnRole,
 )
+from vector_db.contextual_text_builders.r_table_header_formatter import (
+    PATH_SEPARATOR,
+    grouped_header_lines,
+    normalize_header_paths,
+)
 
 
-PATH_SEPARATOR = " > "
 BLOCK_SEPARATOR = "\n\n"
 
 
@@ -142,25 +146,62 @@ def build_r_table_descriptor_contextual_text(
     table_lines.extend(
         f"표 설명 : {value}" for value in _optional_text_list(payload, "captions")
     )
+    units = _optional_text_list(payload, "units")
+    table_lines.extend(f"단위 : {value}" for value in units)
     table_lines.extend(
         f"주석 : {value}" for value in _optional_text_list(payload, "notes")
     )
 
-    header_texts = [column.header_text for column in analysis.columns if column.header_text]
-    column_lines = ["컬럼 :", *header_texts] if header_texts else []
+    normalized_paths = normalize_header_paths(payload.get("headers"))
+    header_lines = grouped_header_lines(payload.get("headers"))
+    column_lines = ["컬럼 구조 :", *header_lines] if header_lines else []
 
+    dimension_values: dict[str, list[str]] = {}
+    for column, path in zip(analysis.columns, normalized_paths, strict=True):
+        if column.role is not RTableColumnRole.DIMENSION or not path:
+            continue
+        key = PATH_SEPARATOR.join(path)
+        values = dimension_values.setdefault(key, [])
+        for value in column.descriptor_values:
+            if value not in values:
+                values.append(value)
     dimension_lines = [
-        f"{column.header_text} : {', '.join(column.descriptor_values)}"
-        for column in analysis.columns
-        if column.role is RTableColumnRole.DIMENSION
-        and column.header_text
-        and column.descriptor_values
+        f"{key} : {', '.join(values)}"
+        for key, values in dimension_values.items()
+        if values
     ]
-    major_item_lines = ["주요 항목 :", *dimension_lines] if dimension_lines else []
+    item_lines = ["행 항목 :", *dimension_lines] if dimension_lines else []
+
+    search_terms: list[str] = []
+
+    def append_search_term(value: str) -> None:
+        cleaned = value.strip()
+        if cleaned and cleaned not in search_terms:
+            search_terms.append(cleaned)
+
+    if title:
+        append_search_term(title)
+    for path in normalized_paths:
+        for part in path:
+            append_search_term(part)
+    for values in dimension_values.values():
+        for value in values:
+            append_search_term(value)
+    for unit in units:
+        append_search_term(unit)
+    search_lines = (
+        ["검색어 :", " | ".join(search_terms)] if search_terms else []
+    )
 
     blocks = [
         "\n".join(lines)
-        for lines in (document_lines, table_lines, column_lines, major_item_lines)
+        for lines in (
+            document_lines,
+            table_lines,
+            column_lines,
+            item_lines,
+            search_lines,
+        )
         if lines
     ]
     if not blocks:

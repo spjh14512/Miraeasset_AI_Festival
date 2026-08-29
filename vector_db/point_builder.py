@@ -22,16 +22,17 @@ from vector_db.r_table_strategy_selector import (
     RTableEmbeddingStrategy,
     RTableEmbeddingStrategySelector,
 )
-from vector_db.text2vector import text_to_vector
+from vector_db.text2vector import HybridEmbedding, text_to_hybrid_vector
 
 
 POINT_ID_NAMESPACE = UUID("9220d409-a029-5497-8ab2-fc39b239ab18")
 VECTOR_NAME = "evidence_dense"
+SPARSE_VECTOR_NAME = "evidence_sparse"
 POINT_KINDS = {"TEXT", "KV_TABLE", "R_TABLE"}
 TABLE_METADATA_FIELDS = ("title", "captions", "units", "notes")
 PATH_SEPARATOR = " > "
 
-Vectorizer = Callable[[str], list[float]]
+Vectorizer = Callable[[str], HybridEmbedding]
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +76,24 @@ def to_neo4j_evidence_id(source_evidence_id: str) -> str:
     return f"d{suffix}"
 
 
+def _evidence_parent_ids(evidence_id: str) -> tuple[str, str]:
+    parts = evidence_id.split(":")
+    if (
+        len(parts) != 4
+        or len(parts[0]) != 15
+        or not parts[0].startswith("d")
+        or not parts[0][1:].isdigit()
+        or not parts[1].startswith("src")
+        or not parts[1][3:].isdigit()
+        or not parts[2].startswith("s")
+        or not parts[2][1:].isdigit()
+        or not parts[3].startswith("e")
+        or not parts[3][1:].isdigit()
+    ):
+        raise ValueError("evidence_id must use the Neo4j Evidence ID format")
+    return parts[0], ":".join(parts[:3])
+
+
 def _required_text(source: Mapping[str, Any], field: str) -> str:
     value = source.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -107,6 +126,29 @@ def _section_path(section_context: Mapping[str, Any]) -> list[str]:
     ):
         raise ValueError("section_path must be a sequence of non-empty strings")
     return [part.strip() for part in value]
+
+
+def _section_name(
+    evidence: Mapping[str, Any],
+    section_path: Sequence[str],
+) -> str:
+    payload = evidence.get("payload")
+    if not isinstance(payload, Mapping):
+        raise ValueError("Evidence payload must be a mapping")
+    heading_path = payload.get("heading_path", [])
+    if not isinstance(heading_path, (list, tuple)) or not all(
+        isinstance(part, str) for part in heading_path
+    ):
+        raise ValueError("Evidence payload.heading_path must be a sequence of strings")
+
+    combined: list[str] = []
+    for part in (*section_path, *heading_path):
+        cleaned = part.strip()
+        if cleaned and (not combined or combined[-1] != cleaned):
+            combined.append(cleaned)
+    if not combined:
+        raise ValueError("Combined section and heading path must not be empty")
+    return PATH_SEPARATOR.join(combined)
 
 
 def _table_metadata(payload: Mapping[str, Any], *, table_type: str) -> dict[str, Any]:
@@ -485,6 +527,7 @@ def _point_payload(
     contextual_text: str,
     canonical: Mapping[str, Any],
     document_context: Mapping[str, Any],
+    section_name: str,
     table_id: str | None = None,
     row_start_index: int | None = None,
     row_end_index: int | None = None,
@@ -494,14 +537,22 @@ def _point_payload(
     if point_kind not in POINT_KINDS:
         raise ValueError(f"Unsupported point_kind: {point_kind}")
 
-    base_month = _optional_integer(document_context, "base_month")
-    if base_month is not None and not 1 <= base_month <= 12:
-        raise ValueError("base_month must be between 1 and 12")
+    if not isinstance(section_name, str) or not section_name.strip():
+        raise ValueError("section_name must be a non-empty string")
 
-    has_row_range = row_start_index is not None or row_end_index is not None
-    if has_row_range:
-        if table_id is None:
-            raise ValueError("table_id is required for an R_TABLE row-group Point")
+    chunk_values = (
+        table_id,
+        row_start_index,
+        row_end_index,
+        chunk_index,
+        chunk_count,
+    )
+    has_chunking = any(value is not None for value in chunk_values)
+    if has_chunking:
+        if point_kind != "R_TABLE":
+            raise ValueError("chunking is supported only for R_TABLE Points")
+        if not isinstance(table_id, str) or not table_id.strip():
+            raise ValueError("chunking.table_id must be a non-empty string")
         if (
             not isinstance(row_start_index, int)
             or isinstance(row_start_index, bool)
@@ -511,15 +562,8 @@ def _point_payload(
             or row_end_index < row_start_index
         ):
             raise ValueError(
-                "row_start_index and row_end_index must define a valid inclusive range"
+                "chunking row indexes must define a valid inclusive range"
             )
-    if table_id is not None and (not isinstance(table_id, str) or not table_id.strip()):
-        raise ValueError("table_id must be a non-empty string or null")
-
-    has_chunk_position = chunk_index is not None or chunk_count is not None
-    if has_chunk_position:
-        if table_id is None:
-            raise ValueError("table_id is required for an R_TABLE chunk Point")
         if (
             not isinstance(chunk_index, int)
             or isinstance(chunk_index, bool)
@@ -530,33 +574,32 @@ def _point_payload(
             or chunk_index >= chunk_count
         ):
             raise ValueError(
-                "chunk_index and chunk_count must define a valid zero-based position"
+                "chunking indexes must define a valid zero-based position"
             )
 
-    retrieval_metadata = {
+    neo4j_evidence_id = to_neo4j_evidence_id(evidence_id)
+    disclosure_id, section_id = _evidence_parent_ids(neo4j_evidence_id)
+    payload = {
         "point_kind": point_kind,
-        "evidence_id": to_neo4j_evidence_id(evidence_id),
+        "disclosure_id": disclosure_id,
+        "section_id": section_id,
+        "evidence_id": neo4j_evidence_id,
         "corp_name": _required_text(document_context, "corp_name"),
-        "corp_code": _required_text(document_context, "corp_code"),
-        "industry": _optional_text(document_context, "industry"),
-        "sector": _optional_text(document_context, "sector"),
-        "report_nm": _required_text(document_context, "report_nm"),
-        "base_year": _optional_integer(document_context, "base_year"),
-        "base_month": base_month,
-    }
-    if table_id is not None:
-        retrieval_metadata["table_id"] = table_id.strip()
-    if has_row_range:
-        retrieval_metadata["row_start_index"] = row_start_index
-        retrieval_metadata["row_end_index"] = row_end_index
-    if has_chunk_position:
-        retrieval_metadata["chunk_index"] = chunk_index
-        retrieval_metadata["chunk_count"] = chunk_count
-    return {
-        "retrieval_metadata": retrieval_metadata,
+        "report_name": _required_text(document_context, "report_nm"),
+        "section_name": section_name.strip(),
+        "rcept_date": _required_text(document_context, "rcept_date"),
         "contextual_text": contextual_text,
         "canonical": dict(canonical),
     }
+    if has_chunking:
+        payload["chunking"] = {
+            "table_id": table_id.strip(),
+            "chunk_index": chunk_index,
+            "chunk_count": chunk_count,
+            "row_start_index": row_start_index,
+            "row_end_index": row_end_index,
+        }
+    return payload
 
 
 def _point_input(
@@ -567,6 +610,7 @@ def _point_input(
     contextual_text: str,
     canonical: Mapping[str, Any],
     document_context: Mapping[str, Any],
+    section_name: str,
     table_id: str | None = None,
     row_start_index: int | None = None,
     row_end_index: int | None = None,
@@ -583,6 +627,7 @@ def _point_input(
             contextual_text=contextual_text,
             canonical=canonical,
             document_context=document_context,
+            section_name=section_name,
             table_id=table_id,
             row_start_index=row_start_index,
             row_end_index=row_end_index,
@@ -649,6 +694,7 @@ def build_point_inputs(
             raise ValueError(f"fragment.evidence_list[{index}] must be a mapping")
         evidence_id = _required_text(evidence, "evidence_id")
         evidence_type = evidence.get("evidence_type")
+        section_name = _section_name(evidence, section_path)
 
         if evidence_type == "TEXT":
             contextual_text = build_text_contextual_text(
@@ -665,6 +711,7 @@ def build_point_inputs(
                     contextual_text=contextual_text,
                     canonical=_text_canonical(evidence),
                     document_context=document_context,
+                    section_name=section_name,
                 )
             )
             continue
@@ -688,6 +735,7 @@ def build_point_inputs(
                     contextual_text=contextual_text,
                     canonical=_kv_table_canonical(evidence),
                     document_context=document_context,
+                    section_name=section_name,
                 )
             )
             continue
@@ -848,6 +896,7 @@ def build_point_inputs(
 
         chunk_count = len(point_parts) if len(point_parts) > 1 else None
         for chunk_index, part in enumerate(point_parts):
+            is_chunked = chunk_count is not None
             append_point_input(
                 _point_input(
                     identity_key=part.identity_key,
@@ -856,10 +905,11 @@ def build_point_inputs(
                     contextual_text=part.contextual_text,
                     canonical=part.canonical,
                     document_context=document_context,
-                    table_id=table_id,
-                    row_start_index=part.row_start_index,
-                    row_end_index=part.row_end_index,
-                    chunk_index=chunk_index if chunk_count is not None else None,
+                    section_name=section_name,
+                    table_id=table_id if is_chunked else None,
+                    row_start_index=part.row_start_index if is_chunked else None,
+                    row_end_index=part.row_end_index if is_chunked else None,
+                    chunk_index=chunk_index if is_chunked else None,
                     chunk_count=chunk_count,
                 )
             )
@@ -876,10 +926,10 @@ def build_point_inputs(
 def embed_point_inputs(
     point_inputs: Sequence[PointInput],
     *,
-    vectorizer: Vectorizer = text_to_vector,
-) -> dict[str, list[float]]:
+    vectorizer: Vectorizer = text_to_hybrid_vector,
+) -> dict[str, HybridEmbedding]:
     """Embed unique contextual texts, keyed for a future persistent cache."""
-    embeddings: dict[str, list[float]] = {}
+    embeddings: dict[str, HybridEmbedding] = {}
     cached_texts: dict[str, str] = {}
     for point_input in point_inputs:
         if not isinstance(point_input, PointInput):
@@ -897,25 +947,45 @@ def embed_point_inputs(
 
 def assemble_qdrant_points(
     point_inputs: Sequence[PointInput],
-    embeddings: Mapping[str, Sequence[float]],
+    embeddings: Mapping[str, HybridEmbedding],
 ) -> list[dict[str, Any]]:
     """Combine Point inputs and precomputed embeddings into Qdrant dictionaries."""
     points: list[dict[str, Any]] = []
     for point_input in point_inputs:
         if not isinstance(point_input, PointInput):
             raise ValueError("point_inputs must contain PointInput items")
-        vector = embeddings.get(point_input.embedding_cache_key)
-        if not isinstance(vector, (list, tuple)) or not vector or not all(
+        embedding = embeddings.get(point_input.embedding_cache_key)
+        if not isinstance(embedding, HybridEmbedding):
+            raise ValueError(
+                f"Missing or invalid hybrid embedding for Point input: {point_input.id}"
+            )
+        dense = embedding.dense
+        sparse = embedding.sparse
+        if not dense or not all(
             isinstance(value, (int, float)) and not isinstance(value, bool)
-            for value in vector
+            for value in dense
         ):
             raise ValueError(
-                f"Missing or invalid embedding for Point input: {point_input.id}"
+                f"Invalid dense embedding for Point input: {point_input.id}"
+            )
+        if (
+            not sparse.indices
+            or len(sparse.indices) != len(sparse.values)
+            or any(index < 0 for index in sparse.indices)
+        ):
+            raise ValueError(
+                f"Invalid sparse embedding for Point input: {point_input.id}"
             )
         points.append(
             {
                 "id": point_input.id,
-                "vector": {VECTOR_NAME: [float(value) for value in vector]},
+                "vector": {
+                    VECTOR_NAME: [float(value) for value in dense],
+                    SPARSE_VECTOR_NAME: {
+                        "indices": list(sparse.indices),
+                        "values": list(sparse.values),
+                    },
+                },
                 "payload": dict(point_input.payload),
             }
         )
@@ -927,7 +997,7 @@ def build_qdrant_points(
     *,
     document_context: Mapping[str, Any],
     section_context: Mapping[str, Any],
-    vectorizer: Vectorizer = text_to_vector,
+    vectorizer: Vectorizer = text_to_hybrid_vector,
     r_table_strategy_selector: RTableEmbeddingStrategySelector | None = None,
 ) -> list[dict[str, Any]]:
     """Build, embed, and assemble Qdrant points for one Evidence Fragment."""
@@ -944,6 +1014,7 @@ def build_qdrant_points(
 __all__ = [
     "POINT_ID_NAMESPACE",
     "POINT_KINDS",
+    "SPARSE_VECTOR_NAME",
     "VECTOR_NAME",
     "PointInput",
     "assemble_qdrant_points",

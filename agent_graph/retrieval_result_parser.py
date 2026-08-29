@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import re
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, MutableMapping, Sequence
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any, Literal
@@ -290,23 +289,16 @@ def _qdrant_payload(point: QdrantPoint) -> Mapping[str, Any]:
     """Qdrant point의 payload가 object인지 검증하여 반환합니다.
 
     입력 예시:
-        <ScoredPoint payload={"retrieval_metadata": {...}}>
+        <ScoredPoint payload={"point_kind": "TEXT", ...}>
 
     출력 예시:
-        {"retrieval_metadata": {...}, "contextual_text": "...", "canonical": {...}}
+        {"point_kind": "TEXT", "contextual_text": "...", "canonical": {...}}
     """
 
     payload = _qdrant_point_value(point, "payload")
     if not isinstance(payload, Mapping):
         raise ValueError("Qdrant point payload must be a mapping")
     return payload
-
-
-def _qdrant_retrieval_metadata(payload: Mapping[str, Any]) -> Mapping[str, Any]:
-    retrieval_metadata = payload.get("retrieval_metadata")
-    if not isinstance(retrieval_metadata, Mapping):
-        raise ValueError("Qdrant payload.retrieval_metadata must be a mapping")
-    return retrieval_metadata
 
 
 def _parse_qdrant_retrieval_context(
@@ -326,15 +318,22 @@ def _parse_qdrant_retrieval_context(
         }
     """
 
-    retrieval_metadata = _qdrant_retrieval_metadata(payload)
-    corp_name = retrieval_metadata.get("corp_name")
-    report_name = retrieval_metadata.get("report_nm")
+    parsed_context = payload.get("retrieval_context")
+    if isinstance(parsed_context, Mapping):
+        return dict(parsed_context)
+
+    corp_name = payload.get("corp_name")
+    report_name = payload.get("report_name")
+    section_name = payload.get("section_name")
     if not isinstance(corp_name, str) or not corp_name.strip():
-        raise ValueError("Qdrant retrieval_metadata.corp_name must be a string")
+        raise ValueError("Qdrant payload.corp_name must be a string")
     if not isinstance(report_name, str) or not report_name.strip():
-        raise ValueError("Qdrant retrieval_metadata.report_nm must be a string")
+        raise ValueError("Qdrant payload.report_name must be a string")
+    if not isinstance(section_name, str) or not section_name.strip():
+        raise ValueError("Qdrant payload.section_name must be a string")
     corp_name = corp_name.strip()
     report_name = report_name.strip()
+    section_name = section_name.strip()
 
     contextual_text = payload.get("contextual_text")
     if not isinstance(contextual_text, str):
@@ -356,7 +355,9 @@ def _parse_qdrant_retrieval_context(
     section = header.get("섹션")
     if section is None:
         raise ValueError("contextual text header에 섹션이 없습니다.")
-    section_path = [part.strip() for part in section.split(" > ") if part.strip()]
+    if section != section_name:
+        raise ValueError("contextual text와 payload의 섹션명이 일치하지 않습니다.")
+    section_path = [part.strip() for part in section_name.split(" > ") if part.strip()]
     if not section_path:
         raise ValueError("contextual text header의 섹션 경로가 비어 있습니다.")
 
@@ -367,53 +368,79 @@ def _parse_qdrant_retrieval_context(
     }
 
 
-def _parse_qdrant_reference(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Qdrant retrieval_metadata를 출처 추적용 reference로 정규화합니다.
+def parse_and_remove_qdrant_contextual_text(point: QdrantPoint) -> None:
+    """contextual text를 구조화한 뒤 원본 payload에서 제거합니다.
 
     입력 예시:
-        {"retrieval_metadata": {"evidence_id": "d1", "corp_name": "삼성전자"}}
+        <ScoredPoint payload={"contextual_text": "회사 : 삼성전자\n...", ...}>
+
+    출력 예시:
+        None
+        point.payload에는 contextual_text 대신 retrieval_context가 남습니다.
+    """
+
+    payload = _qdrant_payload(point)
+    if not isinstance(payload, MutableMapping):
+        raise ValueError("Qdrant point payload must be mutable")
+    payload["retrieval_context"] = _parse_qdrant_retrieval_context(payload)
+    payload.pop("contextual_text", None)
+
+
+def _parse_qdrant_reference(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Qdrant payload를 출처 추적용 reference로 정규화합니다.
+
+    입력 예시:
+        {"evidence_id": "d1", "rcept_date": "20250318"}
 
     출력 예시:
         {"evidence_id": "d1"}
     """
 
-    retrieval_metadata = _qdrant_retrieval_metadata(payload)
-    reference = {
-        str(key): parse_value(value)
-        for key, value in retrieval_metadata.items()
-        if key
-        not in {"point_kind", "corp_name", "report_nm", "base_year", "base_month"}
+    disclosure_id = payload.get("disclosure_id")
+    section_id = payload.get("section_id")
+    evidence_id = payload.get("evidence_id")
+    rcept_date = payload.get("rcept_date")
+    if not isinstance(disclosure_id, str) or not disclosure_id.strip():
+        raise ValueError("Qdrant payload.disclosure_id must be a string")
+    if not isinstance(section_id, str) or not section_id.strip():
+        raise ValueError("Qdrant payload.section_id must be a string")
+    if not isinstance(evidence_id, str) or not evidence_id.strip():
+        raise ValueError("Qdrant payload.evidence_id must be a string")
+    if not isinstance(rcept_date, str) or not rcept_date.strip():
+        raise ValueError("Qdrant payload.rcept_date must be a string")
+    reference: dict[str, Any] = {
+        "disclosure_id": disclosure_id.strip(),
+        "section_id": section_id.strip(),
+        "evidence_id": evidence_id.strip(),
+        "rcept_date": rcept_date.strip(),
     }
-    base_year = retrieval_metadata.get("base_year")
-    base_month = retrieval_metadata.get("base_month")
-    if (base_year is None) != (base_month is None):
-        raise ValueError("base_year와 base_month는 함께 존재해야 합니다.")
-    if base_year is not None:
-        if (
-            not isinstance(base_year, int)
-            or isinstance(base_year, bool)
-            or not isinstance(base_month, int)
-            or isinstance(base_month, bool)
-            or not 1 <= base_month <= 12
-        ):
-            raise ValueError("base_year와 base_month가 올바른 정수가 아닙니다.")
-        reference["base_date"] = f"{base_year:04d}-{base_month:02d}"
+
+    chunking = payload.get("chunking")
+    if chunking is not None:
+        if not isinstance(chunking, Mapping):
+            raise ValueError("Qdrant payload.chunking must be a mapping")
+        reference.update(
+            {str(key): parse_value(value) for key, value in chunking.items()}
+        )
 
     evidence_id = reference.get("evidence_id")
     if isinstance(evidence_id, str):
-        match = re.fullmatch(
-            r"(?P<disclosure_id>d\d{14})"
-            r"(?P<section_suffix>:src\d+:s\d+)"
-            r":e\d+",
-            evidence_id,
-        )
-        if match is not None:
-            disclosure_id = match.group("disclosure_id")
-            reference.setdefault("disclosure_id", disclosure_id)
-            reference.setdefault(
-                "section_id",
-                disclosure_id + match.group("section_suffix"),
-            )
+        parts = evidence_id.split(":")
+        if (
+            len(parts) == 4
+            and len(parts[0]) == 15
+            and parts[0].startswith("d")
+            and parts[0][1:].isdigit()
+            and parts[1].startswith("src")
+            and parts[2].startswith("s")
+            and parts[3].startswith("e")
+        ):
+            disclosure_id = parts[0]
+            derived_section_id = ":".join(parts[:3])
+            if reference["disclosure_id"] != disclosure_id:
+                raise ValueError("payload disclosure_id and evidence_id do not match")
+            if reference["section_id"] != derived_section_id:
+                raise ValueError("payload section_id and evidence_id do not match")
     return reference
 
 
@@ -456,10 +483,7 @@ def _qdrant_item_metadata(base: Mapping[str, Any]) -> dict[str, Any]:
     reference = base["reference"]
     metadata = {"retrieval_context": base["retrieval_context"]}
     for key in (
-        "corp_code",
-        "industry",
-        "sector",
-        "base_date",
+        "rcept_date",
         "disclosure_id",
         "section_id",
         "evidence_id",
@@ -743,7 +767,7 @@ def parse_qdrant_point(
     r_table_detail: RTableDetail = "summary",
     r_table_record_indexes: Collection[int] | None = None,
 ) -> dict[str, Any]:
-    """retrieval_metadata.point_kind에 따라 Qdrant point parser를 선택합니다.
+    """payload.point_kind에 따라 Qdrant point parser를 선택합니다.
 
     입력 예시:
         parse_qdrant_point(point, r_table_detail="summary")
@@ -754,7 +778,7 @@ def parse_qdrant_point(
     """
 
     payload = _qdrant_payload(point)
-    point_kind = _qdrant_retrieval_metadata(payload).get("point_kind")
+    point_kind = payload.get("point_kind")
     if point_kind == "TEXT":
         return parse_text_point(point)
     if point_kind == "KV_TABLE":
@@ -845,7 +869,7 @@ def parse_qdrant_response(
             if selected_item_ids is not None and point_id is not None
             else None
         )
-        point_kind = _qdrant_retrieval_metadata(payload).get("point_kind")
+        point_kind = payload.get("point_kind")
         items.append(
             parse_qdrant_point(
                 point,

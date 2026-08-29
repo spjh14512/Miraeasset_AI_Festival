@@ -84,19 +84,22 @@ def test_builds_descriptor_from_context_headers_and_dimension_values():
         "섹션 : 연결재무제표 주석 > 매출\n\n"
         "표 제목 : 사업부문별 매출\n"
         "표 설명 : 주요 제품별 매출 내역\n"
+        "단위 : 백만원\n"
         "주석 : 연결 기준\n\n"
-        "컬럼 :\n"
+        "컬럼 구조 :\n"
         "사업부문\n"
         "품목\n"
         "지역\n"
         "2025년 > 매출액\n"
         "비중\n\n"
-        "주요 항목 :\n"
+        "행 항목 :\n"
         "사업부문 : 반도체, DX\n"
         "품목 : DRAM, NAND, TV\n"
-        "지역 : 국내, 미주, 중국"
+        "지역 : 국내, 미주, 중국\n\n"
+        "검색어 :\n"
+        "사업부문별 매출 | 사업부문 | 품목 | 지역 | 2025년 | 매출액 | 비중 | "
+        "반도체 | DX | DRAM | NAND | TV | 국내 | 미주 | 중국 | 백만원"
     )
-    assert "단위" not in result
     assert "행 식별 컬럼" not in result
     assert "레코드 수" not in result
     assert "1500" not in result
@@ -129,8 +132,8 @@ def test_omits_high_cardinality_and_non_dimension_values():
         section_path=["주식등의 세부변동내역"],
     )
 
-    assert "컬럼 :\n품목\n성명\n금액\n변동일" in result
-    assert "주요 항목 :" not in result
+    assert "컬럼 구조 :\n품목\n성명\n금액\n변동일" in result
+    assert "행 항목 :" not in result
     assert "품목-0" not in result
     assert "성명-0" not in result
     assert "2025-01-01" not in result
@@ -152,8 +155,32 @@ def test_omits_missing_optional_table_context_lines():
     assert "표 제목" not in result
     assert "표 설명" not in result
     assert "\n주석 :" not in result
-    assert "컬럼 :\n구분\n금액" in result
-    assert "주요 항목 :\n구분 : 합계" in result
+    assert "컬럼 구조 :\n구분\n금액" in result
+    assert "행 항목 :\n구분 : 합계" in result
+
+
+def test_groups_merged_header_repetitions_for_retrieval_text_only():
+    headers = [
+        ["당기", "당기", "금액"],
+        ["당기", "당기", "비율"],
+        ["전기", "전기", "금액"],
+        ["전기", "전기", "비율"],
+    ]
+    records = _records([["100", "10%", "90", "9%"]])
+    evidence = _evidence(headers, 1, include_context=False)
+
+    result = build_r_table_descriptor_contextual_text(
+        evidence,
+        profile_r_table_columns(evidence, records),
+        corp_name="삼성전자",
+        report_nm="사업보고서",
+        section_path=["재무제표 주석"],
+    )
+
+    assert "컬럼 구조 :\n당기 : 금액 | 비율\n전기 : 금액 | 비율" in result
+    assert "당기 > 당기" not in result
+    assert "전기 > 전기" not in result
+    assert evidence["payload"]["headers"] == headers
 
 
 @pytest.mark.parametrize(

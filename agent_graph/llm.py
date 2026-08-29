@@ -7,6 +7,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+MAX_LLM_RETRIES = 2
+
+
+def build_output_retry_message(component: str, error: BaseException) -> str:
+    """LLM 출력 검증 오류를 해당 LLM의 재생성 요청으로 변환합니다."""
+
+    return (
+        f"방금 생성한 {component} 출력이 application 검증을 통과하지 못했습니다.\n"
+        f"오류: {type(error).__name__}: {error}\n"
+        "오류 원인을 수정하여 전체 출력을 요구된 schema 또는 tool call 형식으로 "
+        "다시 생성하세요. 오류가 난 출력을 그대로 반복하지 마세요."
+    )
+
 
 @lru_cache(maxsize=1)
 def get_llm() -> Any:
@@ -31,4 +44,4 @@ def get_llm() -> Any:
     )
 
 
-__all__ = ["get_llm"]
+__all__ = ["MAX_LLM_RETRIES", "build_output_retry_message", "get_llm"]

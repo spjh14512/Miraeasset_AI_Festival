@@ -1,4 +1,4 @@
-schema_version: "qdrant-query-llm.v1"
+schema_version: "qdrant-query-llm.v2"
 
 purpose: >-
   Plan을 QdrantQuery로 변환하기 위한 LLM 전용 논리 schema입니다.
@@ -10,143 +10,82 @@ output_contract:
     values: ["vector", "filter"]
     rules:
       vector: 의미 검색이 필요할 때 사용
-      filter: 명시된 evidence_id 또는 table_id만으로 조회할 수 있을 때 사용
-
+      filter: 명시된 disclosure_id, section_id, evidence_id 또는 chunking.table_id로 조회할 때 사용
   query_text:
     type: "string | null"
     rules:
       vector: 비어 있지 않은 자연어 검색문 필수
       filter: 반드시 null
-    forbidden_content:
-      - Qdrant filter 문법
-      - JSON
-      - database 명령
-
   query_vector:
     llm_output: forbidden
-    reason: application이 query_text를 embedding하여 생성
-
+    reason: application이 query_text에서 BGE-M3 dense+sparse vector를 생성
   limit:
     llm_output: forbidden
     reason: Retriever가 retrieve_search의 argument로 지정
-
-  point_kinds:
-    type: list[enum]
-    values: ["TEXT", "KV_TABLE", "R_TABLE"]
-    min_items: 1
-    default: ["TEXT", "KV_TABLE", "R_TABLE"]
-    guidance:
-      TEXT: 서술형 본문, 정책, 설명, 관계 또는 맥락
-      KV_TABLE: 단일 항목 중심의 key-value 표
-      R_TABLE: 목록, 명단, 시계열, 여러 행으로 구성된 표의 전체 또는 row-group point
-    selection_rules:
-      - Plan이 Evidence 형태를 명시하지 않으면 세 종류를 모두 사용
-      - 목록, 현황, 내역, 금액 같은 표현만으로 point 종류를 좁히지 않음
-      - table_id filter를 사용하면 R_TABLE만 사용
-      - R_TABLE의 특정 행을 찾는 vector query_text에는 대상 행이나 값의 의미를 포함
-    critical_rule: >-
-      point 종류는 반드시 이 필드에만 작성합니다.
-      retrieval_metadata.point_kind filter는 절대 생성하지 않습니다.
-
   filters:
     type: list[QdrantFilter]
     semantics: 모든 항목을 AND 조건으로 결합
     allowed_keys:
-      retrieval_metadata.evidence_id:
+      disclosure_id:
         match_type: string
-      retrieval_metadata.corp_name:
+      section_id:
         match_type: string
-      retrieval_metadata.corp_code:
+      evidence_id:
         match_type: string
-        note: DART 고유 회사 코드이며 6자리 주식 종목코드가 아님
-      retrieval_metadata.industry:
+      rcept_date:
         match_type: string
-      retrieval_metadata.sector:
+        format: YYYYMMDD
+        note: >-
+          보고서 접수일 metadata입니다. 사용자 날짜 조건에는 최소 1개월 오차 범위가
+          필요하므로 단일 날짜 exact match로 사용하지 않고, Neo4j에서 기간 범위를
+          먼저 좁힌 dependency의 식별자를 사용하는 것을 우선합니다.
+      chunking.table_id:
         match_type: string
-      retrieval_metadata.base_year:
-        match_type: integer
-        range_operators: [gt, gte, lt, lte]
-      retrieval_metadata.base_month:
-        match_type: integer
-        range: [1, 12]
-        range_operators: [gt, gte, lt, lte]
-      retrieval_metadata.table_id:
-        match_type: string
-        requires_point_kinds: ["R_TABLE"]
+        availability: 여러 Point로 청킹된 R_TABLE에만 존재
     condition_rules:
-      - 하나의 filter에는 match 또는 range 중 정확히 하나만 사용
-      - match 값은 string 또는 integer scalar만 허용
+      - 하나의 filter에는 match만 사용하고 range는 사용하지 않음
+      - match 값은 string scalar만 허용
       - match에 list, array, object를 사용하지 않음
-      - gt, gte, lt, lte는 base_year와 base_month에만 허용
-      - 같은 filter에서 gt와 gte 또는 lt와 lte를 함께 사용하지 않음
       - 동일한 key의 filter를 여러 개 만들어 OR를 표현하지 않음
       - Plan에 명시된 조건만 filter로 변환
-
+      - base_year와 base_month는 존재하지 않으므로 사용하지 않음
+      - 날짜 조건을 단일 rcept_date exact match로 변환하지 않음
+      - 날짜 검색에는 최소 1개월 오차 범위를 허용하고 Neo4j dependency를 우선 사용
+      - 거래일·취득일·처분일 자체를 보고서 접수일로 단정하지 않음
+      - corp_name은 filter로 사용하지 않고 필요한 표현을 query_text에 유지
   score_threshold:
     type: "number | null"
     range: [-1.0, 1.0]
     rules:
-      vector: Plan에 threshold 요구가 없으면 null
+      vector: Plan에 threshold 요구가 없으면 null. 값은 dense cosine이 아닌 fused RRF score에 적용
       filter: 반드시 null
-
-decision_order:
-  - Plan에서 명시된 기업, 연도, 식별자를 추출
-  - mode를 선택
-  - Evidence 형태가 확정되지 않았다면 기본 point_kinds 세 종류를 모두 선택
-  - 허용된 filter만 생성
-  - vector mode라면 자연어 query_text를 작성
-  - 최종 출력이 output_contract를 위반하지 않는지 검사
 
 examples:
   - name: 특별관계자 목록 의미 검색
-    plan:
-      source: qdrant
-      query: 삼성전자의 특별관계자 목록
-      purpose: 삼성전자의 특별관계자 목록 확인
     output:
       mode: vector
       query_text: 삼성전자 특별관계자 명단 및 관계
-      point_kinds: ["TEXT", "KV_TABLE", "R_TABLE"]
-      filters:
-        - key: retrieval_metadata.corp_name
-          match: 삼성전자
+      filters: []
       score_threshold: null
-
-  - name: 특정 연도 재무 항목 의미 검색
-    plan:
-      source: qdrant
-      query: LG유플러스의 2023년 연결 기준 유동자산 총액
-      purpose: 유동자산 총액 확인
+  - name: 공시 기준일을 포함한 의미 검색
     output:
       mode: vector
-      query_text: LG유플러스 2023년 연결 기준 유동자산 총액
-      point_kinds: ["TEXT", "KV_TABLE", "R_TABLE"]
-      filters:
-        - key: retrieval_metadata.corp_name
-          match: LG유플러스
-        - key: retrieval_metadata.base_year
-          match: 2023
+      query_text: 2024년 3월 전후 LG유플러스 사업보고서 연결 기준 유동자산 총액
+      filters: []
       score_threshold: null
-
   - name: evidence_id 정확 조회
-    plan:
-      source: qdrant
-      query: evidence_id d20240306000686:src0:s27:e8 조회
-      purpose: 특정 Evidence 확인
     output:
       mode: filter
       query_text: null
-      point_kinds: ["TEXT", "KV_TABLE", "R_TABLE"]
       filters:
-        - key: retrieval_metadata.evidence_id
+        - key: evidence_id
           match: d20240306000686:src0:s27:e8
       score_threshold: null
 
 invalid_example:
   output:
     filters:
-      - key: retrieval_metadata.point_kind
-        match: ["TEXT", "KV_TABLE", "R_TABLE"]
+      - key: corp_name
+        match: 삼성전자
   violations:
-    - point_kind는 filters가 아니라 point_kinds에 작성해야 함
-    - match는 list가 아니라 string 또는 integer scalar여야 함
+    - corp_name은 허용된 filter key가 아님

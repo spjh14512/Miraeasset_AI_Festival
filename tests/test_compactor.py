@@ -29,7 +29,7 @@ def _point(point_kind: str, canonical: dict) -> ScoredPoint:
         version=1,
         score=0.9,
         payload={
-            "retrieval_metadata": {"point_kind": point_kind},
+            "point_kind": point_kind,
             "contextual_text": (
                 "회사 : 삼성전자\n"
                 "공시 : 사업보고서 (2023.12)\n"
@@ -47,6 +47,7 @@ def _plan() -> Plan:
         source="qdrant",
         query="최대주주인 특별관계자",
         purpose="특별관계자 성명 확인",
+        dependencies=[],
     )
 
 

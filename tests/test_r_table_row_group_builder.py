@@ -90,7 +90,7 @@ def test_groups_records_greedily_without_overlap_or_omission():
         assert "주요 생산시설 내역" in group.contextual_text
         assert "백만원" in group.contextual_text
         assert "연결 기준" in group.contextual_text
-        assert "사업장 | 설명" in group.contextual_text
+        assert "컬럼 구조 :\n사업장\n설명" in group.contextual_text
 
     assert groups[0].to_dict() == {
         "group_index": 0,

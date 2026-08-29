@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 
 import pytest
-from pydantic import ValidationError
 
 from agent_graph.state import QuestionAnalysis, RetrievalResult
 from agent_graph.tools import (
@@ -47,20 +46,16 @@ def _state():
     }
 
 
-def test_finish_stores_validated_evidence_selection():
+def test_finish_stores_validated_result_ids():
     update = finish.invoke({
         "status": "COMPLETE",
         "reason": "필요한 근거를 확보했습니다.",
-        "selected_evidence": [{
-            "result_id": "retrieval:plan_1",
-            "item_indexes": [1],
-            "reason": "질문의 핵심 정보를 포함합니다."
-        }],
+        "selected_result_ids": ["retrieval:plan_1"],
         "state": _state(),
     })
 
     assert update["retrieval_status"] == "COMPLETE"
-    assert update["selected_evidence"][0].item_indexes == [1]
+    assert update["selected_result_ids"] == ["retrieval:plan_1"]
 
 
 def test_finish_requires_selection_for_complete():
@@ -68,7 +63,7 @@ def test_finish_requires_selection_for_complete():
         finish.invoke({
             "status": "COMPLETE",
             "reason": "완료",
-            "selected_evidence": [],
+            "selected_result_ids": [],
             "state": _state(),
         })
 
@@ -81,75 +76,57 @@ def test_finish_allows_empty_selection_for_insufficient():
             "args": {
                 "status": "INSUFFICIENT",
                 "reason": "근거를 찾지 못했습니다.",
-                "selected_evidence": [],
+                "selected_result_ids": [],
             },
         },
     )
 
-    assert update["selected_evidence"] == []
+    assert update["selected_result_ids"] == []
 
 
-def test_finish_rejects_unknown_result_and_out_of_range_item():
+def test_finish_rejects_unknown_result():
     with pytest.raises(ValueError, match="찾지 못했습니다"):
         finish.invoke({
             "status": "COMPLETE",
             "reason": "완료",
-            "selected_evidence": [{
-                "result_id": "retrieval:unknown",
-                "item_indexes": None,
-                "reason": "근거"
-            }],
+            "selected_result_ids": ["retrieval:unknown"],
             "state": _state(),
         })
 
-    with pytest.raises(ValueError, match="범위를 벗어났습니다"):
+
+def test_finish_rejects_duplicate_result_ids():
+    with pytest.raises(ValueError, match="중복"):
         finish.invoke({
             "status": "COMPLETE",
             "reason": "완료",
-            "selected_evidence": [{
-                "result_id": "retrieval:plan_1",
-                "item_indexes": [2],
-                "reason": "근거"
-            }],
+            "selected_result_ids": [
+                "retrieval:plan_1",
+                "retrieval:plan_1",
+            ],
             "state": _state(),
         })
 
 
-def test_evidence_selection_rejects_duplicate_indexes():
-    with pytest.raises(ValidationError, match="중복"):
-        finish.invoke({
-            "status": "COMPLETE",
-            "reason": "완료",
-            "selected_evidence": [{
-                "result_id": "retrieval:plan_1",
-                "item_indexes": [0, 0],
-                "reason": "근거"
-            }],
-            "state": _state(),
-        })
-
-
-def test_answer_message_contains_only_selected_items():
+def test_answer_message_contains_all_items_from_selected_result():
     state = _state()
     state.update(finish.invoke({
         "status": "COMPLETE",
         "reason": "필요한 근거를 확보했습니다.",
-        "selected_evidence": [{
-            "result_id": "retrieval:plan_2",
-            "item_indexes": [1],
-            "reason": "두 번째 결과의 두 번째 item이 필요합니다."
-        }],
+        "selected_result_ids": ["retrieval:plan_2"],
         "state": state,
     }))
 
     payload = _message_payload(state)
 
-    assert len(payload["selected_retrieval_results"]) == 1
-    selected = payload["selected_retrieval_results"][0]
-    assert selected["result_id"] == "retrieval:plan_2"
-    assert selected["selection_reason"] == "두 번째 결과의 두 번째 item이 필요합니다."
-    assert selected["items"] == [{
-        "value": 1,
-        "item_reference_id": "R1-I2",
-        "item_index": 1,
-    }]
+    assert payload["retrieval_results"] == [
+        {
+            "result_id": "answer_result_1",
+            "context": "",
+            "content": {"value": 0},
+        },
+        {
+            "result_id": "answer_result_2",
+            "context": "",
+            "content": {"value": 1},
+        },
+    ]

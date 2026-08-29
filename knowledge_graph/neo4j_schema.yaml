@@ -63,12 +63,9 @@ entities:
       report_name:
         type: string
         description: 공시 보고서명
-      base_year:
-        type: integer?
-        description: 공시 기준 연도
-      base_month:
-        type: integer?
-        description: 공시 기준 월
+      rcept_date:
+        type: date
+        description: 공시 접수일
       n_sections:
         type: integer
         description: 연결된 전체 Section 수

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from vector_db.contextual_text_builders import (
+    build_r_table_contextual_text,
     build_r_table_record_contextual_text,
 )
 
@@ -108,6 +109,48 @@ def test_renders_non_data_row_type_and_row_context():
     assert "행 유형 : TOTAL\n행 문맥 : 국내 > 사업장" in result
     assert "사업장 : 합계" in result
     assert "투자 금액 : 350000" in result
+
+
+def test_whole_table_groups_headers_and_keeps_one_key_per_column():
+    evidence = _evidence()
+    headers = [
+        ["당기", "당기", "금액"],
+        ["당기", "당기", "비율"],
+        ["전기", "전기", "금액"],
+        ["전기", "전기", "비율"],
+        ["구분"],
+        ["구분"],
+    ]
+    evidence["payload"]["headers"] = headers
+    evidence["payload"]["record_count"] = 1
+    record = {
+        "table_id": evidence["payload"]["table_id"],
+        "record_index": 0,
+        "row_type": "DATA",
+        "row_context": [],
+        "values": ["100", "10%", "90", "9%", "토지", "건물"],
+    }
+
+    result = build_r_table_contextual_text(
+        evidence,
+        [record],
+        corp_name="삼성전자",
+        report_nm="사업보고서",
+        section_path=["재무제표 주석"],
+    )
+
+    assert (
+        "컬럼 구조 :\n"
+        "당기 : 금액 | 비율\n"
+        "전기 : 금액 | 비율\n"
+        "구분"
+    ) in result
+    assert "당기 > 금액 : 100" in result
+    assert "당기 > 비율 : 10%" in result
+    assert "구분 : 토지" in result
+    assert "구분 [2] : 건물" in result
+    assert "당기 > 당기" not in result
+    assert evidence["payload"]["headers"] == headers
 
 
 @pytest.mark.parametrize(

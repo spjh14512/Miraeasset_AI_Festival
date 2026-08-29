@@ -1,11 +1,35 @@
 from __future__ import annotations
 
+import json
+
+import pytest
 from neo4j import Record as Neo4jRecord
+from qdrant_client import models
 from qdrant_client.http.models import QueryResponse, ScoredPoint
 
 from agent_graph import tools
 from agent_graph.state import Plan, RetrievalResult
-from agent_graph.tools import CypherQuery, QdrantQuery
+from agent_graph.tools import CypherQuery, QdrantQuery, QdrantQueryToolArgs
+from vector_db.text2vector import HybridEmbedding, SparseEmbedding
+
+
+def _hybrid() -> HybridEmbedding:
+    return HybridEmbedding(
+        dense=(0.1, 0.2),
+        sparse=SparseEmbedding(indices=(1, 42), values=(0.2, 0.8)),
+    )
+
+
+def _query_tool_args(query: QdrantQuery) -> QdrantQueryToolArgs:
+    return QdrantQueryToolArgs(
+        mode=query.mode,
+        query_text=query.query_text or "",
+        filters_json=json.dumps([
+            item.model_dump(mode="json", exclude_none=True)
+            for item in query.filters
+        ]),
+        score_threshold_json=json.dumps(query.score_threshold),
+    )
 
 
 class _Neo4jSession:
@@ -46,6 +70,32 @@ class _QdrantClient:
         return self.response
 
 
+class _QueryBuilderLlm:
+    def with_structured_output(self, *_args, **_kwargs):
+        return self
+
+    def invoke(self, messages):
+        self.messages = messages
+        return _query_tool_args(QdrantQuery(
+            mode="vector",
+            query_text="삼성전자 특별관계자",
+        ))
+
+
+class _SequenceQueryBuilderLlm:
+    def __init__(self, queries):
+        self.queries = list(queries)
+        self.calls = []
+
+    def with_structured_output(self, *_args, **_kwargs):
+        return self
+
+    def invoke(self, messages):
+        self.calls.append(messages)
+        query = self.queries.pop(0)
+        return _query_tool_args(query) if isinstance(query, QdrantQuery) else query
+
+
 def _r_table_point(
     point_id: str = "00000000-0000-0000-0000-000000000001",
 ):
@@ -54,13 +104,20 @@ def _r_table_point(
         version=1,
         score=0.9,
         payload={
-            "retrieval_metadata": {
-                "point_kind": "R_TABLE",
-                "evidence_id": "d1:src0:s0:e0",
-                "corp_name": "삼성전자",
-                "corp_code": "00126380",
-                "report_nm": "사업보고서 (2023.12)",
+            "point_kind": "R_TABLE",
+            "disclosure_id": "d1",
+            "section_id": "d1:src0:s0",
+            "evidence_id": "d1:src0:s0:e0",
+            "corp_name": "삼성전자",
+            "report_name": "사업보고서 (2023.12)",
+            "section_name": "VII. 주주에 관한 사항",
+            "rcept_date": "20240306",
+            "chunking": {
                 "table_id": "table-1",
+                "chunk_index": 0,
+                "chunk_count": 2,
+                "row_start_index": 0,
+                "row_end_index": 0,
             },
             "contextual_text": (
                 "회사 : 삼성전자\n"
@@ -101,12 +158,11 @@ def test_query_executor_runs_vector_query(monkeypatch):
     query = QdrantQuery(
         mode="vector",
         query_text="삼성전자 특별관계자",
-        query_vector=[0.1, 0.2],
-        point_kinds=["R_TABLE"],
+        query_vector=_hybrid(),
         filters=[
             {
-                "key": "retrieval_metadata.corp_name",
-                "match": "삼성전자"
+                "key": "evidence_id",
+                "match": "evidence-1"
             }
         ],
         limit=5
@@ -115,8 +171,40 @@ def test_query_executor_runs_vector_query(monkeypatch):
     result = tools.query_executor(query)
 
     assert result is raw_result
-    assert client.query_call["query"] == [0.1, 0.2]
-    assert client.query_call["using"] == "evidence_dense"
+    assert isinstance(client.query_call["query"], models.FusionQuery)
+    assert client.query_call["query"].fusion == models.Fusion.RRF
+    assert len(client.query_call["prefetch"]) == 2
+    dense_prefetch, sparse_prefetch = client.query_call["prefetch"]
+    assert dense_prefetch.query == [0.1, 0.2]
+    assert dense_prefetch.using == "evidence_dense"
+    assert sparse_prefetch.query == models.SparseVector(
+        indices=[1, 42], values=[0.2, 0.8]
+    )
+    assert sparse_prefetch.using == "evidence_sparse"
+    assert dense_prefetch.limit == 25
+    assert sparse_prefetch.limit == 25
+    assert dense_prefetch.filter == sparse_prefetch.filter
+    assert [condition.key for condition in dense_prefetch.filter.must] == [
+        "evidence_id"
+    ]
+    assert client.query_call["with_payload"] is True
+
+
+def test_query_executor_omits_filter_for_unfiltered_vector_query(monkeypatch):
+    client = _QdrantClient(QueryResponse(points=[]))
+    monkeypatch.setattr(tools, "qdrant_client", client)
+    query = QdrantQuery(
+        mode="vector",
+        query_text="삼성전자 특별관계자",
+        query_vector=_hybrid(),
+    )
+
+    tools.query_executor(query)
+
+    assert all(
+        prefetch.filter is None
+        for prefetch in client.query_call["prefetch"]
+    )
 
 
 def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
@@ -125,10 +213,9 @@ def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
     monkeypatch.setattr(tools, "qdrant_client", client)
     query = QdrantQuery(
         mode="filter",
-        point_kinds=["R_TABLE"],
         filters=[
             {
-                "key": "retrieval_metadata.table_id",
+                "key": "chunking.table_id",
                 "match": "table-1"
             }
         ],
@@ -139,6 +226,7 @@ def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
 
     assert result is raw_result
     assert client.scroll_call["limit"] == 10
+    assert client.scroll_call["with_payload"] is True
 
 
 def test_qdrant_query_limit_is_owned_by_application():
@@ -146,11 +234,163 @@ def test_qdrant_query_limit_is_owned_by_application():
     query = QdrantQuery(
         mode="vector",
         query_text="삼성전자 특별관계자",
-        point_kinds=["R_TABLE"],
     )
 
     assert "limit" not in schema["properties"]
-    assert query.limit == 3
+    assert query.limit == 5
+
+
+def test_qdrant_query_tool_args_use_clova_compatible_flat_schema():
+    schema = QdrantQueryToolArgs.model_json_schema()
+    properties = schema["properties"]
+
+    assert set(properties) == {
+        "mode",
+        "query_text",
+        "filters_json",
+        "score_threshold_json",
+    }
+    assert all(property_schema.get("type") == "string" for name, property_schema in properties.items() if name != "mode")
+    assert "$defs" not in schema
+    assert "anyOf" not in json.dumps(schema)
+
+
+def test_qdrant_query_tool_args_convert_to_validated_query():
+    query = QdrantQueryToolArgs(
+        mode="filter",
+        query_text="",
+        filters_json='[{"key":"evidence_id","match":"evidence-1"}]',
+        score_threshold_json="null",
+    ).to_qdrant_query()
+
+    assert query.mode == "filter"
+    assert query.query_text is None
+    assert query.filters[0].key == "evidence_id"
+
+
+@pytest.mark.parametrize("field", [
+    "retrieval_metadata.corp_name",
+    "retrieval_metadata.corp_code",
+    "retrieval_metadata.industry",
+    "retrieval_metadata.sector",
+])
+def test_qdrant_filter_rejects_removed_company_fields(field):
+    with pytest.raises(ValueError):
+        tools.QdrantFilter(key=field, match="value")
+
+
+def test_query_builder_logs_human_message(monkeypatch, capsys):
+    llm = _QueryBuilderLlm()
+    plan = Plan(
+        plan_id="plan_1",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="특별관계자 확인",
+        dependencies=[],
+    )
+    monkeypatch.setattr(tools, "text_to_hybrid_vector", lambda _: _hybrid())
+
+    tools.query_builder(
+        plan,
+        user_question="삼성전자의 특별관계자를 알려줘",
+        dependencies=[],
+        qdrant_schema="schema",
+        llm=llm,
+    )
+
+    output = capsys.readouterr().out
+    assert "[query builder human message]:" in output
+    assert '"user_question": "삼성전자의 특별관계자를 알려줘"' in output
+    assert '"plan_id": "plan_1"' in output
+    assert '"previous_results": []' in output
+    assert '"dependencies"' not in output
+
+
+def test_query_builder_regenerates_repeated_no_results_filter(monkeypatch):
+    failed_result = RetrievalResult(
+        result_id="retrieval:plan_1",
+        plan_id="plan_1",
+        source="qdrant",
+        status="NO_RESULTS",
+        query=(
+            '{"mode":"vector","query_text":"삼성생명보험 취득자금",'
+            '"filters":[{"key":"evidence_id",'
+            '"match":"evidence-1"}],"score_threshold":null}'
+        ),
+        items=[],
+        result_count=0,
+    )
+    repeated_query = QdrantQuery(
+        mode="vector",
+        query_text="삼성생명보험 취득자금 원천",
+        filters=[{
+            "key": "evidence_id",
+            "match": "evidence-1",
+        }],
+    )
+    relaxed_query = QdrantQuery(
+        mode="vector",
+        query_text="삼성생명보험 취득자금 원천",
+        filters=[],
+    )
+    llm = _SequenceQueryBuilderLlm([repeated_query, relaxed_query])
+    monkeypatch.setattr(tools, "text_to_hybrid_vector", lambda _: _hybrid())
+
+    query = tools.query_builder(
+        Plan(
+            plan_id="plan_2",
+            source="qdrant",
+            query="삼성생명보험 취득자금 원천 재검색",
+            purpose="실패한 기업명 filter를 완화하여 재검색",
+            dependencies=["retrieval:plan_1"],
+        ),
+        user_question="삼성생명보험의 취득자금 원천을 알려줘",
+        dependencies=[failed_result],
+        qdrant_schema="schema",
+        llm=llm,
+    )
+
+    assert query.filters == []
+    assert len(llm.calls) == 2
+    assert "filter 조건의 제거 또는 완화" in llm.calls[1][-1].content
+
+
+def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
+    failed_result = RetrievalResult(
+        result_id="retrieval:plan_1",
+        plan_id="plan_1",
+        source="qdrant",
+        status="NO_RESULTS",
+        query='{"filters":[]}',
+        items=[],
+        result_count=0,
+    )
+    plan = Plan(
+        plan_id="plan_2",
+        source="qdrant",
+        query="필터를 완화한 후속 검색",
+        purpose="NO_RESULTS 검색 보정",
+        dependencies=["retrieval:plan_1"],
+    )
+
+    def reject_repeated_filter(*_args, **_kwargs):
+        raise tools.RepeatedNoResultsFilterError("동일 filter 조합")
+
+    monkeypatch.setattr(tools, "query_builder", reject_repeated_filter)
+
+    update = tools.retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "후속 검색",
+            "retrieval_results": [failed_result],
+            "next_plan_seq": 2,
+        },
+    })
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_QUERY"
+    assert result.metadata["failure_stage"] == "query_builder"
 
 
 def test_retrieve_search_preserves_plan_purpose(monkeypatch):
@@ -158,13 +398,13 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         plan_id="plan_4",
         source="qdrant",
         query="삼성전자 특별관계자",
-        purpose="특별관계자 명단 확인"
+        purpose="특별관계자 명단 확인",
+        dependencies=[],
     )
     query = QdrantQuery(
         mode="vector",
         query_text="삼성전자 특별관계자",
-        query_vector=[0.1],
-        point_kinds=["R_TABLE"]
+        query_vector=_hybrid(),
     )
     raw_result = QueryResponse(points=[])
     monkeypatch.setattr(tools, "query_builder", lambda _, **__: query)
@@ -175,18 +415,18 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
     )
 
     update = tools.retrieve_search.invoke({
-        "plan_id": "plan_4",
+        "plan": plan,
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-            "plans": [plan],
-            "retrieval_results": []
+            "retrieval_results": [],
+            "next_plan_seq": 4,
         },
     })
 
     assert update["retrieval_results"][0].metadata == {
         "mode": "vector",
-        "requested_limit": 3,
+        "requested_limit": 5,
         "raw_point_count": 0,
         "duplicate_point_count": 0,
         "returned_point_count": 0,
@@ -194,6 +434,90 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         "plan_purpose": "특별관계자 명단 확인"
     }
     assert update["retrieved_qdrant_point_ids"] == []
+    assert update["retrieval_results"][0].status == "NO_RESULTS"
+
+
+def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
+    plan = Plan(
+        plan_id="plan_4",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="중복 결과 확인",
+        dependencies=[],
+    )
+    point = _r_table_point()
+    monkeypatch.setattr(
+        tools,
+        "query_builder",
+        lambda *_args, **_kwargs: QdrantQuery(
+            mode="vector",
+            query_text="삼성전자 특별관계자",
+            query_vector=_hybrid(),
+        ),
+    )
+    monkeypatch.setattr(
+        tools,
+        "query_executor",
+        lambda *_: QueryResponse(points=[point]),
+    )
+
+    update = tools.retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "retrieval_results": [],
+            "retrieved_qdrant_point_ids": [str(point.id)],
+            "next_plan_seq": 4,
+        },
+    })
+
+    result = update["retrieval_results"][0]
+    assert result.status == "DUPLICATES_ONLY"
+    assert result.result_count == 0
+
+
+def test_retrieve_search_preserves_timeout_as_result(monkeypatch):
+    plan = Plan(
+        plan_id="plan_4",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="timeout 기록 확인",
+        dependencies=[],
+    )
+    monkeypatch.setattr(
+        tools,
+        "query_builder",
+        lambda *_args, **_kwargs: QdrantQuery(
+            mode="vector",
+            query_text="삼성전자 특별관계자",
+            query_vector=_hybrid(),
+        ),
+    )
+
+    def raise_timeout(_query):
+        try:
+            raise TimeoutError("timed out")
+        except TimeoutError as error:
+            raise RuntimeError("Qdrant 쿼리 실행 중 오류 발생!") from error
+
+    monkeypatch.setattr(tools, "query_executor", raise_timeout)
+
+    update = tools.retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "retrieval_results": [],
+            "next_plan_seq": 4,
+        },
+    })
+
+    result = update["retrieval_results"][0]
+    assert result.status == "TIMEOUT"
+    assert result.result_count == 0
+    assert '"query_text":"삼성전자 특별관계자"' in result.query
+    assert "point_kinds" not in result.query
 
 
 def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
@@ -202,12 +526,12 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
         source="qdrant",
         query="삼성전자 특별관계자",
         purpose="특별관계자 명단 확인",
+        dependencies=[],
     )
     query = QdrantQuery(
         mode="vector",
         query_text="삼성전자 특별관계자",
-        query_vector=[0.1],
-        point_kinds=["R_TABLE"],
+        query_vector=_hybrid(),
     )
     point = _r_table_point()
     monkeypatch.setattr(tools, "query_builder", lambda _, **__: query)
@@ -217,45 +541,57 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
         lambda *_: QueryResponse(points=[point]),
     )
     monkeypatch.setattr(tools, "point_requires_compaction", lambda _: True)
-    monkeypatch.setattr(tools, "compact_qdrant_point", lambda *_: [])
+
+    def compact(compactor_point, _plan):
+        assert "contextual_text" not in compactor_point.payload
+        assert compactor_point.payload["retrieval_context"]["section_path"] == [
+            "VII. 주주에 관한 사항"
+        ]
+        return []
+
+    monkeypatch.setattr(tools, "compact_qdrant_point", compact)
 
     update = tools.retrieve_search.invoke({
-        "plan_id": "plan_5",
+        "plan": plan,
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-            "plans": [plan],
             "retrieval_results": [],
+            "next_plan_seq": 5,
         },
     })
 
     item = update["retrieval_results"][0].items[0]
+    assert "contextual_text" not in point.payload
+    assert item["metadata"]["retrieval_context"]["section_path"] == [
+        "VII. 주주에 관한 사항"
+    ]
     assert item["records"] == []
     assert item["included_record_count"] == 0
     assert item["omitted_record_count"] == 1
 
 
 def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
-    plans = [
-        Plan(
-            plan_id="plan_1",
-            source="qdrant",
-            query="삼성전자 특별관계자",
-            purpose="초기 근거 검색",
-        ),
-        Plan(
-            plan_id="plan_2",
-            source="qdrant",
-            query="삼성전자 특별관계자",
-            purpose="검색 범위 확대",
-        ),
-    ]
+    first_plan = Plan(
+        plan_id="plan_1",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="초기 근거 검색",
+        dependencies=[],
+    )
+    second_plan = Plan(
+        plan_id="plan_2",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="검색 범위 확대",
+        dependencies=[],
+    )
     points = [
         _r_table_point(f"00000000-0000-0000-0000-{index:012d}")
-        for index in range(1, 6)
+        for index in range(1, 11)
     ]
     raw_results = [
-        QueryResponse(points=points[:3]),
+        QueryResponse(points=points[:5]),
         QueryResponse(points=points),
     ]
     executed_limits = []
@@ -266,8 +602,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         lambda _, **__: QdrantQuery(
             mode="vector",
             query_text="삼성전자 특별관계자",
-            query_vector=[0.1],
-            point_kinds=["R_TABLE"],
+            query_vector=_hybrid(),
         ),
     )
 
@@ -278,41 +613,41 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
     monkeypatch.setattr(tools, "query_executor", execute)
 
     first_update = tools.retrieve_search.invoke({
-        "plan_id": "plan_1",
-        "limit": 3,
+        "plan": first_plan,
+        "limit": 5,
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-            "plans": plans,
             "retrieval_results": [],
+            "next_plan_seq": 1,
         },
     })
     first_result = first_update["retrieval_results"][0]
 
     second_update = tools.retrieve_search.invoke({
-        "plan_id": "plan_2",
-        "limit": 5,
+        "plan": second_plan,
+        "limit": 10,
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-            "plans": first_update["plans"],
             "retrieval_results": [first_result],
             "retrieved_qdrant_point_ids": first_update[
                 "retrieved_qdrant_point_ids"
             ],
+            "next_plan_seq": first_update["next_plan_seq"],
         },
     })
     second_result = second_update["retrieval_results"][0]
 
-    assert executed_limits == [3, 5]
-    assert len(first_result.items) == 3
+    assert executed_limits == [5, 10]
+    assert len(first_result.items) == 5
     assert first_result.metadata["duplicate_point_count"] == 0
-    assert first_result.metadata["returned_point_count"] == 3
-    assert len(second_result.items) == 2
-    assert second_result.metadata["requested_limit"] == 5
-    assert second_result.metadata["raw_point_count"] == 5
-    assert second_result.metadata["duplicate_point_count"] == 3
-    assert second_result.metadata["returned_point_count"] == 2
+    assert first_result.metadata["returned_point_count"] == 5
+    assert len(second_result.items) == 5
+    assert second_result.metadata["requested_limit"] == 10
+    assert second_result.metadata["raw_point_count"] == 10
+    assert second_result.metadata["duplicate_point_count"] == 5
+    assert second_result.metadata["returned_point_count"] == 5
     assert second_update["retrieved_qdrant_point_ids"] == [
         str(point.id) for point in points
     ]
@@ -324,17 +659,18 @@ def test_retrieve_search_rejects_non_progressive_qdrant_limit():
         source="qdrant",
         query="삼성전자 특별관계자",
         purpose="근거 검색",
+        dependencies=[],
     )
 
     try:
         tools.retrieve_search.invoke({
-            "plan_id": "plan_1",
+            "plan": plan,
             "limit": 4,
             "state": {
                 "question_id": "question-1",
                 "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-                "plans": [plan],
                 "retrieval_results": [],
+                "next_plan_seq": 1,
             },
         })
     except ValueError as error:
@@ -360,6 +696,15 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
         items=[{"fields": {"evidence_id": "evidence-other"}}],
         result_count=1,
     )
+    failed_result = RetrievalResult(
+        result_id="retrieval:failed",
+        plan_id="failed",
+        source="qdrant",
+        status="NO_RESULTS",
+        query='{"filters":[{"key":"rcept_date","match":"20250318"}]}',
+        items=[],
+        result_count=0,
+    )
     plan = Plan(
         plan_id="plan_2",
         source="qdrant",
@@ -374,9 +719,8 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
         captured.update(kwargs)
         return QdrantQuery(
             mode="filter",
-            point_kinds=["TEXT", "KV_TABLE", "R_TABLE"],
             filters=[{
-                "key": "retrieval_metadata.evidence_id",
+                "key": "evidence_id",
                 "match": "evidence-1",
             }],
         )
@@ -389,12 +733,12 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
     )
 
     tools.retrieve_search.invoke({
-        "plan_id": "plan_2",
+        "plan": plan,
         "state": {
             "question_id": "question-1",
             "question_text": "해당 Evidence의 실제 내용을 알려줘",
-            "plans": [plan],
-            "retrieval_results": [used_dependency, unused_result],
+            "retrieval_results": [used_dependency, unused_result, failed_result],
+            "next_plan_seq": 2,
         },
     })
 
@@ -414,12 +758,12 @@ def test_retrieve_search_rejects_missing_dependency():
 
     try:
         tools.retrieve_search.invoke({
-            "plan_id": "plan_2",
+            "plan": plan,
             "state": {
                 "question_id": "question-1",
                 "question_text": "해당 Evidence의 실제 내용을 알려줘",
-                "plans": [plan],
                 "retrieval_results": [],
+                "next_plan_seq": 2,
             },
         })
     except ValueError as error:
