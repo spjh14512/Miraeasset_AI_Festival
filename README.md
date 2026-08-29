@@ -164,7 +164,7 @@ uv run python -m converters.event_extractor.event_pipeline
 ```powershell
 uv run python -m knowledge_graph.insertUniverse
 ```
-#### Disclosure, Section, Evidence insert
+#### Disclosure, Section, Evidence nodes & relations insert
 ```powershell
 uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 ```
@@ -174,7 +174,7 @@ uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 uv run python knowledge_graph/insert_correction_relations.py --input data/correction/manifest.jsonl
 ```
 
-#### Event and support relation insert
+#### Event nodes insert
 ```powershell
 uv run python -m knowledge_graph.insert_events --input data/event/manifest.jsonl
 ```
