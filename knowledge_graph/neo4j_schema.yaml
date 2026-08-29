@@ -1,4 +1,4 @@
-schema_version: "1.1.0"
+schema_version: "1.2.0"
 
 metadata:
   description: Neo4j 적재 코드가 사용하는 목표 스키마
@@ -49,6 +49,15 @@ entities:
       id:
         type: string
         description: 공시 고유 ID
+      rcept_no:
+        type: string
+        description: DART 공시 접수번호
+      rcept_dt:
+        type: string
+        description: DART 공시 접수일(YYYYMMDD)
+      is_correction:
+        type: boolean
+        description: 기재정정 공시 여부
       doc_group:
         type: string
         values:
@@ -198,6 +207,28 @@ relations:
         - Evidence:Text
         - Evidence:Table
     properties: {}
+
+  CORRECTS:
+    type: CORRECTS
+    description: 정정공시가 정정하는 원본공시 연결
+    endpoints:
+      source:
+        - Disclosure
+      target:
+        - Disclosure
+    properties:
+      correction_date:
+        type: string?
+        description: 정정일자(YYYY-MM-DD)
+      original_submission_date:
+        type: string?
+        description: 원본공시 최초 제출일(YYYY-MM-DD)
+      target_document_name:
+        type: string?
+        description: 정정 대상 공시서류명
+      reason:
+        type: string?
+        description: 정정 사유
 
 constraints:
   - name: company_corp_code

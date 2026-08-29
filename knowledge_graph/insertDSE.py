@@ -28,7 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Insert schema-compliant Disclosure/Section/Evidence data into Neo4j."
     )
-    parser.add_argument("--limit", type=int, required=True, help="Total disclosures to sample")
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--limit", type=int, help="Total disclosures to sample")
+    selection.add_argument(
+        "--correction-pairs",
+        type=int,
+        help="Resolved correction/original pairs to load together",
+    )
     parser.add_argument(
         "--random-seed",
         type=int,
@@ -41,6 +47,12 @@ def parse_args() -> argparse.Namespace:
         "--schema", type=Path, default=Path("knowledge_graph/neo4j_schema.yaml")
     )
     parser.add_argument("--database", default=None)
+    parser.add_argument(
+        "--selection-output",
+        type=Path,
+        default=None,
+        help="Selected correction.v1 rows (default: DATA_ROOT/correction/selected_pairs.jsonl)",
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -182,6 +194,140 @@ def select_disclosures(
     return selected
 
 
+def complete_disclosures_by_receipt(
+    data_root: Path,
+) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    """Index disclosures with complete canonical and evidence outputs."""
+    section_rows = valid_manifest_rows(
+        data_root / "canonical_section" / "manifest.jsonl"
+    )
+    evidence_rows = valid_manifest_rows(
+        data_root / "evidence_fragment" / "manifest.jsonl"
+    )
+    complete: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+    for key in section_rows.keys() & evidence_rows.keys():
+        group, rcept_no = key
+        if group not in DISCLOSURE_GROUPS:
+            continue
+        section_row = section_rows[key]
+        evidence_row = evidence_rows[key]
+        section_path = data_root / str(section_row.get("output_path", ""))
+        evidence_paths = [
+            data_root / str(path) for path in evidence_row.get("output_paths", [])
+        ]
+        if not (
+            section_path.is_file()
+            and evidence_paths
+            and all(path.is_file() for path in evidence_paths)
+        ):
+            continue
+        previous = complete.get(rcept_no)
+        if previous is not None and previous != (section_row, evidence_row):
+            raise ValueError(f"Duplicate complete disclosure for rcept_no {rcept_no}")
+        complete[rcept_no] = (section_row, evidence_row)
+    return complete
+
+
+def select_correction_pairs(
+    data_root: Path,
+    *,
+    pair_count: int,
+    random_seed: int | None,
+    disclosure_metadata: Mapping[str, Mapping[str, Any]],
+) -> tuple[
+    list[tuple[dict[str, Any], dict[str, Any]]],
+    list[dict[str, Any]],
+]:
+    """Select complete, non-overlapping correction/original pairs by group."""
+    if pair_count < 1:
+        raise ValueError("--correction-pairs must be positive")
+
+    complete = complete_disclosures_by_receipt(data_root)
+    candidates: dict[str, list[tuple[dict[str, Any], str, str]]] = defaultdict(list)
+    relation_path = data_root / "correction" / "manifest.jsonl"
+    for record in read_jsonl(relation_path):
+        if record.get("schema_version") != "correction.v1":
+            raise ValueError(f"Unsupported correction schema in {relation_path}")
+        if record.get("status") not in {"FOUND", "RECOVERED"}:
+            continue
+        source_document = record.get("source_document")
+        correction = record.get("correction")
+        if not isinstance(source_document, dict) or not isinstance(correction, dict):
+            continue
+        source_rcept_no = str(source_document.get("rcept_no", "")).strip()
+        target_rcept_no = str(correction.get("target_rcept_no", "")).strip()
+        group = str(source_document.get("doc_group", "")).strip()
+        if (
+            not source_rcept_no
+            or not target_rcept_no
+            or source_rcept_no == target_rcept_no
+            or group not in DISCLOSURE_GROUPS
+            or source_rcept_no not in complete
+            or target_rcept_no not in complete
+        ):
+            continue
+        source_metadata = disclosure_metadata.get(source_rcept_no)
+        target_metadata = disclosure_metadata.get(target_rcept_no)
+        if source_metadata is None or target_metadata is None:
+            continue
+        if source_metadata.get("is_correction") is not True:
+            continue
+        if target_metadata.get("is_correction") is not False:
+            continue
+        source_corp_code = str(source_metadata.get("corp_code", ""))
+        target_corp_code = str(target_metadata.get("corp_code", ""))
+        if not source_corp_code or source_corp_code != target_corp_code:
+            continue
+        source_group = str(complete[source_rcept_no][0].get("doc_group", ""))
+        target_group = str(complete[target_rcept_no][0].get("doc_group", ""))
+        if source_group != group or target_group != group:
+            continue
+        candidates[group].append((record, source_rcept_no, target_rcept_no))
+
+    rng = random.Random(random_seed)
+    for group in DISCLOSURE_GROUPS:
+        candidates[group].sort(key=lambda item: item[1])
+        rng.shuffle(candidates[group])
+
+    selected_records: list[dict[str, Any]] = []
+    selected_disclosures: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    used_receipts: set[str] = set()
+    while len(selected_records) < pair_count:
+        made_progress = False
+        for group in DISCLOSURE_GROUPS:
+            while candidates[group]:
+                record, source_rcept_no, target_rcept_no = candidates[group].pop()
+                if {source_rcept_no, target_rcept_no} & used_receipts:
+                    continue
+                selected_records.append(record)
+                selected_disclosures.extend(
+                    (complete[source_rcept_no], complete[target_rcept_no])
+                )
+                used_receipts.update((source_rcept_no, target_rcept_no))
+                made_progress = True
+                break
+            if len(selected_records) == pair_count:
+                break
+        if not made_progress:
+            break
+
+    if len(selected_records) < pair_count:
+        raise ValueError(
+            "Not enough complete, non-overlapping correction pairs: "
+            f"required={pair_count}, available={len(selected_records)}"
+        )
+    return selected_disclosures, selected_records
+
+
+def write_jsonl_rows(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    with temporary.open("w", encoding="utf-8", newline="\n") as output:
+        for row in rows:
+            output.write(json.dumps(dict(row), ensure_ascii=False) + "\n")
+    temporary.replace(path)
+
+
 def graph_id(source_id: str, rcept_no: str) -> str:
     prefixes = (f"section:{rcept_no}", f"evidence:{rcept_no}")
     for prefix in prefixes:
@@ -250,12 +396,18 @@ def build_rows(
         corp_code = str(document_metadata.get("corp_code", ""))
         if not corp_code:
             raise ValueError(f"corp_code is missing for disclosure {rcept_no}")
+        is_correction = document_metadata.get("is_correction", False)
+        if not isinstance(is_correction, bool):
+            raise ValueError(f"is_correction must be a boolean for {rcept_no}")
         disclosure_id = f"d{rcept_no}"
         disclosure_properties = filter_properties(
                 schema,
                 "Disclosure",
                 {
                     "id": disclosure_id,
+                    "rcept_no": rcept_no,
+                    "rcept_dt": str(document_metadata.get("rcept_dt", "")),
+                    "is_correction": is_correction,
                     "doc_group": str(section_manifest["doc_group"]),
                     "source_path": str(section_manifest.get("source_path", "")),
                     "n_sections": 0,
@@ -455,11 +607,14 @@ def insert_rows(
             batch_size,
         )
         for key, subtype in (("texts", "Text"), ("tables", "Table")):
+            previous_subtype = "Table" if subtype == "Text" else "Text"
             run_batched(
                 session,
                 f"""
                 UNWIND $rows AS row
-                MERGE (n:Evidence:{subtype} {{id: row.id}})
+                MERGE (n:Evidence {{id: row.id}})
+                SET n:{subtype}
+                REMOVE n:{previous_subtype}
                 SET n += properties(row), n._section_id = null
                 """,
                 rows[key],
@@ -546,12 +701,30 @@ def summary(
 def main() -> int:
     args = parse_args()
     schema = load_schema(args.schema)
-    selected = select_disclosures(
-        args.data_root, limit=args.limit, random_seed=args.random_seed
-    )
     disclosure_metadata = disclosure_metadata_rows(args.data_root)
+    selection_output: Path | None = None
+    selected_pair_records: list[dict[str, Any]] = []
+    if args.correction_pairs is not None:
+        selected, selected_pair_records = select_correction_pairs(
+            args.data_root,
+            pair_count=args.correction_pairs,
+            random_seed=args.random_seed,
+            disclosure_metadata=disclosure_metadata,
+        )
+        selection_output = args.selection_output or (
+            args.data_root / "correction" / "selected_pairs.jsonl"
+        )
+        write_jsonl_rows(selection_output, selected_pair_records)
+    else:
+        selected = select_disclosures(
+            args.data_root, limit=args.limit, random_seed=args.random_seed
+        )
     rows = build_rows(schema, args.data_root, selected, disclosure_metadata)
-    print(json.dumps(summary(selected, rows), ensure_ascii=False, indent=2))
+    result = summary(selected, rows)
+    if selection_output is not None:
+        result["correction_pairs"] = len(selected_pair_records)
+        result["correction_selection"] = str(selection_output)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
     if args.dry_run:
         return 0
 

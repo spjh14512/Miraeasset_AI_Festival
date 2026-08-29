@@ -261,6 +261,45 @@ def test_exchange_html_uses_container_and_three_d8_tables():
     assert [ref.html_id for ref in result.excluded_source_refs] == ["LIB_LC000"]
 
 
+def test_exchange_html_decodes_euc_kr_correction_report():
+    html = """
+    <html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=euc-kr">
+    </head><body><div id="LIB_LC000">
+      <span>정정신고(보고)</span>
+      <table id="XFormD8_Form0_Table1"><tr>
+        <td>정정일자</td><td>2023-10-31</td>
+      </tr></table>
+      <table id="XFormD8_Form0_RepeatTable0">
+        <tr><td>1. 정정관련 공시서류</td>
+          <td>연결재무제표 기준 영업(잠정)실적(공정공시)</td></tr>
+        <tr><td>2. 정정관련 공시서류제출일</td>
+          <td>2023년 10월 11일</td></tr>
+        <tr><td>3. 정정사유</td>
+          <td>2023년 3분기 실적 내용 정정</td></tr>
+      </table>
+      <table id="XFormD8_Form0_Table0"><tr><td>정정 전후</td></tr></table>
+    </div></body></html>
+    """
+
+    result = extract_correction(html.encode("euc-kr"), context=_context())
+
+    assert result.status == CorrectionStatus.FOUND
+    assert result.correction is not None
+    assert result.correction.correction_date == "2023-10-31"
+    assert result.correction.original_submission_date == "2023-10-11"
+    assert result.correction.target_document_name == (
+        "연결재무제표 기준 영업(잠정)실적(공정공시)"
+    )
+    assert result.correction.reason == "2023년 3분기 실적 내용 정정"
+    assert [block.source_ref.html_id for block in result.correction_blocks] == [
+        "XFormD8_Form0_Table1",
+        "XFormD8_Form0_RepeatTable0",
+        "XFormD8_Form0_Table0",
+    ]
+    assert [ref.html_id for ref in result.excluded_source_refs] == ["LIB_LC000"]
+
+
 def test_exchange_html_can_fall_back_to_d8_table_ids():
     html = _html_correction().replace('<div id="LIB_LC000">', "<section>").replace(
         "</div>", "</section>"
