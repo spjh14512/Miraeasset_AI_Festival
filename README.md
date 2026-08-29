@@ -148,6 +148,11 @@ uv run python -m scripts.build_canonical_sections --force --workers 4 --progress
 uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 100
 ```
 
+### Correction extractor
+```powershell
+uv run python -m converters.correction_extractor.correction_relation_builder
+```
+
 ### Neo4j insert
 #### Company nodes insert (from universe.csv)
 ```powershell
@@ -156,6 +161,11 @@ uv run python -m knowledge_graph.insertUniverse
 #### Disclosure, Section, Evidence insert
 ```powershell
 uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
+```
+
+#### Correction relation insert
+```powershell
+uv run python knowledge_graph/insert_correction_relations.py --input data/correction/manifest.jsonl
 ```
 
 ### Qdrant insert
