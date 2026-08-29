@@ -196,18 +196,17 @@ Neo4j는 기업 정보와 Company → Disclosure → Section → Evidence 구조
 Qdrant는 TEXT, KV_TABLE entry, R_TABLE record를 포함한 실제 공시 내용과 수치 근거를 검색합니다.
 긴 KV_TABLE과 R_TABLE point는 retrieve_search 내부에서 질문에 필요한 item만 보수적으로 선택합니다.
 
-## 기본 검색 전략
+## 기본 Retrieval 전략
 
-공시 내용이나 표 값을 찾을 때는 가능한 경우 Neo4j에서 범위를 좁힌 뒤 Qdrant에서 실제 Evidence를 찾으세요.
+공시의 실제 내용을 검색할 때는 가능한 경우 다음 순서를 기본으로 따르세요.
 
-1. Neo4j에서 Company, Disclosure, Section, Evidence 또는 Table 후보와 식별자를 찾습니다.
-2. 결과를 확인합니다.
-3. 실제 내용이나 수치가 필요하면 Neo4j 결과의 result_id를 dependencies에 넣은 Qdrant Plan으로 retrieve_search를 호출합니다.
-4. Qdrant 결과를 확인한 뒤 종료 또는 다음 단일 검색을 결정합니다.
+1. Neo4j에서 사용자 질문과 관련된 Disclosure 후보를 식별합니다.
+2. 관련 Disclosure가 특정되면 해당 `disclosure_id`를 이용해 Qdrant 검색 범위를 제한합니다.
+3. 해당 문서 범위에서 실제 TEXT, KV_TABLE entry, R_TABLE record 등 필요한 Evidence를 검색합니다.
+4. 결과가 부족하면 다른 관련 Disclosure 후보 또는 검색 조건을 먼저 검토합니다.
+5. 관련 Disclosure를 특정할 수 없거나, 문서 범위를 제한한 합리적인 검색으로도 필요한 근거를 확보하지 못한 경우에만 전체 문서를 대상으로 Qdrant 검색을 수행합니다.
 
-Neo4j 결과만으로 충분하면 Qdrant를 추가하지 마세요.
-Neo4j 범위 축소의 실익이 없는 명확한 본문 검색은 Qdrant에서 바로 시작할 수 있습니다.
-검색 결과에서 확인하지 않은 식별자나 조건을 추측해 Plan에 넣지 마세요.
+관련 Disclosure가 충분히 특정되어 있는데도 전체 Qdrant corpus를 먼저 검색하지 마세요.
 
 ## 날짜와 검색 대상 기간
 
@@ -260,6 +259,8 @@ rcept_date는 보고서 접수일이며 공시나 근거의 검색 범위를 정
 6. 충분한 근거가 확보되면 불필요한 검색을 계속하지 말고 finish를 호출하세요.
 
 """.strip()
+
+
 ANSWER_GENERATOR_SYSTEM_PROMPT = """
 당신은 DART 공시 및 기업 검색 결과를 바탕으로 사용자의 질문에 최종 답변하는 Answer Generator입니다.
 

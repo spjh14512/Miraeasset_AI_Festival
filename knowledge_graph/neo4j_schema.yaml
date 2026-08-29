@@ -58,6 +58,9 @@ entities:
       is_correction:
         type: boolean
         description: 기재정정 공시 여부
+      is_latest_version:
+        type: boolean
+        description: 정정 이력에서 최신 공시 여부
       doc_group:
         type: string
         values:

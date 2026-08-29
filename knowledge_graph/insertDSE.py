@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     selection.add_argument(
         "--correction-pairs",
         type=int,
-        help="Resolved correction/original pairs to load together",
+        help="Resolved correction chains to load together",
     )
     parser.add_argument(
         "--random-seed",
@@ -238,12 +238,15 @@ def select_correction_pairs(
     list[tuple[dict[str, Any], dict[str, Any]]],
     list[dict[str, Any]],
 ]:
-    """Select complete, non-overlapping correction/original pairs by group."""
+    """Select complete correction chains by group without cutting a chain."""
     if pair_count < 1:
         raise ValueError("--correction-pairs must be positive")
 
     complete = complete_disclosures_by_receipt(data_root)
-    candidates: dict[str, list[tuple[dict[str, Any], str, str]]] = defaultdict(list)
+    records_by_root: dict[
+        str,
+        dict[str, list[tuple[dict[str, Any], str]]],
+    ] = {group: defaultdict(list) for group in DISCLOSURE_GROUPS}
     relation_path = data_root / "correction" / "manifest.jsonl"
     for record in read_jsonl(relation_path):
         if record.get("schema_version") != "correction.v1":
@@ -282,40 +285,52 @@ def select_correction_pairs(
         target_group = str(complete[target_rcept_no][0].get("doc_group", ""))
         if source_group != group or target_group != group:
             continue
-        candidates[group].append((record, source_rcept_no, target_rcept_no))
+        records_by_root[group][target_rcept_no].append(
+            (record, source_rcept_no)
+        )
 
     rng = random.Random(random_seed)
+    candidates: dict[
+        str,
+        list[tuple[str, list[tuple[dict[str, Any], str]]]],
+    ] = {}
     for group in DISCLOSURE_GROUPS:
-        candidates[group].sort(key=lambda item: item[1])
+        candidates[group] = sorted(records_by_root[group].items())
         rng.shuffle(candidates[group])
 
     selected_records: list[dict[str, Any]] = []
-    selected_disclosures: list[tuple[dict[str, Any], dict[str, Any]]] = []
-    used_receipts: set[str] = set()
-    while len(selected_records) < pair_count:
+    selected_by_receipt: dict[
+        str,
+        tuple[dict[str, Any], dict[str, Any]],
+    ] = {}
+    selected_chain_count = 0
+    while selected_chain_count < pair_count:
         made_progress = False
         for group in DISCLOSURE_GROUPS:
-            while candidates[group]:
-                record, source_rcept_no, target_rcept_no = candidates[group].pop()
-                if {source_rcept_no, target_rcept_no} & used_receipts:
-                    continue
-                selected_records.append(record)
-                selected_disclosures.extend(
-                    (complete[source_rcept_no], complete[target_rcept_no])
-                )
-                used_receipts.update((source_rcept_no, target_rcept_no))
-                made_progress = True
-                break
-            if len(selected_records) == pair_count:
+            if not candidates[group]:
+                continue
+            target_rcept_no, chain_records = candidates[group].pop()
+            chain_records.sort(key=lambda item: item[1])
+            selected_records.extend(record for record, _ in chain_records)
+            selected_by_receipt[target_rcept_no] = complete[target_rcept_no]
+            for _, source_rcept_no in chain_records:
+                selected_by_receipt[source_rcept_no] = complete[source_rcept_no]
+            selected_chain_count += 1
+            made_progress = True
+            if selected_chain_count == pair_count:
                 break
         if not made_progress:
             break
 
-    if len(selected_records) < pair_count:
+    if selected_chain_count < pair_count:
         raise ValueError(
-            "Not enough complete, non-overlapping correction pairs: "
-            f"required={pair_count}, available={len(selected_records)}"
+            "Not enough complete correction chains: "
+            f"required={pair_count}, available={selected_chain_count}"
         )
+    selected_disclosures = [
+        selected_by_receipt[rcept_no]
+        for rcept_no in sorted(selected_by_receipt)
+    ]
     return selected_disclosures, selected_records
 
 
@@ -408,6 +423,7 @@ def build_rows(
                     "rcept_no": rcept_no,
                     "rcept_dt": str(document_metadata.get("rcept_dt", "")),
                     "is_correction": is_correction,
+                    "is_latest_version": True,
                     "doc_group": str(section_manifest["doc_group"]),
                     "source_path": str(section_manifest.get("source_path", "")),
                     "n_sections": 0,

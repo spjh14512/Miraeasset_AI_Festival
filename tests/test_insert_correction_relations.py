@@ -59,6 +59,30 @@ def test_relation_rows_use_existing_correction_v1_contract(tmp_path: Path):
     ]
 
 
+def test_relation_rows_build_chronological_chain_for_same_original(tmp_path: Path):
+    path = tmp_path / "manifest.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _correction_record(
+                source_document={"rcept_no": "20240303000003"},
+                correction={"target_rcept_no": "20240101000001"},
+            ),
+            _correction_record(
+                source_document={"rcept_no": "20240202000002"},
+                correction={"target_rcept_no": "20240101000001"},
+            ),
+        ],
+    )
+
+    rows = loader.correction_relation_rows(path)
+
+    assert [(row["source_id"], row["target_id"]) for row in rows] == [
+        ("d20240202000002", "d20240101000001"),
+        ("d20240303000003", "d20240202000002"),
+    ]
+
+
 def test_relation_rows_reject_conflicting_originals(tmp_path: Path):
     path = tmp_path / "manifest.jsonl"
     _write_jsonl(
@@ -104,6 +128,7 @@ def test_insert_dse_only_adds_correction_identity_properties(tmp_path: Path):
     assert rows["disclosures"][0]["rcept_no"] == "20240202000002"
     assert rows["disclosures"][0]["rcept_dt"] == "20240202"
     assert rows["disclosures"][0]["is_correction"] is True
+    assert rows["disclosures"][0]["is_latest_version"] is True
     assert "corrects" not in rows
 
 
@@ -161,6 +186,44 @@ def test_select_correction_pairs_returns_complete_unique_endpoints(tmp_path: Pat
             )
         )
 
+    later_source = "20240505000005"
+    later_group = "periodic"
+    later_section_output = f"canonical_section/{later_group}/{later_source}.json"
+    later_evidence_output = f"evidence_fragment/{later_group}/{later_source}.json"
+    later_section_path = tmp_path / later_section_output
+    later_evidence_path = tmp_path / later_evidence_output
+    later_section_path.parent.mkdir(parents=True, exist_ok=True)
+    later_evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    later_section_path.write_text("{}", encoding="utf-8")
+    later_evidence_path.write_text("{}", encoding="utf-8")
+    section_rows.append({
+        "doc_group": later_group,
+        "rcept_no": later_source,
+        "status": "SUCCESS",
+        "error": None,
+        "output_path": later_section_output,
+    })
+    evidence_rows.append({
+        "doc_group": later_group,
+        "rcept_no": later_source,
+        "status": "SUCCESS",
+        "error": None,
+        "output_paths": [later_evidence_output],
+    })
+    metadata[later_source] = {
+        "corp_code": "00123456",
+        "is_correction": True,
+    }
+    correction_records.append(
+        _correction_record(
+            source_document={
+                "rcept_no": later_source,
+                "doc_group": later_group,
+            },
+            correction={"target_rcept_no": "20240101000001"},
+        )
+    )
+
     (tmp_path / "canonical_section").mkdir(exist_ok=True)
     (tmp_path / "evidence_fragment").mkdir(exist_ok=True)
     (tmp_path / "correction").mkdir(exist_ok=True)
@@ -178,12 +241,17 @@ def test_select_correction_pairs_returns_complete_unique_endpoints(tmp_path: Pat
         disclosure_metadata=metadata,
     )
 
-    assert len(selected) == 4
-    assert len(records) == 2
-    assert len({row[0]["rcept_no"] for row in selected}) == 4
+    assert len(selected) == 5
+    assert len(records) == 3
+    assert len({row[0]["rcept_no"] for row in selected}) == 5
     selection_path = tmp_path / "correction" / "selected_pairs.jsonl"
     insert_dse.write_jsonl_rows(selection_path, records)
-    assert len(loader.correction_relation_rows(selection_path)) == 2
+    relation_rows = loader.correction_relation_rows(selection_path)
+    assert len(relation_rows) == 3
+    assert (
+        "d20240505000005",
+        "d20240202000002",
+    ) in {(row["source_id"], row["target_id"]) for row in relation_rows}
 
 
 class _Result:
@@ -242,7 +310,7 @@ def _relation_rows() -> list[dict[str, Any]]:
     ]
 
 
-def test_neo4j_loader_only_merges_relationship():
+def test_neo4j_loader_replaces_relationship_and_updates_latest_flags():
     session = _Session()
     driver = _Driver(session)
 
@@ -256,8 +324,17 @@ def test_neo4j_loader_only_merges_relationship():
     assert driver.verified is True
     merge_query = next(query for query, _ in session.calls if "MERGE (source)" in query)
     assert "MERGE (source)-[relation:CORRECTS]->(target)" in merge_query
-    assert "SET source" not in merge_query
-    assert "SET target" not in merge_query
+    assert any("DELETE existing" in query for query, _ in session.calls)
+    assert any(
+        "SET disclosure.is_latest_version = false" in query
+        for query, _ in session.calls
+    )
+    latest_call = next(
+        parameters
+        for query, parameters in session.calls
+        if "SET disclosure.is_latest_version = true" in query
+    )
+    assert latest_call["ids"] == ["d20240202000002"]
 
 
 def test_neo4j_loader_stops_if_a_disclosure_node_is_missing():

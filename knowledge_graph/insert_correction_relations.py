@@ -33,7 +33,7 @@ def _jsonl(path: Path) -> Iterator[tuple[int, dict[str, Any]]]:
 
 
 def correction_relation_rows(path: Path) -> list[dict[str, Any]]:
-    """Read resolved target receipts from the existing correction.v1 contract."""
+    """Build correction chains from resolved correction.v1 records."""
     relations: dict[str, dict[str, Any]] = {}
     for line_number, record in _jsonl(path):
         if record.get("schema_version") != "correction.v1":
@@ -67,19 +67,45 @@ def correction_relation_rows(path: Path) -> list[dict[str, Any]]:
 
         row = {
             "source_id": f"d{source_rcept_no}",
-            "target_id": f"d{target_rcept_no}",
+            "root_target_id": f"d{target_rcept_no}",
+            "source_rcept_no": source_rcept_no,
             "correction_date": correction.get("correction_date"),
             "original_submission_date": correction.get("original_submission_date"),
             "target_document_name": correction.get("target_document_name"),
             "reason": correction.get("reason"),
         }
         previous = relations.get(source_rcept_no)
-        if previous is not None and previous["target_id"] != row["target_id"]:
+        if (
+            previous is not None
+            and previous["root_target_id"] != row["root_target_id"]
+        ):
             raise ValueError(
                 f"Conflicting original disclosures for correction {source_rcept_no}"
             )
         relations[source_rcept_no] = row
-    return list(relations.values())
+
+    by_root: dict[str, list[dict[str, Any]]] = {}
+    for row in relations.values():
+        by_root.setdefault(row["root_target_id"], []).append(row)
+
+    chained: list[dict[str, Any]] = []
+    for root_target_id in sorted(by_root):
+        previous_id = root_target_id
+        chain = sorted(
+            by_root[root_target_id],
+            key=lambda row: row["source_rcept_no"],
+        )
+        for row in chain:
+            chained.append({
+                key: value
+                for key, value in {
+                    **row,
+                    "target_id": previous_id,
+                }.items()
+                if key not in {"root_target_id", "source_rcept_no"}
+            })
+            previous_id = row["source_id"]
+    return chained
 
 
 def _chunks(
@@ -132,7 +158,6 @@ def insert_correction_relations(
                  collect(DISTINCT source_company.corp_code) AS source_companies,
                  collect(DISTINCT target_company.corp_code) AS target_companies
             WHERE coalesce(source.is_correction, false) = false
-               OR coalesce(target.is_correction, true) = true
                OR none(code IN source_companies WHERE code IN target_companies)
             RETURN collect({source_id: row.source_id, target_id: row.target_id}) AS rows
             """,
@@ -140,29 +165,45 @@ def insert_correction_relations(
         ).single(strict=True)["rows"]
         if invalid:
             raise RuntimeError(
-                "CORRECTS must connect a correction to a non-correction from the same company: "
+                "CORRECTS must connect a correction to a previous version from the same company: "
                 f"{json.dumps(invalid, ensure_ascii=False, sort_keys=True)}"
             )
 
-        conflicts = session.run(
+        involved_ids = sorted({
+            node_id
+            for row in rows
+            for node_id in (row["source_id"], row["target_id"])
+        })
+        target_ids = {row["target_id"] for row in rows}
+        latest_ids = sorted({row["source_id"] for row in rows} - target_ids)
+        session.run(
             """
-            UNWIND $rows AS row
-            MATCH (source:Disclosure {id: row.source_id})
-            OPTIONAL MATCH (source)-[:CORRECTS]->(existing:Disclosure)
-            WITH row, [id IN collect(existing.id)
-              WHERE id IS NOT NULL AND id <> row.target_id] AS existing_ids
-            WHERE size(existing_ids) > 0
-            RETURN collect({source_id: row.source_id, existing_ids: existing_ids}) AS rows
+            UNWIND $ids AS id
+            MATCH (disclosure:Disclosure {id: id})
+            SET disclosure.is_latest_version = false
             """,
-            rows=list(rows),
-        ).single(strict=True)["rows"]
-        if conflicts:
-            raise RuntimeError(
-                "Existing CORRECTS relationships point to another original: "
-                f"{json.dumps(conflicts, ensure_ascii=False, sort_keys=True)}"
-            )
+            ids=involved_ids,
+        ).consume()
+        session.run(
+            """
+            UNWIND $ids AS id
+            MATCH (disclosure:Disclosure {id: id})
+            SET disclosure.is_latest_version = true
+            """,
+            ids=latest_ids,
+        ).consume()
 
         for batch in _chunks(rows, batch_size):
+            session.run(
+                """
+                UNWIND $rows AS row
+                MATCH (source:Disclosure {id: row.source_id})
+                OPTIONAL MATCH (source)-[existing:CORRECTS]->(existing_target:Disclosure)
+                WHERE existing_target.id <> row.target_id
+                DELETE existing
+                """,
+                rows=batch,
+            ).consume()
             session.run(
                 """
                 UNWIND $rows AS row
