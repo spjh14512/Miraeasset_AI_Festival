@@ -7,6 +7,7 @@ from enum import StrEnum
 import re
 from typing import Mapping
 
+from converters.common.context_text import source_attributes_are_bold
 from converters.paragraph_parser.paragraph_models import (
     CanonicalParagraph,
     FragmentKind,
@@ -31,7 +32,10 @@ class SemanticTextSegment:
 
 
 _DISCLOSURE_REFNO = re.compile(r"^\d{14}$")
-_NOTE_TEXT = re.compile(r"^(?:※|주\s*\d+\s*[):.]|[-ㆍ·]\s*상기)", re.IGNORECASE)
+_NOTE_TEXT = re.compile(
+    r"^(?:※|\(\s*\*+\d*\s*\)|\*|주\s*\d+\s*[):.]|[-ㆍ·]\s*상기)",
+    re.IGNORECASE,
+)
 _REFERENCE_NOTICE = re.compile(
     r"(?:기재하지\s*않|관련\s*내용|참고하시|참고\s*바랍니다)",
     re.IGNORECASE,
@@ -42,30 +46,40 @@ _TABLE_CAPTION = re.compile(
     re.IGNORECASE,
 )
 _SENTENCE_END = re.compile(
-    r"(?:습니다|합니다|됩니다|있습니다|없습니다|입니다|바랍니다|참조합니다)[.]?$"
+    r"(?:습니다|합니다|됩니다|있습니다|없습니다|입니다|바랍니다|"
+    r"참조(?:합니다)?)[.)]*$"
 )
-_BOLD_TOKEN = re.compile(r"(?:^|\s)B(?:\s|$)", re.IGNORECASE)
-
 _MARKERS: tuple[tuple[str, re.Pattern[str], int], ...] = (
     ("DECIMAL", re.compile(r"^\d{1,2}(?:[.]\d{1,2})+[.]?\s*"), 2),
     ("NUMBER_DOT", re.compile(r"^\d{1,2}[.]\s*"), 1),
-    ("PAREN_NUMBER", re.compile(r"^[(]\s*\d{1,2}\s*[)]\s*"), 1),
-    ("NUMBER_PAREN", re.compile(r"^\d{1,2}\s*[)]\s*"), 2),
-    ("KOREAN", re.compile(r"^(?:[가-하][.]|[(][가-하][)])\s*"), 3),
-    ("CIRCLED", re.compile(r"^[①-⑳]\s*"), 3),
-    ("BRACKET", re.compile(r"^(?:\[[^]\n]{1,40}\]|【[^】\n]{1,40}】)\s*"), 4),
+    ("PAREN_NUMBER", re.compile(r"^[(]\s*\d{1,2}\s*[)]\s*"), 4),
+    ("NUMBER_PAREN", re.compile(r"^\d{1,2}\s*[)]\s*"), 5),
+    (
+        "KOREAN",
+        re.compile(
+            r"^(?:[가나다라마바사아자차카타파하][.]|"
+            r"[(][가나다라마바사아자차카타파하][)])\s*"
+        ),
+        3,
+    ),
+    ("CIRCLED", re.compile(r"^[①-⑳]\s*"), 4),
+    ("BULLET_GROUP", re.compile(r"^ㅇ\s+"), 4),
+    ("BRACKET", re.compile(r"^(?:\[[^]\n]{1,40}\]|【[^】\n]{1,40}】)\s*"), 6),
 )
 
 _INLINE_MARKER = re.compile(
     r"(?:\[[^]\n]{1,40}\]|【[^】\n]{1,40}】|[①-⑳]|"
-    r"[(]\s*\d{1,2}\s*[)]|[(][가-하][)]|"
+    r"[(]\s*\d{1,2}\s*[)]|[(][가나다라마바사아자차카타파하][)]|"
     r"(?<![\d.])\d{1,2}\s*[)]|(?<![\d.])\d{1,2}[.](?!\d)|"
-    r"(?<![가-힣A-Za-z0-9])[가-하][.])"
+    r"(?<![가-힣A-Za-z0-9])[가나다라마바사아자차카타파하][.])"
 )
 _CONCATENATED_KOREAN_MARKER = re.compile(
-    r"(?:사항|현황|개요|정보|내역|정책)([가-하][.])\s*"
+    r"(?:사항|현황|개요|정보|내역|정책)"
+    r"([가나다라마바사아자차카타파하][.])\s*"
 )
-_POSSIBLY_ATTACHED_KOREAN_MARKER = re.compile(r"([가-하][.])\s*")
+_POSSIBLY_ATTACHED_KOREAN_MARKER = re.compile(
+    r"([가나다라마바사아자차카타파하][.])\s*"
+)
 _CONCATENATED_NUMBER_MARKER = re.compile(
     r"(?:습니다|합니다|없습니다)[.](\d{1,2}\s*[)])"
 )
@@ -76,6 +90,11 @@ _BODY_START = re.compile(
 _CAPTION_SENTENCE_START = re.compile(
     r"(?:당분기|당기|전기|보고기간|작성기준일|현재|연결그룹|연결회사|"
     r"지배기업|지배회사|당사)"
+)
+_SUBJECT_ONLY_LABEL = re.compile(
+    r"(?:(?:은|는|을|를)|"
+    r"(?:회사|당사|연결그룹|연결회사|지배기업|지배회사|연결실체)[이가]|"
+    r"(?:에서|에게))$"
 )
 
 
@@ -127,16 +146,25 @@ def _looks_like_heading(text: str, *, force: bool = False) -> bool:
         return False
     if _SENTENCE_END.search(cleaned):
         return False
+    if (
+        marker is not None
+        and marker[0] not in {"BRACKET", "BULLET_GROUP"}
+        and not cleaned[marker[2] :].strip()
+    ):
+        return False
+    if marker is not None and _SUBJECT_ONLY_LABEL.search(
+        cleaned[marker[2] :].strip()
+    ):
+        return False
     return marker is not None or not re.search(r"[.!?]", cleaned)
 
 
 def _is_bold_heading(fragment: ParagraphFragment) -> bool:
     if fragment.kind != FragmentKind.SPAN:
         return False
-    usermark = fragment.source_attributes.get("USERMARK", "")
-    style = fragment.source_attributes.get("STYLE", "").replace(" ", "").lower()
-    is_bold = _BOLD_TOKEN.search(usermark) is not None or "font-weight:bold" in style
-    return is_bold and _looks_like_heading(fragment.text, force=True)
+    return source_attributes_are_bold(
+        fragment.source_attributes
+    ) and _looks_like_heading(fragment.text, force=True)
 
 
 def _marker_kind_at(text: str, position: int) -> str | None:
@@ -181,13 +209,26 @@ def _split_marker_chunks(text: str) -> list[str]:
         if marker_kind == "KOREAN" and position not in concatenated_korean_positions:
             preceding = cleaned[:position].rstrip()
             suffix = cleaned[position:]
+            if re.search(r"(?:습니|합니|됩니|입니)$", preceding):
+                continue
+            compact_heading_chain = (
+                prefix_marker is not None
+                and len(prefix) <= 80
+                and len(suffix) > 2
+                and _looks_like_heading(prefix)
+            )
             joined_heading_caption = (
                 prefix_marker is not None
                 and len(prefix) <= 80
                 and _TABLE_CAPTION.search(suffix) is not None
                 and _BODY_START.search(suffix) is not None
             )
-            if preceding and preceding[-1] not in ".;:" and not joined_heading_caption:
+            if (
+                preceding
+                and preceding[-1] not in ".;:"
+                and not joined_heading_caption
+                and not compact_heading_chain
+            ):
                 continue
         previous = cleaned[position - 1]
         strong = marker_kind in {"BRACKET", "CIRCLED"}
@@ -221,13 +262,23 @@ def _split_heading_body(text: str) -> tuple[str, str] | None:
         return None
     if marker_kind == "BRACKET" and marker_end < len(text):
         return text[:marker_end].strip(), text[marker_end:].strip()
-    search_from = min(len(text), marker_end + 2)
+    search_from = min(len(text), marker_end)
     for match in _BODY_START.finditer(text, search_from):
         heading = text[:match.start()].strip()
         body = text[match.start():].strip()
-        if 3 <= len(heading) <= 80 and _looks_like_heading(heading):
+        marker_label = heading[marker_end:].strip()
+        if not marker_label or _SUBJECT_ONLY_LABEL.search(marker_label):
+            return None
+        max_heading_length = 24 if _SENTENCE_END.search(text) else 80
+        if 3 <= len(heading) <= max_heading_length and _looks_like_heading(heading):
             return heading, body
+        return None
     return None
+
+
+def heading_level_for_text(text: str) -> int:
+    marker = _marker(_clean_text(text))
+    return marker[1] if marker is not None else 6
 
 
 def _split_caption_prefix(text: str) -> tuple[str, str] | None:
@@ -339,7 +390,9 @@ def segment_paragraph(paragraph: CanonicalParagraph) -> tuple[SemanticTextSegmen
             )
             continue
         raw_parts.append(fragment.raw_text)
-    flush()
+    flush(
+        force_heading=source_attributes_are_bold(paragraph.source_attributes)
+    )
 
     if not result and paragraph.text.strip():
         result.extend(
@@ -355,5 +408,6 @@ def segment_paragraph(paragraph: CanonicalParagraph) -> tuple[SemanticTextSegmen
 __all__ = [
     "SemanticTextRole",
     "SemanticTextSegment",
+    "heading_level_for_text",
     "segment_paragraph",
 ]

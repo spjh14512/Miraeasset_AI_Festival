@@ -78,6 +78,16 @@ def evaluate_case(
                 item = _evidence(fragment, str(assertion["evidence_id"]))
                 actual = _path(item, assertion["path"])
                 expected = assertion["value"]
+            elif operation == "evidence_path_not_contains":
+                item = _evidence(fragment, str(assertion["evidence_id"]))
+                expected = assertion["value"]
+                try:
+                    actual = _path(item, assertion["path"])
+                except (KeyError, IndexError):
+                    continue
+                if expected not in actual:
+                    continue
+                raise AssertionError(f"path unexpectedly contains {expected!r}")
             elif operation == "table_path_equals":
                 item = _table(fragment, str(assertion["table_id"]))
                 actual = _path(item, assertion["path"])

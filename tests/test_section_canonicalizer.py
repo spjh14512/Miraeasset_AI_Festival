@@ -104,6 +104,23 @@ def test_atoc_table_group_titles_create_children_of_explicit_section():
     assert first.level == parent.level + 1
     assert first.boundary_kind == SectionBoundaryKind.IMPLICIT
     assert first.section_path == (
+def test_xbrl_toc_table_group_is_promoted_to_nested_note_section():
+    xml = """<DOCUMENT><SECTION-1><TITLE>III. 재무에 관한 사항</TITLE>
+    <SECTION-2><TITLE>3. 연결재무제표 주석</TITLE>
+      <TABLE-GROUP ACLASS="{XBRL}NT_C_DX801000">
+        <TITLE ATOC="Y">1. 일반사항 (연결)</TITLE>
+        <TABLE><TR><TD>주석 본문</TD></TR></TABLE>
+      </TABLE-GROUP>
+    </SECTION-2></SECTION-1></DOCUMENT>"""
+
+    result = chunk_sections(xml, document_context=_document_context())
+
+    notes = next(section for section in result.sections if section.title == "3. 연결재무제표 주석")
+    general = next(section for section in result.sections if section.title == "1. 일반사항 (연결)")
+    assert notes.blocks == ()
+    assert general.parent_section_id == notes.id
+    assert general.boundary_kind == SectionBoundaryKind.IMPLICIT
+    assert general.section_path == (
         "III. 재무에 관한 사항",
         "3. 연결재무제표 주석",
         "1. 일반사항 (연결)",
@@ -121,6 +138,9 @@ def test_atoc_table_group_titles_create_children_of_explicit_section():
         for source_ref in block.source_refs
     ]
     assert len(paths) == len(set(paths))
+    assert [block.block_type for block in general.blocks] == [
+        SectionBlockType.TABLE_GROUP
+    ]
 
 
 def test_every_source_block_belongs_to_only_one_deepest_section():

@@ -23,6 +23,17 @@ class CorrectionBlockType(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class CorrectionTargetCandidate:
+    """Manifest/index fields used to resolve an original disclosure."""
+
+    rcept_no: str
+    submission_date: str
+    document_name: str | None = None
+    company_key: str | None = None
+    doc_group: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class CorrectionIssue:
     code: str
     message: str
@@ -113,4 +124,5 @@ __all__ = [
     "CorrectionIssue",
     "CorrectionMetadata",
     "CorrectionStatus",
+    "CorrectionTargetCandidate",
 ]

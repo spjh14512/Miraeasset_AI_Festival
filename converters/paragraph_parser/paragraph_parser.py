@@ -43,7 +43,8 @@ _NOTE_MARKER = re.compile(r"^(※)")
 _FOOTNOTE_MARKER = re.compile(r"^(주\s*\d+\s*[)])")
 _BULLET_MARKER = re.compile(r"^([-ㆍ·])")
 _ENUMERATION_MARKER = re.compile(
-    r"^((?:[①-⑳])|(?:\(\s*\d+\s*\))|(?:\d+\s*[.])|(?:[가-하]\s*[.]))"
+    r"^((?:[①-⑳])|(?:\(\s*\d+\s*\))|(?:\d+\s*[.])|"
+    r"(?:[가나다라마바사아자차카타파하]\s*[.]))"
 )
 
 
@@ -61,6 +62,16 @@ def _source_attributes(element: ET.Element) -> dict[str, str]:
         for key, value in element.attrib.items()
         if key.upper() in _SOURCE_ATTRIBUTES
     }
+
+
+def _effective_fragment_attributes(
+    parent: Mapping[str, str],
+    child: Mapping[str, str],
+) -> dict[str, str]:
+    """Apply paragraph styling unless an inline node explicitly overrides it."""
+    result = dict(parent)
+    result.update(child)
+    return result
 
 
 def _leading_marker(text: str) -> LeadingMarker | None:
@@ -126,6 +137,7 @@ def _p_fragments(
 ) -> tuple[ParagraphFragment, ...]:
     fragments: list[ParagraphFragment] = []
     paragraph_ref = SourceRef(syntax=syntax, element_path=path)
+    paragraph_attributes = _source_attributes(element)
     _append_fragment(
         fragments,
         kind=FragmentKind.TEXT,
@@ -135,12 +147,16 @@ def _p_fragments(
     for child, child_path in _child_paths(element, path):
         child_ref = SourceRef(syntax=syntax, element_path=child_path)
         if _tag(child) == "SPAN":
+            child_attributes = _source_attributes(child)
             _append_fragment(
                 fragments,
                 kind=FragmentKind.SPAN,
                 raw_text="".join(child.itertext()),
                 source_ref=child_ref,
-                source_attributes=_source_attributes(child),
+                source_attributes=_effective_fragment_attributes(
+                    paragraph_attributes,
+                    child_attributes,
+                ),
             )
         elif _tag(child) == "BR":
             fragments.append(

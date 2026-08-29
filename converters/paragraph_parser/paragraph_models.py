@@ -12,6 +12,7 @@ from converters.common.source_models import (
     EvidenceContext,
     SourceRef,
 )
+from converters.common.context_text import source_attributes_are_bold
 
 
 class ParagraphParseStatus(StrEnum):
@@ -94,6 +95,15 @@ class CanonicalParagraph:
     fragments: tuple[ParagraphFragment, ...]
     parse_status: ParagraphParseStatus = ParagraphParseStatus.SUCCESS
     issues: tuple[ParagraphIssue, ...] = ()
+
+    @property
+    def is_bold(self) -> bool:
+        if source_attributes_are_bold(self.source_attributes):
+            return True
+        return any(
+            source_attributes_are_bold(fragment.source_attributes)
+            for fragment in self.fragments
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {

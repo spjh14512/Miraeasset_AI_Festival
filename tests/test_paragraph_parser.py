@@ -59,6 +59,19 @@ def test_inline_spans_form_one_paragraph_and_preserve_order_and_attributes():
     )
 
 
+def test_paragraph_bold_is_inherited_but_inline_not_bold_is_respected():
+    result = parse_paragraphs(
+        """<DOCUMENT><P USERMARK="B"><SPAN>ㅇ 비씨카드㈜</SPAN>
+        <SPAN USERMARK="!B">소송 현황입니다.</SPAN></P></DOCUMENT>""",
+        document_context=_document_context(),
+    )
+
+    paragraph = result.paragraphs[0]
+    assert paragraph.is_bold is True
+    assert paragraph.fragments[0].source_attributes["USERMARK"] == "B"
+    assert paragraph.fragments[1].source_attributes["USERMARK"] == "!B"
+
+
 def test_inline_disclosure_anchor_preserves_refno_and_text():
     result = parse_paragraphs(
         """<DOCUMENT><P>관련 내용은

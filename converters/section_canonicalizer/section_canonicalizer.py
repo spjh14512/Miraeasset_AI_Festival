@@ -39,7 +39,11 @@ _NUMBERED_HEADINGS: tuple[tuple[str, int, re.Pattern[str]], ...] = (
     ("PART", 1, re.compile(r"^제\s*\d+\s*(?:부|장)\b")),
     ("ROMAN", 1, re.compile(r"^[IVXLC]+[.]\s+", re.IGNORECASE)),
     ("ARABIC", 2, re.compile(r"^\d+[.]\s+")),
-    ("KOREAN", 3, re.compile(r"^[가-하][.]\s+")),
+    (
+        "KOREAN",
+        3,
+        re.compile(r"^[가나다라마바사아자차카타파하][.]\s+"),
+    ),
 )
 _SKIP_SUBTREES = {"CORRECTION", "SCRIPT", "STYLE"}
 _SKIP_ELEMENTS = {"TITLE", "PGBRK", "BR", "META", "LINK"}
@@ -147,6 +151,27 @@ def _find_section_title(
     return visit(section, section_path)
 
 
+def _table_group_section_title(
+    group: ET.Element,
+    group_path: str,
+    syntax: DocumentSyntax,
+    exclusions: _Exclusions,
+) -> tuple[str | None, SourceRef | None]:
+    """Return a TOC-backed XBRL note title that is a real viewer boundary."""
+    group_class = group.attrib.get("ACLASS", "")
+    if re.search(r"_DX801000$", group_class.upper()) is None:
+        return None, None
+    for child, child_path in _child_paths(group, group_path):
+        if _tag(child) != "TITLE" or exclusions.contains(child, child_path):
+            continue
+        if child.attrib.get("ATOC", "").upper() != "Y":
+            return None, None
+        title = _element_text(child)
+        return (
+            (title, _source_ref(child, child_path, syntax))
+            if title
+            else (None, None)
+        )
 def _find_atoc_table_group_title(
     table_group: ET.Element,
     table_group_path: str,
@@ -501,6 +526,43 @@ def _explicit_sections(
             child_tag = _tag(child)
             if exclusions.contains(child, child_path) or child_tag in _SKIP_SUBTREES:
                 continue
+            if child_tag == "TABLE-GROUP":
+                title, title_ref = _table_group_section_title(
+                    child,
+                    child_path,
+                    syntax,
+                    exclusions,
+                )
+                owner = parent_builder or root_builder
+                if title is not None and title_ref is not None and owner is not None:
+                    group_ref = _source_ref(child, child_path, syntax)
+                    owner.blocks = [
+                        block
+                        for block in owner.blocks
+                        if group_ref not in block.source_refs
+                    ]
+                    current_titles = parent_titles + (title,)
+                    builders.append(
+                        _SectionBuilder(
+                            id=f"s{len(builders)}",
+                            parent_section_id=owner.id,
+                            order=len(builders),
+                            level=owner.level + 1,
+                            boundary_kind=SectionBoundaryKind.IMPLICIT,
+                            title=title,
+                            section_path=current_titles,
+                            source_ref=group_ref,
+                            title_source_ref=title_ref,
+                            blocks=[
+                                SectionBlockRef(
+                                    block_type=SectionBlockType.TABLE_GROUP,
+                                    order=0,
+                                    source_refs=(group_ref,),
+                                )
+                            ],
+                        )
+                    )
+                    continue
             if _is_section(child):
                 title, title_ref = _find_section_title(
                     child,

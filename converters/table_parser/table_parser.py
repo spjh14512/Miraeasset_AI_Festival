@@ -8,6 +8,7 @@ import re
 from typing import Any, Iterable, Mapping
 import xml.etree.ElementTree as ET
 
+from converters.common.context_text import normalize_base_date_parts
 from converters.common.document_loader import repair_xml_text
 from converters.common.source_models import (
     ContextPosition,
@@ -50,7 +51,7 @@ _SOURCE_ATTRIBUTES = {
 }
 _UNIT_TEXT = re.compile(r"^\(?\s*단위\s*[:：]", re.IGNORECASE)
 _NOTE_TEXT = re.compile(
-    r"^(?:※|[*]|주\s*\d+\s*[):.]|[-ㆍ·]\s*상기)",
+    r"^(?:※|\(\s*\*+\d*\s*\)|\*|주\s*\d+\s*[):.]|[-ㆍ·]\s*상기)",
     re.IGNORECASE,
 )
 _FOOTNOTE_MARKER = re.compile(
@@ -355,6 +356,8 @@ def _layout_role(grid: LogicalGrid) -> LayoutRole | None:
         and not _strong_value(nonempty[1])
     ):
         return LayoutRole.NOTE
+    if normalize_base_date_parts(tuple(cell.raw_value for cell in nonempty)):
+        return LayoutRole.CAPTION
     if len(nonempty) != 1:
         return None
     cell = nonempty[0]
@@ -665,6 +668,10 @@ def _parse_layout(
         for cell in grid.cells
     }
     values = [cell.raw_value for cell in grid.cells if cell.raw_value]
+    if layout_role == LayoutRole.CAPTION:
+        caption = normalize_base_date_parts(values)
+        if caption is not None:
+            values = [caption]
     if (
         layout_role == LayoutRole.NOTE
         and len(values) == 2

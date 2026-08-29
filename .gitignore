@@ -38,7 +38,13 @@ Thumbs.db
 Desktop.ini
 
 # Logs and temporary files
+/tmp/
 *.log
 *.tmp
 *.swp
 *~
+
+# tmp
+tmp/*
+tmp
+tmp

@@ -3,8 +3,14 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from converters.common.source_models import DocumentContext, DocumentSyntax
-from converters.correction_extractor.correction_extractor import extract_correction
-from converters.correction_extractor.correction_models import CorrectionStatus
+from converters.correction_extractor.correction_extractor import (
+    extract_correction,
+    resolve_correction_target,
+)
+from converters.correction_extractor.correction_models import (
+    CorrectionStatus,
+    CorrectionTargetCandidate,
+)
 
 
 def _context(rcept_no: str = "20241118000171") -> DocumentContext:
@@ -102,6 +108,59 @@ def test_current_rcept_no_does_not_depend_on_correction_date():
     assert result.correction.correction_date == "2024-11-18"
 
 
+def test_original_disclosure_is_resolved_from_date_name_company_and_group():
+    extracted = extract_correction(_xml_correction(), context=_context())
+
+    resolved = resolve_correction_target(
+        extracted,
+        (
+            CorrectionTargetCandidate(
+                rcept_no="20240725000123",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(자기주식취득결정)",
+                company_key="SM",
+                doc_group="major",
+            ),
+            CorrectionTargetCandidate(
+                rcept_no="20240725000999",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(타법인주식취득결정)",
+                company_key="SM",
+                doc_group="major",
+            ),
+        ),
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no == "20240725000123"
+    assert not any(issue.code.startswith("CORRECTION_TARGET_") for issue in resolved.issues)
+
+
+def test_ambiguous_original_disclosures_are_not_guessed():
+    extracted = extract_correction(_xml_correction(), context=_context())
+    candidates = tuple(
+        CorrectionTargetCandidate(
+            rcept_no=rcept_no,
+            submission_date="2024-07-25",
+            document_name="[기재정정] 주요사항보고서(자기주식취득결정)",
+            company_key="SM",
+            doc_group="major",
+        )
+        for rcept_no in ("20240725000123", "20240725000456")
+    )
+
+    resolved = resolve_correction_target(
+        extracted,
+        candidates,
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no is None
+    assert resolved.issues[-1].code == "CORRECTION_TARGET_AMBIGUOUS"
+
+
 def test_xml_element_input_is_not_mutated():
     element = ET.fromstring(_xml_correction())
     before = ET.tostring(element)
@@ -194,6 +253,45 @@ def test_exchange_html_uses_container_and_three_d8_tables():
     assert result.correction.target_document_name == "단일판매ㆍ공급계약 체결"
     assert result.correction.original_submission_date == "2025-07-28"
     assert result.correction.reason == "계약상대방 공개"
+    assert [block.source_ref.html_id for block in result.correction_blocks] == [
+        "XFormD8_Form0_Table1",
+        "XFormD8_Form0_RepeatTable0",
+        "XFormD8_Form0_Table0",
+    ]
+    assert [ref.html_id for ref in result.excluded_source_refs] == ["LIB_LC000"]
+
+
+def test_exchange_html_decodes_euc_kr_correction_report():
+    html = """
+    <html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=euc-kr">
+    </head><body><div id="LIB_LC000">
+      <span>정정신고(보고)</span>
+      <table id="XFormD8_Form0_Table1"><tr>
+        <td>정정일자</td><td>2023-10-31</td>
+      </tr></table>
+      <table id="XFormD8_Form0_RepeatTable0">
+        <tr><td>1. 정정관련 공시서류</td>
+          <td>연결재무제표 기준 영업(잠정)실적(공정공시)</td></tr>
+        <tr><td>2. 정정관련 공시서류제출일</td>
+          <td>2023년 10월 11일</td></tr>
+        <tr><td>3. 정정사유</td>
+          <td>2023년 3분기 실적 내용 정정</td></tr>
+      </table>
+      <table id="XFormD8_Form0_Table0"><tr><td>정정 전후</td></tr></table>
+    </div></body></html>
+    """
+
+    result = extract_correction(html.encode("euc-kr"), context=_context())
+
+    assert result.status == CorrectionStatus.FOUND
+    assert result.correction is not None
+    assert result.correction.correction_date == "2023-10-31"
+    assert result.correction.original_submission_date == "2023-10-11"
+    assert result.correction.target_document_name == (
+        "연결재무제표 기준 영업(잠정)실적(공정공시)"
+    )
+    assert result.correction.reason == "2023년 3분기 실적 내용 정정"
     assert [block.source_ref.html_id for block in result.correction_blocks] == [
         "XFormD8_Form0_Table1",
         "XFormD8_Form0_RepeatTable0",

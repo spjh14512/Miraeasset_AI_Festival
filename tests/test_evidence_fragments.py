@@ -384,6 +384,100 @@ def test_local_heading_and_table_leadin_become_table_context_not_text_evidence()
     assert "legacy_caption:0" in validate_fragment(fragment)
 
 
+def test_numbered_body_stays_text_under_company_heading():
+    xml = """<DOCUMENT><SECTION-1><TITLE>소송</TITLE>
+    <P USERMARK="B">가. 중요한 소송사건</P>
+    <P USERMARK="B">ㅇ ㈜케이티</P>
+    <P>(1)</P><P>소송 본문입니다.</P>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    payloads = [item["payload"] for item in result["fragments"][0]["evidence_list"]]
+    assert payloads == [
+        {
+            "text": "(1)",
+            "text_role": "BODY",
+            "heading_path": ["가. 중요한 소송사건", "ㅇ ㈜케이티"],
+        },
+        {
+            "text": "소송 본문입니다.",
+            "text_role": "BODY",
+            "heading_path": ["가. 중요한 소송사건", "ㅇ ㈜케이티"],
+        },
+    ]
+
+
+def test_compound_table_context_and_sibling_heading_reset_end_to_end():
+    xml = """<DOCUMENT><SECTION-1><TITLE>거래</TITLE>
+    <P USERMARK="B">(2) 해외법인</P>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>A</TD><TD>1</TD></TR></TBODY></TABLE>
+    <P USERMARK="B">다. 담보제공 내역</P>
+    <P>(6) 당분기와 전분기 중 자금거래는 다음과 같습니다(단위: 백만원).1) 2026년 1분기</P>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>B</TD><TD>2</TD></TR></TBODY></TABLE>
+    <P>(*) 자금차입 거래에는 리스거래가 포함되어 있습니다.</P>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    tables = result["fragments"][0]["evidence_list"]
+    assert tables[0]["payload"]["heading_path"] == ["(2) 해외법인"]
+    assert tables[1]["payload"]["heading_path"] == ["다. 담보제공 내역"]
+    assert tables[1]["payload"]["captions"] == [
+        "(6) 당분기와 전분기 중 자금거래는 다음과 같습니다.",
+        "1) 2026년 1분기",
+    ]
+    assert tables[1]["payload"]["units"] == ["(단위: 백만원)"]
+    assert tables[1]["payload"]["notes"] == [
+        "(*) 자금차입 거래에는 리스거래가 포함되어 있습니다."
+    ]
+
+
+def test_general_caption_crosses_empty_paragraph_between_period_tables():
+    xml = """<DOCUMENT><SECTION-1><TITLE>리스</TITLE>
+    <P>가. 당분기 및 전분기 중 사용권자산의 변동내역은 다음과 같습니다.</P>
+    <TABLE><TR><TD>(단위: 백만원)</TD></TR></TABLE>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>당분기</TD><TD>1</TD></TR></TBODY></TABLE>
+    <P></P>
+    <TABLE><TR><TD>(단위: 백만원)</TD></TR></TABLE>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>전분기</TD><TD>2</TD></TR></TBODY></TABLE>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    tables = result["fragments"][0]["evidence_list"]
+    caption = "가. 당분기 및 전분기 중 사용권자산의 변동내역은 다음과 같습니다."
+    assert [table["payload"]["captions"] for table in tables] == [
+        [caption],
+        [caption],
+    ]
+
+
 def test_table_captions_deduplicate_identical_leadin_and_xml_caption():
     caption = "제품별 매출은 다음과 같습니다."
     xml = f"""<DOCUMENT><SECTION-1><TITLE>제품</TITLE>
@@ -505,6 +599,69 @@ def test_two_cell_footnote_table_attaches_to_preceding_r_table():
         "(주1) 리스부채는 기타로 분류하였습니다."
     ]
     assert validate_fragment(fragment) == []
+
+
+def test_note_prefix_attaches_to_table_without_consuming_following_numbered_body():
+    xml = """<DOCUMENT><SECTION-1><TITLE>주석</TITLE>
+    <P USERMARK="B">나. 우발부채와 약정사항</P>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>금액</TH></TR></THEAD>
+      <TBODY><TR><TD>담보</TD><TD>100</TD></TR></TBODY></TABLE>
+    <P>(*) 담보 제공 금액이 포함되어 있습니다.(17) 연결회사는 약정을 체결하였습니다.
+    (18) 연결회사는 조사를 받고 있습니다.</P>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    evidence = result["fragments"][0]["evidence_list"]
+    assert evidence[0]["payload"]["notes"] == [
+        "(*) 담보 제공 금액이 포함되어 있습니다."
+    ]
+    assert [item["payload"]["text"] for item in evidence[1:]] == [
+        "(17) 연결회사는 약정을 체결하였습니다.",
+        "(18) 연결회사는 조사를 받고 있습니다.",
+    ]
+    assert all(
+        item["payload"]["heading_path"] == ["나. 우발부채와 약정사항"]
+        for item in evidence
+    )
+
+
+def test_note_then_heading_and_heading_then_caption_keep_their_boundaries():
+    xml = """<DOCUMENT><SECTION-1><TITLE>주식</TITLE>
+    <P USERMARK="B">라. 주식의 분포현황</P>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>수량</TH></TR></THEAD>
+      <TBODY><TR><TD>보통주</TD><TD>10</TD></TR></TBODY></TABLE>
+    <P><SPAN>* 앞 표의 주석입니다.</SPAN><SPAN USERMARK="B">마. 소액주주 현황</SPAN></P>
+    <TABLE><THEAD><TR><TH>구분</TH><TH>수량</TH></TR></THEAD>
+      <TBODY><TR><TD>소액주주</TD><TD>8</TD></TR></TBODY></TABLE>
+    <P><SPAN USERMARK="B">사. 주식거래실적</SPAN><SPAN>최근 거래실적은 다음과 같습니다.</SPAN></P>
+    <TABLE><THEAD><TR><TH>월</TH><TH>거래량</TH></TR></THEAD>
+      <TBODY><TR><TD>6월</TD><TD>100</TD></TR></TBODY></TABLE>
+    </SECTION-1></DOCUMENT>"""
+    sections = chunk_sections(xml, document_context=_context())
+
+    result = build_source_fragments(
+        xml,
+        section_collection=sections,
+        kept_section_ids={"s0"},
+        document_context=_context(),
+        source_index=0,
+    )
+
+    tables = result["fragments"][0]["evidence_list"]
+    assert tables[0]["payload"]["notes"] == ["* 앞 표의 주석입니다."]
+    assert tables[1]["payload"]["heading_path"] == ["마. 소액주주 현황"]
+    assert tables[2]["payload"]["heading_path"] == ["사. 주식거래실적"]
+    assert tables[2]["payload"]["captions"] == [
+        "최근 거래실적은 다음과 같습니다."
+    ]
 
 
 def test_two_cell_bullet_table_becomes_text_evidence():

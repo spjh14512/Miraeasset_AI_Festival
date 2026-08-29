@@ -241,8 +241,10 @@
       "document_ids": ["periodic_20250314001704"],
       "section_ids": ["section:20250314001704:src2:s3"],
       "assertions": [
-        {"op": "section_counts", "evidence": 908, "records": 5214},
-        {"op": "evidence_path_equals", "evidence_id": "evidence:20250314001704:src2:s3:e0", "path": ["payload", "heading_path"], "value": ["1. 지배기업의 개요 및 보고주체 : 주식회사 KB금융지주(이하 \""]},
+        {"op": "section_counts", "evidence": 701, "records": 5214},
+        {"op": "text_contains", "evidence_id": "evidence:20250314001704:src2:s3:e0", "value": "1. 지배기업의 개요 및 보고주체 : 주식회사 KB금융지주(이하 \"지배기업\")는"},
+        {"op": "evidence_path_equals", "evidence_id": "evidence:20250314001704:src2:s3:e0", "path": ["payload", "text_role"], "value": "BODY"},
+        {"op": "evidence_path_not_contains", "evidence_id": "evidence:20250314001704:src2:s3:e0", "path": ["payload", "heading_path"], "value": "1. 지배기업의 개요 및 보고주체 : 주식회사 KB금융지주(이하 \""},
         {"op": "record_equals", "table_id": "rtable:20250314001704:src2:s3:t0", "record_index": 0, "values": ["순이자이익", "12,141,717", "12,180,860", "39,143"]}
       ]
     },
@@ -319,7 +321,7 @@
       ],
       "assertions": [
         {"op": "section_counts", "section_id": "section:20230512000974:src0:s15", "evidence": 23, "records": 19},
-        {"op": "section_counts", "section_id": "section:20230512000974:src0:s19", "evidence": 149, "records": 748},
+        {"op": "section_counts", "section_id": "section:20230512000974:src0:s19", "evidence": 148, "records": 748},
         {"op": "section_counts", "section_id": "section:20230512000974:src0:s26", "evidence": 32, "records": 124},
         {"op": "evidence_path_equals", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "path": ["payload", "heading_path"], "value": ["(3) 신규사업의 내용과 전망", "[지배회사의 내용]"]},
         {"op": "text_contains", "section_id": "section:20230512000974:src0:s15", "evidence_id": "evidence:20230512000974:src0:s15:e19", "value": "1.공시내용 진행 및 변경상황'을 참고하시기 바랍니다."},
