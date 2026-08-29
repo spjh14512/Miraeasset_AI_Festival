@@ -1,4 +1,4 @@
-schema_version: "1.2.0"
+schema_version: "1.3.0"
 
 metadata:
   description: Neo4j 적재 코드가 사용하는 목표 스키마
@@ -175,6 +175,27 @@ entities:
         applies_to: KV-table
         description: key-value entry 수
 
+  Event:
+    labels:
+      - Event
+    description: 최신 major 또는 exchange 공시가 보고하는 실제 사건
+    properties:
+      id:
+        type: string
+        description: Event 고유 ID
+      event_type:
+        type: string
+        description: Event_categories.xlsx B열의 이벤트 대분류
+      event_subtype:
+        type: string
+        description: Event_categories.xlsx A열의 정제된 문서명
+      event_date:
+        type: date
+        description: 공시 본문에서 추출한 사건 기준일 또는 공시 접수일 fallback
+      content:
+        type: string
+        description: agent retrieval과 판단을 위한 사건 핵심 내용
+
 relations:
   PUBLISHES:
     type: PUBLISHES
@@ -230,6 +251,27 @@ relations:
         type: string?
         description: 정정 사유
 
+  REPORTS:
+    type: REPORTS
+    description: 최신 공시가 Event를 보고함
+    endpoints:
+      source:
+        - Disclosure
+      target:
+        - Event
+    properties: {}
+
+  IS_SUPPORTED_BY:
+    type: IS_SUPPORTED_BY
+    description: Event의 content와 event_date를 뒷받침하는 Evidence
+    endpoints:
+      source:
+        - Event
+      target:
+        - Evidence:Text
+        - Evidence:Table
+    properties: {}
+
 constraints:
   - name: company_corp_code
     entity: node
@@ -256,6 +298,13 @@ constraints:
     entity: node
     labels:
       - Evidence
+    properties:
+      - id
+    constraint_type: uniqueness
+  - name: event_id
+    entity: node
+    labels:
+      - Event
     properties:
       - id
     constraint_type: uniqueness
@@ -293,6 +342,14 @@ indexes:
     properties:
       - id
     owned_by_constraint: evidence_id
+  - name: event_id
+    index_type: range
+    entity: node
+    labels:
+      - Event
+    properties:
+      - id
+    owned_by_constraint: event_id
   - name: index_460996c0
     index_type: lookup
     entity: node

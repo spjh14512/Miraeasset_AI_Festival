@@ -124,7 +124,8 @@ uv run python scripts/validate_converter_pipeline.py --profile quick --semantic-
 - [x] 고정 공시 회귀 검증
 - [ ] Neo4j·Qdrant 적재
 - [ ] Embedding 및 Hybrid Retrieval
-- [ ] Event extraction과 Agent workflow
+- [x] Event extraction
+- [ ] Agent workflow
 
 ## Design Principles
 
@@ -153,6 +154,11 @@ uv run python -m scripts.build_evidence_fragments --workers 4 --progress-every 1
 uv run python -m converters.correction_extractor.correction_relation_builder
 ```
 
+### Event extractor
+```powershell
+uv run python -m converters.event_extractor.event_pipeline
+```
+
 ### Neo4j insert
 #### Company nodes insert (from universe.csv)
 ```powershell
@@ -166,6 +172,11 @@ uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 #### Correction relation insert
 ```powershell
 uv run python knowledge_graph/insert_correction_relations.py --input data/correction/manifest.jsonl
+```
+
+#### Event and support relation insert
+```powershell
+uv run python -m knowledge_graph.insert_events --input data/event/manifest.jsonl
 ```
 
 ### Qdrant insert

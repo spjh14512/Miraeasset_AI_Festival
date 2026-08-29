@@ -9,12 +9,29 @@
 | 도구 | 역할 | 상태 |
 |---|---|---|
 | `correction_extractor` | 정정공시 영역과 관계 해석용 메타데이터 추출 | 구현됨 |
+| `event_extractor` | 최신 major·exchange 공시에서 Event와 근거 관계 추출 | 구현됨 |
 | `section_canonicalizer` | 문서를 계층형 section과 원문 순서 block으로 분할 | 구현됨 |
 | `paragraph_parser` | 본문의 `P`와 독립 `SPAN` 묶음을 문단으로 변환 | 구현됨 |
 | `table_parser` | DART 공시의 `TABLE` 구조화 | 구현됨 |
 | `table_context_resolver` | 표와 인접한 제목·단위·캡션·주석 연결 | 구현됨 |
 | `evidence_builder` | section 단위 Evidence Fragment와 R-table record 생성 | 구현됨 |
 | `regression_validation` | 고정 공시 코퍼스의 구조·의미·snapshot 검증 | 구현됨 |
+
+## `event_extractor`
+
+`converters/event_extractor`는 `is_latest_version=true`인 major·exchange 공시만 처리한다.
+`DOCS/Event_categories.xlsx`의 B열을 `event_type`, A열의 정제된 문서명을
+`event_subtype`으로 사용하며, 문서군과 사건 유형별 parser가 Evidence에서
+`event_date`와 retrieval용 `content`를 구성한다.
+
+결과는 `data/event/manifest.jsonl`에 `event.v1` JSONL로 저장된다. 각 행에는
+`(Disclosure)-[:REPORTS]->(Event)`와
+`(Event)-[:IS_SUPPORTED_BY]->(Evidence)` 방향의 관계도 함께 들어간다.
+
+```powershell
+uv run python -m converters.event_extractor.event_pipeline
+uv run python -m knowledge_graph.insert_events --dry-run
+```
 
 ## `correction_extractor`
 
