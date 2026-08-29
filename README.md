@@ -158,7 +158,7 @@ uv run python -m converters.correction_extractor.correction_relation_builder
 ```powershell
 uv run python -m knowledge_graph.insertUniverse
 ```
-#### Disclosure, Section, Evidence insert
+#### Disclosure, Section, Evidence nodes & relations insert
 ```powershell
 uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 ```
@@ -166,6 +166,11 @@ uv run python -m knowledge_graph.insertDSE --limit 100 --random-seed 42
 #### Correction relation insert
 ```powershell
 uv run python knowledge_graph/insert_correction_relations.py --input data/correction/manifest.jsonl
+```
+
+#### Event nodes insert
+```powershell
+uv run python -m knowledge_graph.insert_events --input data/event/manifest.jsonl
 ```
 
 ### Qdrant insert
