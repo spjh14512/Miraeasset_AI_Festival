@@ -105,7 +105,7 @@ def test_builder_uses_existing_resolver_and_compact_manifest_date(
     assert extracted_documents == ["primary"]
 
 
-def test_builder_does_not_add_document_name_guessing(tmp_path: Path, monkeypatch):
+def test_builder_recovers_unique_canonical_document_family(tmp_path: Path, monkeypatch):
     correction = _manifest_row(
         "20240801000001",
         is_correction=True,
@@ -134,8 +134,11 @@ def test_builder_does_not_add_document_name_guessing(tmp_path: Path, monkeypatch
     )[0]
 
     assert result.correction is not None
-    assert result.correction.target_rcept_no is None
-    assert result.issues[-1].code == "CORRECTION_TARGET_NOT_FOUND"
+    assert result.correction.target_rcept_no == "20240725000001"
+    assert result.status == CorrectionStatus.RECOVERED
+    assert result.issues[-1].code == (
+        "CORRECTION_TARGET_DOCUMENT_FAMILY_RECOVERED"
+    )
 
 
 def test_holding_resolution_uses_filer_identity(tmp_path: Path, monkeypatch):

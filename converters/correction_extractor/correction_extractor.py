@@ -641,6 +641,77 @@ def _normalized_document_name(value: str | None) -> str | None:
     return normalized or None
 
 
+_DOCUMENT_FAMILIES = (
+    "주식등의대량보유상황보고서",
+    "대량보유상황보고서",
+    "주요사항보고서",
+    "사업보고서",
+    "반기보고서",
+    "분기보고서",
+    "단일판매공급계약체결",
+)
+
+
+def _document_family(value: str | None) -> str | None:
+    normalized = _normalized_document_name(value)
+    if normalized is None:
+        return None
+    return next(
+        (family for family in _DOCUMENT_FAMILIES if family in normalized),
+        normalized,
+    )
+
+
+def _is_prior_receipt(candidate_rcept_no: str, source_rcept_no: str) -> bool:
+    if not (
+        re.fullmatch(r"\d{14}", candidate_rcept_no)
+        and re.fullmatch(r"\d{14}", source_rcept_no)
+    ):
+        return True
+    return candidate_rcept_no < source_rcept_no
+
+
+def _resolved_target(
+    extraction: CorrectionExtraction,
+    target_rcept_no: str,
+    *,
+    recovery_code: str | None = None,
+    recovery_message: str | None = None,
+) -> CorrectionExtraction:
+    correction = extraction.correction
+    assert correction is not None
+    if recovery_code is None:
+        return replace(
+            extraction,
+            correction=replace(correction, target_rcept_no=target_rcept_no),
+        )
+    return replace(
+        extraction,
+        status=CorrectionStatus.RECOVERED,
+        correction=replace(correction, target_rcept_no=target_rcept_no),
+        issues=extraction.issues
+        + (
+            CorrectionIssue(
+                code=recovery_code,
+                message=recovery_message or "Resolved with relaxed matching.",
+            ),
+        ),
+    )
+
+
+def _unresolved_target(
+    extraction: CorrectionExtraction,
+    *,
+    code: str,
+    message: str,
+) -> CorrectionExtraction:
+    return replace(
+        extraction,
+        issues=extraction.issues
+        + (CorrectionIssue(code=code, message=message),),
+    )
+
+
 def resolve_correction_target(
     extraction: CorrectionExtraction,
     candidates: Iterable[CorrectionTargetCandidate],
@@ -669,49 +740,121 @@ def resolve_correction_target(
             ),
         )
 
-    target_name = _normalized_document_name(correction.target_document_name)
-    eligible: list[CorrectionTargetCandidate] = []
-    for candidate in candidates:
-        if candidate.rcept_no == extraction.source_document.rcept_no:
-            continue
-        if _normalize_date(candidate.submission_date) != original_date:
-            continue
-        if (
-            extraction.source_document.doc_group
-            and candidate.doc_group
-            and candidate.doc_group != extraction.source_document.doc_group
-        ):
-            continue
-        if company_key is not None and candidate.company_key != company_key:
-            continue
-        candidate_name = _normalized_document_name(candidate.document_name)
-        if target_name is not None and candidate_name != target_name:
-            continue
-        eligible.append(candidate)
-
-    unique = {candidate.rcept_no: candidate for candidate in eligible}
-    if len(unique) == 1:
-        target_rcept_no = next(iter(unique))
-        return replace(
+    source_rcept_no = extraction.source_document.rcept_no
+    prior_candidates = {
+        candidate.rcept_no: candidate
+        for candidate in candidates
+        if candidate.rcept_no != source_rcept_no
+        and _is_prior_receipt(candidate.rcept_no, source_rcept_no)
+    }
+    date_candidates = {
+        rcept_no: candidate
+        for rcept_no, candidate in prior_candidates.items()
+        if _normalize_date(candidate.submission_date) == original_date
+    }
+    if not date_candidates:
+        return _unresolved_target(
             extraction,
-            correction=replace(correction, target_rcept_no=target_rcept_no),
+            code="CORRECTION_TARGET_DATE_NOT_FOUND",
+            message=f"No prior disclosure candidate exists for {original_date}.",
         )
 
-    return replace(
-        extraction,
-        issues=extraction.issues
-        + (
-            CorrectionIssue(
-                code=(
-                    "CORRECTION_TARGET_AMBIGUOUS"
-                    if len(unique) > 1
-                    else "CORRECTION_TARGET_NOT_FOUND"
-                ),
-                message=(
-                    f"Found {len(unique)} original disclosure candidates for "
-                    f"{original_date}."
-                ),
+    source_group = extraction.source_document.doc_group
+    group_candidates = {
+        rcept_no: candidate
+        for rcept_no, candidate in date_candidates.items()
+        if not source_group
+        or not candidate.doc_group
+        or candidate.doc_group == source_group
+    }
+    if not group_candidates:
+        return _unresolved_target(
+            extraction,
+            code="CORRECTION_TARGET_GROUP_MISMATCH",
+            message=(
+                f"Candidates exist for {original_date}, but none match "
+                f"doc_group={source_group!r}."
             ),
+        )
+
+    company_candidates = {
+        rcept_no: candidate
+        for rcept_no, candidate in group_candidates.items()
+        if company_key is None or candidate.company_key == company_key
+    }
+    if not company_candidates:
+        return _unresolved_target(
+            extraction,
+            code="CORRECTION_TARGET_COMPANY_MISMATCH",
+            message=(
+                f"Candidates exist for {original_date} and group, but none "
+                "match the issuer or filer."
+            ),
+        )
+
+    target_name = _normalized_document_name(correction.target_document_name)
+    exact_candidates = {
+        rcept_no: candidate
+        for rcept_no, candidate in company_candidates.items()
+        if target_name is not None
+        and _normalized_document_name(candidate.document_name) == target_name
+    }
+    if len(exact_candidates) == 1:
+        return _resolved_target(extraction, next(iter(exact_candidates)))
+    if len(exact_candidates) > 1:
+        return _unresolved_target(
+            extraction,
+            code="CORRECTION_TARGET_AMBIGUOUS",
+            message=(
+                f"Found {len(exact_candidates)} exact original disclosure "
+                f"candidates for {original_date}."
+            ),
+        )
+
+    target_family = _document_family(correction.target_document_name)
+    family_candidates = {
+        rcept_no: candidate
+        for rcept_no, candidate in company_candidates.items()
+        if target_family is not None
+        and _document_family(candidate.document_name) == target_family
+    }
+    if len(family_candidates) == 1:
+        return _resolved_target(
+            extraction,
+            next(iter(family_candidates)),
+            recovery_code="CORRECTION_TARGET_DOCUMENT_FAMILY_RECOVERED",
+            recovery_message=(
+                "Resolved the unique original candidate using a normalized "
+                f"document family: {target_family}."
+            ),
+        )
+    if len(family_candidates) > 1:
+        return _unresolved_target(
+            extraction,
+            code="CORRECTION_TARGET_AMBIGUOUS",
+            message=(
+                f"Found {len(family_candidates)} document-family candidates "
+                f"for {original_date}."
+            ),
+        )
+
+    if len(company_candidates) == 1:
+        return _resolved_target(
+            extraction,
+            next(iter(company_candidates)),
+            recovery_code="CORRECTION_TARGET_UNIQUE_CANDIDATE_RECOVERED",
+            recovery_message=(
+                "Resolved the only candidate matching submission date, "
+                "document group, and issuer or filer."
+            ),
+        )
+
+    return _unresolved_target(
+        extraction,
+        code="CORRECTION_TARGET_AMBIGUOUS",
+        message=(
+            f"Found {len(company_candidates)} candidates for {original_date}; "
+            "document name did not identify one uniquely."
         ),
     )
 

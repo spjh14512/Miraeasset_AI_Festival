@@ -83,6 +83,7 @@ payload:
     - "report_name"
     - "section_name"
     - "rcept_date"
+    - "is_latest_version"
     - "contextual_text"
     - "canonical"
   fields:
@@ -148,6 +149,13 @@ payload:
       source_field: "manifest.rcept_dt"
       payload_index: true
       index_path: "rcept_date"
+    is_latest_version:
+      type: "boolean"
+      required: true
+      nullable: false
+      source_field: "Neo4j Disclosure.is_latest_version"
+      payload_index: true
+      index_path: "is_latest_version"
     contextual_text:
       type: "text"
       required: true
@@ -232,4 +240,5 @@ payload_indexes:
   - {path: "evidence_id", type: "keyword"}
   - {path: "corp_name", type: "keyword"}
   - {path: "rcept_date", type: "keyword"}
+  - {path: "is_latest_version", type: "boolean"}
   - {path: "chunking.table_id", type: "keyword"}

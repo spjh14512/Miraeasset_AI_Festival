@@ -254,6 +254,30 @@ def test_select_correction_pairs_returns_complete_unique_endpoints(tmp_path: Pat
     ) in {(row["source_id"], row["target_id"]) for row in relation_rows}
 
 
+def test_select_all_disclosures_returns_every_complete_receipt_in_order(
+    monkeypatch,
+    tmp_path: Path,
+):
+    rows = {
+        "20240303000003": ({"rcept_no": "20240303000003"}, {"id": "e3"}),
+        "20240101000001": ({"rcept_no": "20240101000001"}, {"id": "e1"}),
+        "20240202000002": ({"rcept_no": "20240202000002"}, {"id": "e2"}),
+    }
+    monkeypatch.setattr(
+        insert_dse,
+        "complete_disclosures_by_receipt",
+        lambda _data_root: rows,
+    )
+
+    selected = insert_dse.select_all_disclosures(tmp_path)
+
+    assert [section["rcept_no"] for section, _ in selected] == [
+        "20240101000001",
+        "20240202000002",
+        "20240303000003",
+    ]
+
+
 class _Result:
     def __init__(self, rows: list[dict[str, Any]] | None = None):
         self.rows = rows or []

@@ -111,6 +111,35 @@ def test_cypher_builder_retries_invalid_parameters_json():
     assert "parameters_json" in llm.calls[1][-1].content
 
 
+def test_cypher_builder_retries_missing_latest_disclosure_filter():
+    llm = _SequenceLlm([
+        {
+            "cypher": "MATCH (d:Disclosure) RETURN d.id AS disclosure_id",
+            "parameters_json": "{}",
+        },
+        {
+            "cypher": (
+                "MATCH (d:Disclosure) "
+                "WHERE d.is_latest_version = $is_latest_version "
+                "RETURN d.id AS disclosure_id"
+            ),
+            "parameters_json": '{"is_latest_version":true}',
+        },
+    ])
+
+    query = tools.cypher_builder(
+        _plan("neo4j"),
+        user_question="최신 공시를 알려줘",
+        dependencies=[],
+        neo4j_schema="schema",
+        llm=llm,
+    )
+
+    assert query.parameters["is_latest_version"] is True
+    assert len(llm.calls) == 2
+    assert "Disclosure 조회에는 최신 공시 조건" in llm.calls[1][-1].content
+
+
 def test_query_builder_retries_invalid_structured_output(monkeypatch):
     llm = _SequenceLlm([
         {"mode": "vector", "query_text": None},

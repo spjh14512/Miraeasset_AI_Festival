@@ -185,12 +185,14 @@ def test_query_executor_runs_vector_query(monkeypatch):
     assert sparse_prefetch.limit == 25
     assert dense_prefetch.filter == sparse_prefetch.filter
     assert [condition.key for condition in dense_prefetch.filter.must] == [
+        "is_latest_version",
         "evidence_id"
     ]
+    assert dense_prefetch.filter.must[0].match.value is True
     assert client.query_call["with_payload"] is True
 
 
-def test_query_executor_omits_filter_for_unfiltered_vector_query(monkeypatch):
+def test_query_executor_adds_latest_version_filter_to_vector_query(monkeypatch):
     client = _QdrantClient(QueryResponse(points=[]))
     monkeypatch.setattr(tools, "qdrant_client", client)
     query = QdrantQuery(
@@ -201,10 +203,11 @@ def test_query_executor_omits_filter_for_unfiltered_vector_query(monkeypatch):
 
     tools.query_executor(query)
 
-    assert all(
-        prefetch.filter is None
-        for prefetch in client.query_call["prefetch"]
-    )
+    for prefetch in client.query_call["prefetch"]:
+        assert [condition.key for condition in prefetch.filter.must] == [
+            "is_latest_version"
+        ]
+        assert prefetch.filter.must[0].match.value is True
 
 
 def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
@@ -227,6 +230,11 @@ def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
     assert result is raw_result
     assert client.scroll_call["limit"] == 10
     assert client.scroll_call["with_payload"] is True
+    assert [
+        condition.key
+        for condition in client.scroll_call["scroll_filter"].must
+    ] == ["is_latest_version", "chunking.table_id"]
+    assert client.scroll_call["scroll_filter"].must[0].match.value is True
 
 
 def test_qdrant_query_limit_is_owned_by_application():

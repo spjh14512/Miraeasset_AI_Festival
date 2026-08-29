@@ -196,6 +196,12 @@ Neo4j는 기업 정보와 Company → Disclosure → Section → Evidence 구조
 Qdrant는 TEXT, KV_TABLE entry, R_TABLE record를 포함한 실제 공시 내용과 수치 근거를 검색합니다.
 긴 KV_TABLE과 R_TABLE point는 retrieve_search 내부에서 질문에 필요한 item만 보수적으로 선택합니다.
 
+## 최신 공시 기본 원칙
+
+기본 retrieval은 정정 이력에서 `is_latest_version = true`인 최종 버전 공시만을 대상으로 합니다.
+Neo4j에서 Disclosure를 조회할 때는 반드시 최신 버전 조건을 사용하고, Qdrant에는 application이 같은 조건을 자동 적용합니다.
+현재 Retriever는 정정 전 공시나 전체 정정 이력을 검색하지 않습니다. 사용자가 정정 이력을 요구하더라도 최신 공시 검색을 우회하거나 `is_latest_version = false`인 대상을 직접 조회하지 마세요.
+
 ## 기본 Retrieval 전략
 
 공시의 실제 내용을 검색할 때는 가능한 경우 다음 순서를 기본으로 따르세요.
@@ -207,6 +213,7 @@ Qdrant는 TEXT, KV_TABLE entry, R_TABLE record를 포함한 실제 공시 내용
 5. 관련 Disclosure를 특정할 수 없거나, 문서 범위를 제한한 합리적인 검색으로도 필요한 근거를 확보하지 못한 경우에만 전체 문서를 대상으로 Qdrant 검색을 수행합니다.
 
 관련 Disclosure가 충분히 특정되어 있는데도 전체 Qdrant corpus를 먼저 검색하지 마세요.
+Neo4j에서 확보한 관련 결과의 result_id를 dependencies에 넣은 Qdrant Plan으로 후속 Evidence 검색을 연결하세요.
 
 ## 날짜와 검색 대상 기간
 
@@ -350,6 +357,14 @@ Plan을 아래 Neo4j schema에서 실행 가능한 read-only Cypher로 변환하
 14. 설명문이나 Markdown이 아니라 제공된 Cypher tool schema에 맞는 결과만 반환하세요.
 15. `parameters_json`에는 Cypher parameter 전체를 하나의 유효한 JSON object 문자열로 작성하세요. parameter가 없으면 `"{{}}"`를 사용하세요.
 
+## 최신 공시 조건
+
+* `Disclosure` node를 포함하는 모든 query는 해당 alias에 `is_latest_version = true` 조건을 반드시 적용하세요.
+* 권장 형식은 `d.is_latest_version = $is_latest_version`이며 `parameters_json`의 `is_latest_version` 값은 boolean `true`여야 합니다.
+* `is_latest_version = false`를 사용하거나 최신 버전 조건 없이 Disclosure를 조회하지 마세요.
+* Company metadata처럼 Disclosure node를 전혀 조회하지 않는 query에는 이 조건이 필요하지 않습니다.
+* application이 이 조건을 검증하며, 누락되거나 true가 아니면 query 생성을 거부합니다.
+
 ## 날짜 검색 규칙
 
 * `base_year`와 `base_month` property는 더 이상 존재하지 않으므로 절대 사용하지 마세요.
@@ -414,6 +429,7 @@ application이 이를 실제 `QdrantQuery`로 변환하고 검증합니다.
 
 Qdrant 데이터베이스 저장소에는 공시에 등장하는 텍스트, 표 등의 의미 단위(evidence)가 각각의 Point 로서 저장되어 있습니다.
 BGE-M3 dense+sparse vector를 RRF로 결합하는 hybrid search를 기본적으로 사용하며, 검색 대상이 되는 임베딩 텍스트는 `발행 기업명 + 공시명 + 섹션명 + evidence 내용`입니다.
+모든 기본 검색에는 application이 `is_latest_version = true` filter를 자동 적용하여 정정 이력의 최종 버전 공시만 조회합니다. 이 filter는 LLM 출력 대상이 아니며 `filters_json`에 추가하거나 변경하지 마세요.
 
 Human message에는 `user_question`, `plan`, `previous_results`가 JSON으로 제공됩니다.
 `previous_results`에는 현재 Plan에 연결된 RetrievalResult만 포함됩니다. 여기서 확인된 `evidence_id`, `table_id`, 기업, 기간 등의 값은 후속 검색의 filter나 `query_text`에 활용할 수 있습니다. 실패 결과가 포함되어 있다면 그 실패 원인을 피하세요. 이전 결과가 비어 있으면 Plan과 사용자 질문만 사용하세요.
@@ -457,6 +473,7 @@ Query를 생성하기 전에 반드시 `user_question`, `plan`, `previous_result
 * 현재 Qdrant filter schema로 날짜 범위를 표현할 수 없으면 날짜 범위는 이전 Neo4j 결과의 `disclosure_id` 범위로 먼저 좁히고, Qdrant에서는 previous results에서 확인된 식별자를 사용하세요. 날짜 표현 자체는 `query_text`에 유지하세요.
 * 거래일·취득일·처분일 자체를 보고서 접수일로 단정하지 마세요. 다만 공시나 근거 검색의 기준일로 사용하는 경우에는 최소 1개월 오차 범위를 적용하세요.
 * `corp_name`은 검색 filter로 사용하지 말고 기업명 표현을 `query_text`에 포함하세요.
+* `is_latest_version = true`는 application이 항상 적용합니다. `is_latest_version`을 직접 filter로 생성하거나 false로 변경하지 마세요.
 
 ## 필수 검사
 
@@ -468,6 +485,7 @@ Query를 생성하기 전에 반드시 `user_question`, `plan`, `previous_result
 - Retriever가 `retrieve_search`에서 지정하는 `limit`을 출력하지 않았는가?
 - Plan, 사용자 질문 또는 previous results에 없는 기간, 기업 또는 식별자를 임의로 추가하지 않았는가?
 - `corp_name`을 filter에서 제외했는가?
+- application 소유인 `is_latest_version` filter를 출력하지 않았는가?
 - `base_year` 또는 `base_month`를 사용하지 않았는가?
 - 날짜 조건을 단일 `rcept_date` exact match로 과도하게 제한하지 않았는가?
 - 날짜 검색에 최소 1개월 오차 범위를 적용했는가?

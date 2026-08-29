@@ -13,6 +13,7 @@ from typing import Any
 
 import yaml
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 from qdrant_client import QdrantClient, models
 
 from knowledge_graph.insertDSE import (
@@ -32,6 +33,7 @@ from vector_db.text2vector import HybridEmbedding, texts_to_hybrid_vectors
 
 
 BatchVectorizer = Callable[[Sequence[str]], list[HybridEmbedding]]
+LatestVersionLookup = Callable[[Sequence[str]], dict[str, bool]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +139,7 @@ def load_qdrant_schema(path: Path) -> QdrantSchema:
     payload_type_map = {
         "keyword": models.PayloadSchemaType.KEYWORD,
         "integer": models.PayloadSchemaType.INTEGER,
+        "boolean": models.PayloadSchemaType.BOOL,
     }
     indexes: list[PayloadIndex] = []
 
@@ -296,12 +299,74 @@ def all_disclosures(
     return selected
 
 
-def _document_context(document_manifest: Mapping[str, Any]) -> dict[str, Any]:
+def _document_context(
+    document_manifest: Mapping[str, Any],
+    *,
+    is_latest_version: bool,
+) -> dict[str, Any]:
+    if not isinstance(is_latest_version, bool):
+        raise ValueError("is_latest_version must be a boolean")
     return {
         "corp_name": document_manifest.get("corp_name"),
         "report_nm": document_manifest.get("report_nm"),
         "rcept_date": document_manifest.get("rcept_dt"),
+        "is_latest_version": is_latest_version,
     }
+
+
+def latest_version_statuses_from_neo4j(
+    disclosure_ids: Sequence[str],
+) -> dict[str, bool]:
+    """Read authoritative latest-version flags for Qdrant payload creation."""
+    unique_ids = sorted(set(disclosure_ids))
+    if not unique_ids:
+        return {}
+
+    load_dotenv()
+    uri = os.getenv("NEO4J_URI", "").strip()
+    username = os.getenv("NEO4J_USERNAME", "").strip()
+    password = os.getenv("NEO4J_PASSWORD", "").strip()
+    database = os.getenv("NEO4J_DATABASE", "").strip() or None
+    if not all((uri, username, password)):
+        raise RuntimeError(
+            "NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD must be configured"
+        )
+
+    statuses: dict[str, bool] = {}
+    with GraphDatabase.driver(uri, auth=(username, password)) as driver:
+        driver.verify_connectivity()
+        with driver.session(database=database) as session:
+            for id_batch in _chunks(unique_ids, 1000):
+                result = session.run(
+                    """
+                    UNWIND $ids AS id
+                    MATCH (disclosure:Disclosure {id: id})
+                    RETURN disclosure.id AS id,
+                           disclosure.is_latest_version AS is_latest_version
+                    """,
+                    ids=list(id_batch),
+                )
+                for record in result:
+                    disclosure_id = record["id"]
+                    is_latest_version = record["is_latest_version"]
+                    if not isinstance(disclosure_id, str):
+                        raise ValueError("Neo4j Disclosure.id must be a string")
+                    if not isinstance(is_latest_version, bool):
+                        raise ValueError(
+                            "Neo4j Disclosure.is_latest_version must be a boolean: "
+                            f"{disclosure_id}"
+                        )
+                    statuses[disclosure_id] = is_latest_version
+
+    missing_ids = sorted(set(unique_ids) - statuses.keys())
+    if missing_ids:
+        preview = ", ".join(missing_ids[:10])
+        suffix = " ..." if len(missing_ids) > 10 else ""
+        raise ValueError(
+            f"Neo4j is missing {len(missing_ids)} selected Disclosure nodes: "
+            f"{preview}{suffix}"
+        )
+    return statuses
 
 
 def iter_fragment_point_inputs(
@@ -309,6 +374,8 @@ def iter_fragment_point_inputs(
     section_manifest: Mapping[str, Any],
     evidence_manifest: Mapping[str, Any],
     document_manifest: Mapping[str, Any],
+    *,
+    is_latest_version: bool,
 ) -> Iterator[tuple[Path, list[PointInput]]]:
     section_document = json.loads(
         (data_root / str(section_manifest["output_path"])).read_text(
@@ -323,7 +390,10 @@ def iter_fragment_point_inputs(
         for section in sections
         if isinstance(section, Mapping) and section.get("section_id")
     }
-    document_context = _document_context(document_manifest)
+    document_context = _document_context(
+        document_manifest,
+        is_latest_version=is_latest_version,
+    )
 
     for output_path in evidence_manifest.get("output_paths", []):
         fragment_path = data_root / str(output_path)
@@ -423,6 +493,7 @@ def run(
     dry_run: bool,
     client: QdrantClient | None = None,
     vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
+    latest_version_lookup: LatestVersionLookup = latest_version_statuses_from_neo4j,
 ) -> dict[str, Any]:
     selected = (
         all_disclosures(data_root)
@@ -433,6 +504,8 @@ def run(
             random_seed=random_seed,
         )
     )
+    disclosure_ids = [f"d{item[0]['rcept_no']}" for item in selected]
+    latest_version_statuses = latest_version_lookup(disclosure_ids)
     resolved_client = client
     owns_client = False
     if not dry_run:
@@ -446,11 +519,13 @@ def run(
     inserted = 0
     try:
         for section_manifest, evidence_manifest, document_manifest in selected:
+            disclosure_id = f"d{section_manifest['rcept_no']}"
             for _, point_inputs in iter_fragment_point_inputs(
                 data_root,
                 section_manifest,
                 evidence_manifest,
                 document_manifest,
+                is_latest_version=latest_version_statuses[disclosure_id],
             ):
                 fragment_count += 1
                 for point_input in point_inputs:

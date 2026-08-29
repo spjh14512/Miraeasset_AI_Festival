@@ -92,6 +92,28 @@ def test_loads_current_qdrant_schema():
         "section_id",
         models.PayloadSchemaType.KEYWORD,
     ) in schema.payload_indexes
+    assert insert_points.PayloadIndex(
+        "is_latest_version",
+        models.PayloadSchemaType.BOOL,
+    ) in schema.payload_indexes
+
+
+def test_document_context_includes_latest_version_flag():
+    context = insert_points._document_context(
+        {
+            "corp_name": "회사",
+            "report_nm": "사업보고서",
+            "rcept_dt": "20250318",
+        },
+        is_latest_version=False,
+    )
+
+    assert context["is_latest_version"] is False
+
+
+def test_document_context_rejects_non_boolean_latest_version_flag():
+    with pytest.raises(ValueError, match="is_latest_version must be a boolean"):
+        insert_points._document_context({}, is_latest_version=1)
 
 
 def test_ensure_collection_creates_named_vector_and_payload_indexes():

@@ -32,6 +32,11 @@ def parse_args() -> argparse.Namespace:
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--limit", type=int, help="Total disclosures to sample")
     selection.add_argument(
+        "--all",
+        action="store_true",
+        help="Load every disclosure with complete Section and Evidence outputs",
+    )
+    selection.add_argument(
         "--correction-pairs",
         type=int,
         help="Resolved correction chains to load together",
@@ -226,6 +231,14 @@ def complete_disclosures_by_receipt(
             raise ValueError(f"Duplicate complete disclosure for rcept_no {rcept_no}")
         complete[rcept_no] = (section_row, evidence_row)
     return complete
+
+
+def select_all_disclosures(
+    data_root: Path,
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Select every complete supported disclosure in receipt-number order."""
+    complete = complete_disclosures_by_receipt(data_root)
+    return [complete[rcept_no] for rcept_no in sorted(complete)]
 
 
 def select_correction_pairs(
@@ -726,6 +739,8 @@ def main() -> int:
             args.data_root / "correction" / "selected_pairs.jsonl"
         )
         write_jsonl_rows(selection_output, selected_pair_records)
+    elif args.all:
+        selected = select_all_disclosures(args.data_root)
     else:
         selected = select_disclosures(
             args.data_root, limit=args.limit, random_seed=args.random_seed

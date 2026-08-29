@@ -119,6 +119,13 @@ def _optional_integer(source: Mapping[str, Any], field: str) -> int | None:
     return value
 
 
+def _required_boolean(source: Mapping[str, Any], field: str) -> bool:
+    value = source.get(field)
+    if not isinstance(value, bool):
+        raise ValueError(f"{field} must be a boolean")
+    return value
+
+
 def _section_path(section_context: Mapping[str, Any]) -> list[str]:
     value = section_context.get("section_path")
     if not isinstance(value, (list, tuple)) or not all(
@@ -588,6 +595,10 @@ def _point_payload(
         "report_name": _required_text(document_context, "report_nm"),
         "section_name": section_name.strip(),
         "rcept_date": _required_text(document_context, "rcept_date"),
+        "is_latest_version": _required_boolean(
+            document_context,
+            "is_latest_version",
+        ),
         "contextual_text": contextual_text,
         "canonical": dict(canonical),
     }

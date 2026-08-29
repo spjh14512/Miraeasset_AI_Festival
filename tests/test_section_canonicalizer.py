@@ -103,7 +103,7 @@ def test_atoc_table_group_titles_create_children_of_explicit_section():
     assert second.parent_section_id == parent.id
     assert first.level == parent.level + 1
     assert first.boundary_kind == SectionBoundaryKind.IMPLICIT
-    assert first.section_path == (
+    assert first.section_path == ()
 def test_xbrl_toc_table_group_is_promoted_to_nested_note_section():
     xml = """<DOCUMENT><SECTION-1><TITLE>III. 재무에 관한 사항</TITLE>
     <SECTION-2><TITLE>3. 연결재무제표 주석</TITLE>

@@ -161,6 +161,75 @@ def test_ambiguous_original_disclosures_are_not_guessed():
     assert resolved.issues[-1].code == "CORRECTION_TARGET_AMBIGUOUS"
 
 
+def test_unique_date_group_company_candidate_is_recovered_when_name_differs():
+    extracted = extract_correction(_xml_correction(), context=_context())
+
+    resolved = resolve_correction_target(
+        extracted,
+        (
+            CorrectionTargetCandidate(
+                rcept_no="20240725000123",
+                submission_date="2024-07-25",
+                document_name="완전히 다른 표기의 문서",
+                company_key="SM",
+                doc_group="major",
+            ),
+        ),
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no == "20240725000123"
+    assert resolved.status == CorrectionStatus.RECOVERED
+    assert resolved.issues[-1].code == (
+        "CORRECTION_TARGET_UNIQUE_CANDIDATE_RECOVERED"
+    )
+
+
+def test_future_candidate_is_not_used_as_original():
+    extracted = extract_correction(_xml_correction(), context=_context())
+
+    resolved = resolve_correction_target(
+        extracted,
+        (
+            CorrectionTargetCandidate(
+                rcept_no="20250101000001",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(자기주식취득결정)",
+                company_key="SM",
+                doc_group="major",
+            ),
+        ),
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no is None
+    assert resolved.issues[-1].code == "CORRECTION_TARGET_DATE_NOT_FOUND"
+
+
+def test_resolution_reports_company_mismatch_stage():
+    extracted = extract_correction(_xml_correction(), context=_context())
+
+    resolved = resolve_correction_target(
+        extracted,
+        (
+            CorrectionTargetCandidate(
+                rcept_no="20240725000123",
+                submission_date="2024-07-25",
+                document_name="주요사항보고서(자기주식취득결정)",
+                company_key="OTHER",
+                doc_group="major",
+            ),
+        ),
+        company_key="SM",
+    )
+
+    assert resolved.correction is not None
+    assert resolved.correction.target_rcept_no is None
+    assert resolved.issues[-1].code == "CORRECTION_TARGET_COMPANY_MISMATCH"
+
+
 def test_xml_element_input_is_not_mutated():
     element = ET.fromstring(_xml_correction())
     before = ET.tostring(element)

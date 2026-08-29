@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -626,7 +627,9 @@ def cypher_builder(
                 if isinstance(result, CypherQueryToolArgs)
                 else CypherQueryToolArgs.model_validate(result)
             )
-            return tool_args.to_cypher_query()
+            query = tool_args.to_cypher_query()
+            _validate_latest_disclosure_filter(query)
+            return query
         except (ValidationError, ValueError, TypeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
@@ -634,6 +637,52 @@ def cypher_builder(
                 "CypherQuery",
                 error,
             )))
+
+
+def _validate_latest_disclosure_filter(query: CypherQuery) -> None:
+    """Disclosure를 조회하는 Cypher가 최신 공시만 선택하는지 검증합니다.
+
+    입력 예시:
+        CypherQuery(
+            cypher="MATCH (d:Disclosure) WHERE d.is_latest_version = $latest RETURN d",
+            parameters={"latest": True},
+        )
+
+    출력 예시:
+        유효하면 None, 조건이 없거나 true가 아니면 ValueError
+    """
+
+    aliases = set(re.findall(
+        r"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*Disclosure\b",
+        query.cypher,
+        flags=re.IGNORECASE,
+    ))
+    for alias in aliases:
+        value_patterns = (
+            rf"\b{re.escape(alias)}\s*\.\s*is_latest_version\s*=\s*"
+            r"(true|\$[A-Za-z_][A-Za-z0-9_]*)",
+            rf"\(\s*{re.escape(alias)}\s*:\s*Disclosure\b[^)]*"
+            r"\bis_latest_version\s*:\s*"
+            r"(true|\$[A-Za-z_][A-Za-z0-9_]*)",
+        )
+        values = [
+            match.group(1)
+            for pattern in value_patterns
+            for match in re.finditer(pattern, query.cypher, re.IGNORECASE)
+        ]
+        if any(
+            value.lower() == "true"
+            or (
+                value.startswith("$")
+                and query.parameters.get(value[1:]) is True
+            )
+            for value in values
+        ):
+            continue
+        raise ValueError(
+            "Disclosure 조회에는 최신 공시 조건이 필요합니다: "
+            f"{alias}.is_latest_version = true"
+        )
 
 def _qdrant_filter_signature(filters: Any) -> tuple[str, ...]:
     """Qdrant filter 순서와 null field를 무시하는 비교용 signature를 만듭니다.
@@ -788,7 +837,10 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
 
 def query_executor(qdrant_query: QdrantQuery) -> Any:
 
-    must = []
+    must = [models.FieldCondition(
+        key="is_latest_version",
+        match=models.MatchValue(value=True),
+    )]
     for condition in qdrant_query.filters:
         if condition.match is not None:
             must.append(models.FieldCondition(

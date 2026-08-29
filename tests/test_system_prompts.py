@@ -111,6 +111,22 @@ def test_retrieval_prompts_use_rcept_date_with_month_tolerance():
     assert "단일 `rcept_date` exact-match filter로 변환하지 마세요" in query
 
 
+def test_retrieval_prompts_enforce_latest_disclosure_version():
+    retriever = sp.RETRIEVER_SYSTEM_PROMPT
+    cypher = sp.CYPHER_BUILDER_SYSTEM_PROMPT
+    query = sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
+    schema = QDRANT_QUERY_SCHEMA_PATH.read_text(encoding="utf-8")
+
+    assert "`is_latest_version = true`" in retriever
+    assert "d.is_latest_version = $is_latest_version" in cypher
+    assert "application이 이 조건을 검증" in cypher
+    assert "application이 `is_latest_version = true` filter를 자동 적용" in query
+    assert "`is_latest_version`을 직접 filter로 생성" in query
+    assert "automatic_filters" in schema
+    assert "is_latest_version" in schema
+    assert "llm_output: forbidden" in schema
+
+
 def test_compactor_prompt_prefers_recall_when_uncertain():
     prompt = sp.QDRANT_POINT_COMPACTOR_SYSTEM_PROMPT
 

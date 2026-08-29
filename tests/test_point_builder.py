@@ -33,6 +33,7 @@ POINT_PAYLOAD_FIELDS = {
     "report_name",
     "section_name",
     "rcept_date",
+    "is_latest_version",
     "contextual_text",
     "canonical",
 }
@@ -44,6 +45,7 @@ DOCUMENT_CONTEXT = {
     "sector": "반도체와 반도체장비",
     "report_nm": "2025년 사업보고서",
     "rcept_date": "20250318",
+    "is_latest_version": True,
 }
 
 SECTION_CONTEXT = {
@@ -223,6 +225,33 @@ def test_payload_has_flat_retrieval_fields_and_minimal_canonical_data():
         for point in points
     )
     assert all(point["payload"]["rcept_date"] == "20250318" for point in points)
+    assert all(point["payload"]["is_latest_version"] is True for point in points)
+
+
+def test_payload_preserves_false_latest_version_flag():
+    document_context = {**DOCUMENT_CONTEXT, "is_latest_version": False}
+
+    points = build_point_inputs(
+        _fragment(),
+        document_context=document_context,
+        section_context=SECTION_CONTEXT,
+        r_table_strategy_selector=_whole_table_selector(),
+    )
+
+    assert all(point.payload["is_latest_version"] is False for point in points)
+
+
+def test_payload_rejects_missing_latest_version_flag():
+    document_context = dict(DOCUMENT_CONTEXT)
+    document_context.pop("is_latest_version")
+
+    with pytest.raises(ValueError, match="is_latest_version must be a boolean"):
+        build_point_inputs(
+            _fragment(),
+            document_context=document_context,
+            section_context=SECTION_CONTEXT,
+            r_table_strategy_selector=_whole_table_selector(),
+        )
 
 
 def test_section_name_appends_evidence_heading_path():
