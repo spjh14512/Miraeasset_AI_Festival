@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from pydantic.json_schema import SkipJsonSchema
 
 RetrievalSource = Literal["qdrant", "neo4j"]
+RetrievalResultSource = Literal["qdrant", "neo4j", "derived"]
 RetrievalResultStatus = Literal[
     "SUCCESS",
     "NO_RESULTS",
@@ -11,6 +12,7 @@ RetrievalResultStatus = Literal[
     "TIMEOUT",
     "DUPLICATES_ONLY",
     "INVALID_QUERY",
+    "INVALID_INPUT",
 ]
 QuestionDecision = Literal["retrieve", "direct", "clarify"]
 
@@ -89,7 +91,7 @@ class RetrievalResult(BaseModel):
     """
     result_id: str
     plan_id: str
-    source: RetrievalSource
+    source: RetrievalResultSource
     status: RetrievalResultStatus | None = None
     query: str
     items: list[dict[str, Any]] = Field(default_factory=list)
