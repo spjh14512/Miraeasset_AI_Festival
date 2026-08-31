@@ -311,6 +311,168 @@ def test_percent_ratio_differs_from_ratio_and_percent_change():
     assert len({ratio_value, percent_ratio_value, percent_change_value}) == 3
 
 
+def test_cagr_succeeds():
+    # 100 -> 200, 5년 -> 2^(1/5) - 1 ≈ 14.8698%
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    update = _invoke(
+        variable_name="CAGR",
+        operation="cagr",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        periods=5,
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    value = Decimal(result.items[0]["fields"]["value"])
+    assert abs(value - Decimal("14.8698354997035006798626947")) < Decimal("0.000001")
+    assert result.items[0]["fields"]["unit"] == "%"
+
+
+def test_cagr_requires_periods():
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    with pytest.raises(ValueError, match="periods"):
+        _invoke(
+            variable_name="CAGR",
+            operation="cagr",
+            targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+            state=state,
+        )
+
+
+def test_cagr_rejects_non_positive_periods():
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    with pytest.raises(ValueError, match="periods"):
+        _invoke(
+            variable_name="CAGR",
+            operation="cagr",
+            targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+            periods=0,
+            state=state,
+        )
+
+
+def test_cagr_rejects_bool_periods():
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    with pytest.raises(ValueError, match="periods"):
+        _invoke(
+            variable_name="CAGR",
+            operation="cagr",
+            targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+            periods=True,
+            state=state,
+        )
+
+
+def test_cagr_with_zero_start_makes_invalid_input():
+    state = _state(
+        _derived_result("derived:plan_1", value="0"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    update = _invoke(
+        variable_name="CAGR",
+        operation="cagr",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        periods=5,
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_cagr_with_sign_change_makes_invalid_input():
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="-50"),
+    )
+
+    update = _invoke(
+        variable_name="CAGR",
+        operation="cagr",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        periods=5,
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_cagr_with_both_negative_makes_invalid_input():
+    state = _state(
+        _derived_result("derived:plan_1", value="-100"),
+        _derived_result("derived:plan_2", value="-50"),
+    )
+
+    update = _invoke(
+        variable_name="CAGR",
+        operation="cagr",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        periods=5,
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_cagr_with_zero_end_makes_invalid_input():
+    state = _state(
+        _derived_result("derived:plan_1", value="200"),
+        _derived_result("derived:plan_2", value="0"),
+    )
+
+    update = _invoke(
+        variable_name="CAGR",
+        operation="cagr",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        periods=5,
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_cagr_rejects_three_targets():
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+        _derived_result("derived:plan_3", value="300"),
+    )
+
+    with pytest.raises(ValueError, match="cagr"):
+        _invoke(
+            variable_name="CAGR",
+            operation="cagr",
+            targets=[_target("derived:plan_1"), _target("derived:plan_2"), _target("derived:plan_3")],
+            periods=5,
+            state=state,
+        )
+
+
 def test_ratio_by_zero_makes_invalid_input():
     state = _state(
         _derived_result("derived:plan_1", value="100"),
@@ -389,6 +551,28 @@ def test_ordering_ranks_ascending_by_default():
         "derived:plan_3",
         "derived:plan_1",
     ]
+    assert [entry["rank"] for entry in fields["ordered_results"]] == [1, 2, 3]
+
+
+def test_ordering_rank_reflects_descending_direction_too():
+    state = _state(
+        _derived_result("derived:plan_1", value="300"),
+        _derived_result("derived:plan_2", value="100"),
+    )
+
+    update = _invoke(
+        variable_name="순위",
+        operation="ordering",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        direction="descending",
+        state=state,
+    )
+
+    ordered = update["retrieval_results"][0].items[0]["fields"]["ordered_results"]
+    assert [(entry["rank"], entry["result_id"]) for entry in ordered] == [
+        (1, "derived:plan_1"),
+        (2, "derived:plan_2"),
+    ]
 
 
 def test_ordering_descending_direction():
@@ -433,6 +617,7 @@ def test_ordering_ties_preserve_input_order():
         "derived:plan_1",
         "derived:plan_2",
     ]
+    assert [entry["rank"] for entry in fields["ordered_results"]] == [1, 2, 3]
 
 
 def test_ordering_result_cannot_be_reused_as_scalar_input():

@@ -973,7 +973,7 @@ def finish(
     }
 
 
-CalculationOperation = Literal["sum", "mean", "median", "max", "min", "mode"]
+CalculationOperation = Literal["sum", "mean", "median", "max", "min", "mode", "stdev"]
 
 
 class TableTarget(BaseModel):
@@ -1300,7 +1300,8 @@ def _apply_calculation_operation(
 
     계산에 성공하면 (결과값, None)을, 계산할 수 없으면 (None, 실패 사유)를
     반환합니다. mode는 동률이 여러 개면 임의로 하나를 고르지 않고
-    계산 불가로 처리합니다.
+    계산 불가로 처리합니다. stdev는 표본 표준편차(n-1로 나눔)이며
+    값이 2개 미만이면 계산 불가로 처리합니다.
     """
 
     if operation == "sum":
@@ -1318,6 +1319,10 @@ def _apply_calculation_operation(
         if len(modes) > 1:
             return None, "최빈값이 여러 개로 동률입니다."
         return modes[0], None
+    if operation == "stdev":
+        if len(values) < 2:
+            return None, "표본 표준편차는 값이 2개 이상 있어야 계산할 수 있습니다."
+        return statistics.stdev(values), None
     raise ValueError(f"지원하지 않는 operation입니다: {operation}")
 
 
@@ -1448,7 +1453,7 @@ def calculate_table_statistic(
         variable_name(str): 계산 결과에 붙일 사람이 읽을 이름.
             예: "삼성전자 2024년 매출액 합계". 빈 문자열은 허용하지 않습니다.
         operation(CalculationOperation): 'sum', 'mean', 'median', 'max',
-            'min', 'mode' 중 하나
+            'min', 'mode', 'stdev'(표본 표준편차, 값 2개 이상 필요) 중 하나
         column(str): 집계할 R_TABLE의 열 이름. 대상 표의 columns에
             정확히 존재해야 합니다. 빈 문자열은 허용하지 않습니다.
         targets(list[TableTarget]): 집계 대상 R_TABLE의 위치 목록(최소
@@ -1652,7 +1657,8 @@ def calculate_table_statistic(
 
 
 CombineOperation = Literal[
-    "sum", "mean", "difference", "ratio", "percent_ratio", "percent_change", "ordering",
+    "sum", "mean", "difference", "ratio", "percent_ratio", "percent_change",
+    "cagr", "ordering",
 ]
 OrderingDirection = Literal["ascending", "descending"]
 
@@ -1671,6 +1677,7 @@ _COMBINE_OPERATION_INPUT_COUNTS: dict[CombineOperation, tuple[int, int | None]] 
     "ratio": (2, 2),
     "percent_ratio": (2, 2),
     "percent_change": (2, 2),
+    "cagr": (2, 2),
     "ordering": (2, None),
 }
 
@@ -1775,6 +1782,7 @@ def _validate_combine_call(
     operation: CombineOperation,
     targets: list[NumericResultTarget],
     state: AgentState,
+    periods: int | None = None,
 ) -> list[tuple[Decimal, str | None, dict[str, Any]]]:
     """combine_numeric_results의 구조적 오류를 검증하고 해석된 operand들을 반환합니다.
 
@@ -1799,6 +1807,10 @@ def _validate_combine_call(
             f"(전달된 개수: {len(targets)})."
         )
 
+    if operation == "cagr":
+        if not isinstance(periods, int) or isinstance(periods, bool) or periods < 1:
+            raise ValueError("cagr에는 1 이상의 정수 periods가 필요합니다.")
+
     return [_resolve_combine_operand(target, state) for target in targets]
 
 
@@ -1809,6 +1821,7 @@ def combine_numeric_results(
     targets: list[NumericResultTarget],
     state: Annotated[AgentState, InjectedState],
     direction: OrderingDirection = "ascending",
+    periods: Annotated[int | None, Field(strict=True)] = None,
 ) -> dict:
     """calculate_table_statistic 등이 만든 numeric_scalar 결과 여러 개를 조합합니다.
 
@@ -1837,6 +1850,11 @@ def combine_numeric_results(
               혼동하지 마세요 — percent_change는 "증감률"(예: 전년
               대비 몇 % 늘었는지), percent_ratio는 서로 다른 두
               항목의 "비율"(예: 순이익이 자산의 몇 %인지)입니다.
+            - 'cagr': 정확히 2개, (targets[1] / targets[0]) ** (1 / periods)
+              - 1을 백분율로 반환. targets[0]이 시작 값, targets[1]이
+              끝 값이며 periods(기간 수, 정수)를 반드시 지정해야
+              합니다. 시작 값과 끝 값이 모두 양수가 아니면(0, 음수,
+              부호 전환 포함) 계산할 수 없습니다.
             - 'ordering': targets를 값 기준으로 정렬해 순위를 매김
               (2개 이상). 정렬 방향은 direction으로 지정합니다.
         targets(list[NumericResultTarget]): 조합할 numeric_scalar
@@ -1844,7 +1862,7 @@ def combine_numeric_results(
             combine_numeric_results가 만든 result_kind="numeric_scalar",
             status="SUCCESS" 결과만 참조할 수 있습니다(numeric_ordering
             결과는 참조 불가). difference/ratio/percent_ratio/
-            percent_change에서는 순서가 결과에 직접 영향을 주므로
+            percent_change/cagr에서는 순서가 결과에 직접 영향을 주므로
             정확히 지정하세요. 동일한 (result_id, item_index) 조합을
             중복해서 넣을 수 없습니다(이중 계산 방지).
         state(AgentState): InjectedState로 주입되며 LLM에는 보이지
@@ -1854,40 +1872,47 @@ def combine_numeric_results(
             사용하는 정렬 방향('ascending' 또는 'descending', 기본
             'ascending'). 다른 operation에서는 무시됩니다. 값이 같은
             대상은 입력 순서를 그대로 유지합니다(안정 정렬).
+        periods(int | None): operation='cagr'일 때만 사용하는 기간 수
+            (예: 2020년부터 2024년까지면 4). 1 이상의 정수여야 합니다.
+            다른 operation에서는 무시됩니다.
 
     return:
         dict: next_plan_seq와 조합 결과가 담긴 새 RetrievalResult 하나를
             포함한 state update.
-            - sum/mean/difference/ratio/percent_ratio/percent_change가
-              성공하면 status="SUCCESS", metadata.result_kind=
+            - sum/mean/difference/ratio/percent_ratio/percent_change/
+              cagr이 성공하면 status="SUCCESS", metadata.result_kind=
               "numeric_scalar"이고 items[0].fields에 변수명/연산/값/
-              단위/사용한 값 개수가 담깁니다. 모든 operation은 입력
-              단위가 전부 완전히 같을 때만(모두 None이거나 모두 같은
-              문자열) 계산하며, calculate_table_statistic의 셀 단위
-              정책과 달리 단위 없음과 명시된 단위를 같다고 보지
-              않습니다. sum·mean·difference는 그 공통 단위를 그대로
-              사용합니다. ratio는 단위를 None으로, percent_ratio와
-              percent_change는 "%"로 반환합니다.
+              단위/사용한 값 개수가 담깁니다. sum/mean/difference/ratio/
+              percent_ratio/percent_change는 입력 단위가 전부 완전히
+              같을 때만(모두 None이거나 모두 같은 문자열) 계산하며,
+              calculate_table_statistic의 셀 단위 정책과 달리 단위
+              없음과 명시된 단위를 같다고 보지 않습니다. sum·mean·
+              difference는 그 공통 단위를 그대로 사용합니다. ratio는
+              단위를 None으로, percent_ratio·percent_change·cagr는
+              "%"로 반환합니다.
             - ordering이 성공하면 status="SUCCESS",
               metadata.result_kind="numeric_ordering"이고
               items[0].fields는 단일 value 대신 {"direction":...,
-              "unit":..., "ordered_results": [{"result_id":...,
+              "unit":..., "ordered_results": [{"rank":1, "result_id":...,
               "variable_name":..., "value":...}, ...]} 형태입니다.
+              rank는 정렬 순서를 나타내는 1부터 시작하는 순번입니다.
             - 모든 경우 입력 대상 전체의 source_references를
               검증·병합한 결과가 함께 담기며, 하나라도 유효한 인용이
               없으면 성공으로 처리하지 않습니다.
             - 입력 단위가 서로 다르거나(비교 가능한 단위끼리만 허용),
-              0으로 나누게 되거나, 인용할 원본 정보가 없으면
-              status="INVALID_INPUT"이고 items는 빈 목록입니다.
-              metadata.failure_stage로 원인을 구분합니다.
+              0으로 나누게 되거나, cagr에서 두 값의 부호가 다르거나,
+              인용할 원본 정보가 없으면 status="INVALID_INPUT"이고
+              items는 빈 목록입니다. metadata.failure_stage로 원인을
+              구분합니다.
             - result_id가 존재하지 않거나, numeric_scalar
               result_kind의 SUCCESS 결과가 아니거나, item_index가
               존재하지 않거나, 계산 결과 형식이 아니거나, operation에
-              필요한 개수의 targets가 아니거나, 중복 target이 있거나,
+              필요한 개수의 targets가 아니거나, cagr인데 1 이상의
+              정수 periods가 없거나, 중복 target이 있거나,
               variable_name이 비어 있으면 ValueError를 발생시킵니다.
     """
 
-    operands = _validate_combine_call(variable_name, operation, targets, state)
+    operands = _validate_combine_call(variable_name, operation, targets, state, periods)
     values = [operand[0] for operand in operands]
     units = [operand[1] for operand in operands]
     items = [operand[2] for operand in operands]
@@ -1898,6 +1923,7 @@ def combine_numeric_results(
         {
             "operation": operation,
             "direction": direction if operation == "ordering" else None,
+            "periods": periods if operation == "cagr" else None,
             "targets": [target.model_dump() for target in targets],
         },
         ensure_ascii=False,
@@ -1954,6 +1980,18 @@ def combine_numeric_results(
             return invalid("기준값(첫 번째 값)이 0이어서 증감률을 계산할 수 없습니다.", "calculation")
         value = (values[1] - values[0]) / values[0] * 100
         unit = "%"
+    elif operation == "cagr":
+        if values[0] <= 0 or values[1] <= 0:
+            return invalid(
+                "CAGR은 시작 값과 끝 값이 모두 양수여야 계산할 수 있습니다.",
+                "calculation",
+            )
+        growth_ratio = values[1] / values[0]
+        try:
+            value = (growth_ratio ** (Decimal(1) / periods) - 1) * 100
+        except InvalidOperation:
+            return invalid("CAGR 계산 중 값을 확정할 수 없습니다.", "calculation")
+        unit = "%"
     elif operation == "ordering":
         ranked = sorted(
             zip(source_result_ids, values, items),
@@ -1968,11 +2006,12 @@ def combine_numeric_results(
             "input_count": len(values),
             "ordered_results": [
                 {
+                    "rank": rank,
                     "result_id": ranked_result_id,
                     "variable_name": (ranked_item.get("fields") or {}).get("variable_name"),
                     "value": str(ranked_value),
                 }
-                for ranked_result_id, ranked_value, ranked_item in ranked
+                for rank, (ranked_result_id, ranked_value, ranked_item) in enumerate(ranked, start=1)
             ],
         }
         result_item = {
@@ -2543,6 +2582,7 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             validated.operation,
             validated.targets,
             state,
+            validated.periods,
         )
         return
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -56,7 +57,7 @@ def test_calculation_operation_accepts_supported_values():
     class _Probe(BaseModel):
         operation: CalculationOperation
 
-    for operation in ("sum", "mean", "median", "max", "min", "mode"):
+    for operation in ("sum", "mean", "median", "max", "min", "mode", "stdev"):
         assert _Probe(operation=operation).operation == operation
 
 
@@ -275,6 +276,57 @@ def test_mode_with_tie_is_invalid_input():
     result = update["retrieval_results"][0]
     assert result.status == "INVALID_INPUT"
     assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_stdev_succeeds():
+    # 표본 표준편차(n-1로 나눔): 2, 4, 4, 4, 5, 5, 7, 9 -> 2.13809...
+    item = _r_table_item(values=["2", "4", "4", "4", "5", "5", "7", "9"])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="표준편차",
+        operation="stdev",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    value = Decimal(result.items[0]["fields"]["value"])
+    assert abs(value - Decimal("2.1380899352993950027")) < Decimal("0.0000001")
+
+
+def test_stdev_requires_at_least_two_values():
+    item = _r_table_item(values=["100"])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="표준편차",
+        operation="stdev",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_stdev_uses_column_unit():
+    item = _r_table_item(values=["100백만원", "200백만원", "300백만원"])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="표준편차",
+        operation="stdev",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    assert update["retrieval_results"][0].items[0]["fields"]["unit"] == "백만원"
 
 
 def test_missing_values_are_excluded_but_calculation_still_succeeds():
