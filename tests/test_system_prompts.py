@@ -51,6 +51,19 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "result_id를 dependencies에 넣은 Qdrant Plan" in prompt
     assert "selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함" in prompt
     assert "INVALID_INPUT 결과는 선택할 수 없습니다" in prompt
+    assert "calculate_table_statistic(variable_name, operation, column, targets)" in prompt
+    assert "combine_numeric_results(variable_name, operation, targets, direction)" in prompt
+    assert "숫자 계산은 암산하지 말고" in prompt
+    assert "하나의 호출에 섞지 마세요" in prompt
+    assert "numeric_ordering" in prompt
+    assert "단위 없음과 명시된 단위는 다른 것으로 취급" in prompt
+    assert "targets[0] - targets[1]" in prompt
+    assert "최종 계산, 비교, 판단과 답변 생성은 downstream" not in prompt
+    assert "그 결과의 status가 SUCCESS가 아니거나" in prompt
+    assert "가리킨 item이 R_TABLE이 아니거나" in prompt
+    assert "targets에 중복해서 넣을 수 없습니다" in prompt
+    assert "나누는 값이 0이거나" in prompt
+    assert "ordering 결과(numeric_ordering)는 대상으로 쓸 수 없습니다" in prompt
 
 
 def test_answer_generator_prompt_matches_compacted_qdrant_output():
