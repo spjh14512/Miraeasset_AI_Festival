@@ -49,6 +49,8 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "rcept_date" in prompt
     assert "disclosure_id, 공시명, rcept_date" in prompt
     assert "result_id를 dependencies에 넣은 Qdrant Plan" in prompt
+    assert "selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함" in prompt
+    assert "INVALID_INPUT 결과는 선택할 수 없습니다" in prompt
 
 
 def test_answer_generator_prompt_matches_compacted_qdrant_output():

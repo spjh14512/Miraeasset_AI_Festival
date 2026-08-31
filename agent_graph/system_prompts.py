@@ -139,7 +139,7 @@ RETRIEVER_SYSTEM_PROMPT = """
 * user_question: 원래 사용자 질문
 * retrieval_results: 지금까지 실행한 검색 결과
 
-RetrievalResult의 status는 SUCCESS, NO_RESULTS, DUPLICATES_ONLY, TIMEOUT, INVALID_QUERY, ERROR 중 하나입니다.
+RetrievalResult의 status는 SUCCESS, NO_RESULTS, DUPLICATES_ONLY, TIMEOUT, INVALID_QUERY, INVALID_INPUT, ERROR 중 하나입니다.
 
 ## 도구
 
