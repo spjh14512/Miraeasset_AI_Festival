@@ -1292,6 +1292,30 @@ def _build_calculation_invalid_result(
     )
 
 
+def _validate_calculate_call(
+    variable_name: str,
+    column: str,
+    targets: list[TableTarget],
+    state: AgentState,
+) -> list[dict[str, Any]]:
+    """calculate_table_statistic의 구조적 오류를 검증하고 해석된 R_TABLE item들을 반환합니다.
+
+    validate_retriever_tool_call(실행 전 사전 검증)과 calculate_table_statistic
+    본문이 모두 이 함수를 호출합니다. 두 경로가 서로 다른 검증을 하면,
+    사전 검증은 통과했는데 실제 실행에서 ValueError가 나는 경우
+    retriever 노드의 재시도 루프를 벗어나 처리되지 않은 예외로 이어질
+    수 있으므로 반드시 동일한 검증을 공유해야 합니다.
+    """
+
+    if not targets:
+        raise ValueError("targets에는 최소 하나의 TableTarget이 필요합니다.")
+    if not variable_name.strip():
+        raise ValueError("variable_name은 비어 있을 수 없습니다.")
+    if not column.strip():
+        raise ValueError("column은 비어 있을 수 없습니다.")
+    return _resolve_table_targets(targets, column, state)
+
+
 @tool
 def calculate_table_statistic(
     variable_name: str,
@@ -1351,14 +1375,7 @@ def calculate_table_statistic(
               않고 tool 호출 자체를 다시 만들어야 합니다).
     """
 
-    if not targets:
-        raise ValueError("targets에는 최소 하나의 TableTarget이 필요합니다.")
-    if not variable_name.strip():
-        raise ValueError("variable_name은 비어 있을 수 없습니다.")
-    if not column.strip():
-        raise ValueError("column은 비어 있을 수 없습니다.")
-
-    resolved_items = _resolve_table_targets(targets, column, state)
+    resolved_items = _validate_calculate_call(variable_name, column, targets, state)
     result_id, plan_id, next_plan_seq = _next_derived_ids(state)
     source_result_ids = [target.result_id for target in targets]
     request_query = json.dumps(
@@ -1588,6 +1605,38 @@ def _resolve_combine_operand(
     return value, unit, item
 
 
+def _validate_combine_call(
+    variable_name: str,
+    operation: CombineOperation,
+    targets: list[NumericResultTarget],
+    state: AgentState,
+) -> list[tuple[Decimal, str | None, dict[str, Any]]]:
+    """combine_numeric_results의 구조적 오류를 검증하고 해석된 operand들을 반환합니다.
+
+    validate_retriever_tool_call(실행 전 사전 검증)과 combine_numeric_results
+    본문이 모두 이 함수를 호출합니다. _validate_calculate_call과 같은 이유로
+    두 경로는 반드시 같은 검증을 공유해야 합니다.
+    """
+
+    if not variable_name.strip():
+        raise ValueError("variable_name은 비어 있을 수 없습니다.")
+    target_keys = [(target.result_id, target.item_index) for target in targets]
+    if len(target_keys) != len(set(target_keys)):
+        raise ValueError("targets에는 중복된 (result_id, item_index)를 사용할 수 없습니다.")
+
+    min_count, max_count = _COMBINE_OPERATION_INPUT_COUNTS[operation]
+    if len(targets) < min_count or (max_count is not None and len(targets) > max_count):
+        expected = (
+            f"정확히 {min_count}개" if min_count == max_count else f"최소 {min_count}개"
+        )
+        raise ValueError(
+            f"{operation}에는 targets가 {expected} 필요합니다"
+            f"(전달된 개수: {len(targets)})."
+        )
+
+    return [_resolve_combine_operand(target, state) for target in targets]
+
+
 @tool
 def combine_numeric_results(
     variable_name: str,
@@ -1662,23 +1711,7 @@ def combine_numeric_results(
               variable_name이 비어 있으면 ValueError를 발생시킵니다.
     """
 
-    if not variable_name.strip():
-        raise ValueError("variable_name은 비어 있을 수 없습니다.")
-    target_keys = [(target.result_id, target.item_index) for target in targets]
-    if len(target_keys) != len(set(target_keys)):
-        raise ValueError("targets에는 중복된 (result_id, item_index)를 사용할 수 없습니다.")
-
-    min_count, max_count = _COMBINE_OPERATION_INPUT_COUNTS[operation]
-    if len(targets) < min_count or (max_count is not None and len(targets) > max_count):
-        expected = (
-            f"정확히 {min_count}개" if min_count == max_count else f"최소 {min_count}개"
-        )
-        raise ValueError(
-            f"{operation}에는 targets가 {expected} 필요합니다"
-            f"(전달된 개수: {len(targets)})."
-        )
-
-    operands = [_resolve_combine_operand(target, state) for target in targets]
+    operands = _validate_combine_call(variable_name, operation, targets, state)
     values = [operand[0] for operand in operands]
     units = [operand[1] for operand in operands]
     items = [operand[2] for operand in operands]
@@ -2309,6 +2342,24 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             state,
         )
         return
+    if name == "calculate_table_statistic":
+        validated = calculate_table_statistic.tool_call_schema.model_validate(args)
+        _validate_calculate_call(
+            validated.variable_name,
+            validated.column,
+            validated.targets,
+            state,
+        )
+        return
+    if name == "combine_numeric_results":
+        validated = combine_numeric_results.tool_call_schema.model_validate(args)
+        _validate_combine_call(
+            validated.variable_name,
+            validated.operation,
+            validated.targets,
+            state,
+        )
+        return
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 
 
@@ -2321,5 +2372,9 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
         return retrieve_search.invoke({**args, "state": state})
     if name == "finish":
         return finish.invoke({**args, "state": state})
+    if name == "calculate_table_statistic":
+        return calculate_table_statistic.invoke({**args, "state": state})
+    if name == "combine_numeric_results":
+        return combine_numeric_results.invoke({**args, "state": state})
 
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")

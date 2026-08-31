@@ -20,7 +20,9 @@ from .tools import (
     execute_tool_call,
     validate_retriever_tool_call,
     retrieve_search,
-    finish
+    finish,
+    calculate_table_statistic,
+    combine_numeric_results,
 )
 
 
@@ -44,7 +46,7 @@ def _build_retriever_llm() -> Any:
     """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
 
     return get_llm().bind_tools(
-        [retrieve_search, finish],
+        [retrieve_search, calculate_table_statistic, combine_numeric_results, finish],
     )
 @lru_cache(maxsize=1)
 def _build_answer_generator_llm() -> Any:
@@ -116,7 +118,7 @@ def retriever(
 ) -> dict:
     print("retriever 노드 호출")
 
-    tools = [retrieve_search, finish]
+    tools = [retrieve_search, calculate_table_statistic, combine_numeric_results, finish]
 
     retriever_llm = (
         _build_retriever_llm()

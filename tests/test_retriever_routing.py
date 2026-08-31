@@ -81,7 +81,7 @@ def test_route_after_retrieval_returns_registered_retriever_key():
     }) == "retriever"
 
 
-def test_retriever_can_finish_with_two_tool_interface():
+def test_retriever_can_finish_with_tool_interface():
     llm = _FakeRetrieverLlm()
 
     update = graph_module.retriever(_retrieval_state(), llm=llm)
@@ -90,6 +90,8 @@ def test_retriever_can_finish_with_two_tool_interface():
     assert update["selected_result_ids"] == ["retrieval:plan_1"]
     assert {tool.name for tool in llm.bound_tools} == {
         "retrieve_search",
+        "calculate_table_statistic",
+        "combine_numeric_results",
         "finish",
     }
     assert llm.invoke_count == 1
