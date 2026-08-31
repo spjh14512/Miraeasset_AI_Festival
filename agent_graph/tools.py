@@ -2,7 +2,7 @@ import json
 import re
 import statistics
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -1083,33 +1083,39 @@ def _normalized_id(value: Any) -> str | None:
     return stripped or None
 
 
-def _extract_source_reference(item: dict[str, Any]) -> dict[str, str] | None:
-    """R_TABLE item의 metadata에서 인용용 disclosure/section/evidence id를 뽑습니다.
+def _normalize_reference(reference: Any) -> dict[str, str] | None:
+    """disclosure/section/evidence id가 담긴 dict를 검증된 인용 정보로 정규화합니다.
 
     id는 모두 strip 후 비어 있지 않아야 유효한 것으로 인정합니다.
     evidence_id가 있는데 section_id가 없으면(Citation의 계층 규칙 위반)
-    이 item에는 유효한 인용이 없는 것으로 처리합니다 — _extract_citations가
-    이런 조합을 조용히 버리기 때문에, 여기서 미리 걸러내지 않으면
-    source_references에는 들어있지만 실제 답변에는 인용되지 않는
-    결과가 생깁니다.
+    유효하지 않은 것으로 처리합니다 — _extract_citations가 이런 조합을
+    조용히 버리기 때문에, 여기서 미리 걸러내지 않으면 source_references에는
+    들어있지만 실제 답변에는 인용되지 않는 결과가 생깁니다. R_TABLE
+    item의 metadata와 derived item의 source_references 원소 모두
+    이 함수 하나로 검증합니다.
     """
 
-    metadata = item.get("metadata")
-    if not isinstance(metadata, dict):
+    if not isinstance(reference, dict):
         return None
-    disclosure_id = _normalized_id(metadata.get("disclosure_id"))
+    disclosure_id = _normalized_id(reference.get("disclosure_id"))
     if disclosure_id is None:
         return None
-    section_id = _normalized_id(metadata.get("section_id"))
-    evidence_id = _normalized_id(metadata.get("evidence_id"))
+    section_id = _normalized_id(reference.get("section_id"))
+    evidence_id = _normalized_id(reference.get("evidence_id"))
     if evidence_id is not None and section_id is None:
         return None
-    reference: dict[str, str] = {"disclosure_id": disclosure_id}
+    normalized: dict[str, str] = {"disclosure_id": disclosure_id}
     if section_id is not None:
-        reference["section_id"] = section_id
+        normalized["section_id"] = section_id
     if evidence_id is not None:
-        reference["evidence_id"] = evidence_id
-    return reference
+        normalized["evidence_id"] = evidence_id
+    return normalized
+
+
+def _extract_source_reference(item: dict[str, Any]) -> dict[str, str] | None:
+    """R_TABLE item의 metadata에서 인용용 disclosure/section/evidence id를 뽑습니다."""
+
+    return _normalize_reference(item.get("metadata"))
 
 
 def _collect_source_references(
@@ -1138,6 +1144,49 @@ def _collect_source_references(
         seen.add(key)
         references.append(reference)
     return references
+
+
+def _merge_derived_source_references(
+    items: list[dict[str, Any]],
+) -> list[dict[str, str]] | None:
+    """derived record item들이 이미 갖고 있는 source_references를 병합합니다.
+
+    R_TABLE item과 달리 derived item(계산/조합 결과)은 인용 정보를
+    item["metadata"]가 아니라 item["source_references"]에 형제 key로
+    직접 담고 있으므로 원소 각각을 _normalize_reference로 검증합니다
+    (strip, 빈 문자열 거부, evidence_id에는 section_id 필수인 계층 규칙
+    모두 동일하게 적용). calculate_table_statistic의 citation_check와
+    같은 원칙으로, item 중 하나라도 유효한 인용이 없으면(형식이
+    비정상이어도) 전체를 None으로 거부합니다 — 입력이 정상적인 SUCCESS
+    derived 결과라면 항상 통과해야 하며, 이 조건은 조작되었거나 손상된
+    state에 대한 방어입니다.
+    """
+
+    seen: set[tuple[str, str | None, str | None]] = set()
+    references: list[dict[str, str]] = []
+    for item in items:
+        raw_references = item.get("source_references")
+        if not isinstance(raw_references, list) or not raw_references:
+            return None
+        item_references: list[dict[str, str]] = []
+        for reference in raw_references:
+            normalized = _normalize_reference(reference)
+            if normalized is None:
+                # 하나라도 무효한 reference가 섞여 있으면 이 item 전체를
+                # 신뢰할 수 없는 것으로 보고 부분 인용을 허용하지 않는다.
+                return None
+            item_references.append(normalized)
+        for normalized in item_references:
+            key = (
+                normalized["disclosure_id"],
+                normalized.get("section_id"),
+                normalized.get("evidence_id"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            references.append(normalized)
+    return references or None
 
 
 def _collect_table_units(items: list[dict[str, Any]]) -> list[str]:
@@ -1416,7 +1465,344 @@ def calculate_table_statistic(
         query=request_query,
         items=[result_item],
         result_count=1,
-        metadata={"source_result_ids": source_result_ids},
+        metadata={
+            "source_result_ids": source_result_ids,
+            "result_kind": RESULT_KIND_NUMERIC_SCALAR,
+        },
+    )
+    return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
+
+
+CombineOperation = Literal["sum", "difference", "ratio", "percent_change", "ordering"]
+OrderingDirection = Literal["ascending", "descending"]
+
+# result_kind는 derived RetrievalResult가 어떤 모양의 값을 담고 있는지
+# 나타내는 구분값입니다. combine_numeric_results는 numeric_scalar만
+# 입력으로 받아, numeric_ordering(순위 목록) 결과를 실수로 다시 더하거나
+# 나누는 것을 막습니다.
+RESULT_KIND_NUMERIC_SCALAR = "numeric_scalar"
+RESULT_KIND_NUMERIC_ORDERING = "numeric_ordering"
+
+# operation별 허용되는 targets 개수 범위. 위쪽 경계가 None이면 상한 없음.
+_COMBINE_OPERATION_INPUT_COUNTS: dict[CombineOperation, tuple[int, int | None]] = {
+    "sum": (2, None),
+    "difference": (2, 2),
+    "ratio": (2, 2),
+    "percent_change": (2, 2),
+    "ordering": (2, None),
+}
+
+
+class NumericResultTarget(BaseModel):
+    """combine_numeric_results가 참조할 numeric_scalar 결과 하나의 주소입니다.
+
+    result_id는 대상 derived RetrievalResult, item_index는 그 안에서
+    이 숫자 결과가 위치한 인덱스입니다. numeric_scalar 결과는 현재 항상
+    item을 하나만 가지므로 보통 0을 사용합니다.
+    """
+
+    result_id: str = Field(
+        ...,
+        min_length=1,
+        description="참조할 derived RetrievalResult의 result_id",
+    )
+    item_index: int = Field(
+        default=0,
+        ge=0,
+        strict=True,
+        description="RetrievalResult.items 안에서 이 숫자 결과의 위치(보통 0)",
+    )
+
+    @field_validator("result_id")
+    @classmethod
+    def validate_result_id(cls, value: str) -> str:
+        result_id = value.strip()
+        if not result_id:
+            raise ValueError("result_id는 비어 있을 수 없습니다.")
+        return result_id
+
+
+def _resolve_combine_operand(
+    target: NumericResultTarget,
+    state: AgentState,
+) -> tuple[Decimal, str | None, dict[str, Any]]:
+    """combine_numeric_results가 참조할 하나의 numeric_scalar 결과를 해석합니다.
+
+    calculate_table_statistic이나 combine_numeric_results 자신이 만든
+    result_kind="numeric_scalar"인 SUCCESS 상태의 derived RetrievalResult만
+    허용합니다. numeric_ordering(순위 목록) 결과는 단일 숫자가 아니므로
+    거부합니다. 존재하지 않거나 이 조건에 맞지 않으면 ValueError를
+    발생시켜 Retriever LLM이 다른 대상을 고르게 합니다.
+
+    반환값은 (값, 단위, 원본 item)입니다. 원본 item은 source_references를
+    다시 모으는 데 사용합니다.
+    """
+
+    results_by_id = {
+        result.result_id: result
+        for result in state.get("retrieval_results", [])
+    }
+    result = results_by_id.get(target.result_id)
+    if result is None:
+        raise ValueError(f"RetrievalResult를 찾지 못했습니다: {target.result_id}")
+    if result.source != "derived":
+        raise ValueError(
+            f"{target.result_id}는 derived 계산 결과가 아니어서 참조할 수 없습니다"
+            f"(source={result.source})."
+        )
+    if result.status != "SUCCESS":
+        raise ValueError(
+            f"{target.result_id}의 status가 SUCCESS가 아니어서 참조할 수 없습니다"
+            f"(status={result.status})."
+        )
+    if result.metadata.get("result_kind") != RESULT_KIND_NUMERIC_SCALAR:
+        raise ValueError(
+            f"{target.result_id}는 숫자 scalar 결과가 아니어서 참조할 수 없습니다"
+            f"(result_kind={result.metadata.get('result_kind')!r})."
+        )
+    if target.item_index >= len(result.items):
+        raise ValueError(
+            f"{target.result_id}에 item_index {target.item_index}가 없습니다"
+            f"(item 개수: {len(result.items)})."
+        )
+
+    item = result.items[target.item_index]
+    if not isinstance(item, dict) or item.get("type") != "record":
+        raise ValueError(
+            f"{target.result_id}의 item {target.item_index}는 계산 결과 형식이 아닙니다."
+        )
+    fields = item.get("fields")
+    if not isinstance(fields, dict):
+        raise ValueError(f"{target.result_id}에 fields가 없습니다.")
+    value_text = fields.get("value")
+    if not isinstance(value_text, str):
+        raise ValueError(f"{target.result_id}의 value가 문자열이 아닙니다.")
+    try:
+        value = Decimal(value_text)
+    except InvalidOperation as error:
+        raise ValueError(f"{target.result_id}의 value를 숫자로 해석할 수 없습니다.") from error
+
+    unit = fields.get("unit")
+    if unit is not None and not isinstance(unit, str):
+        raise ValueError(f"{target.result_id}의 unit이 문자열이 아닙니다.")
+    return value, unit, item
+
+
+@tool
+def combine_numeric_results(
+    variable_name: str,
+    operation: CombineOperation,
+    targets: list[NumericResultTarget],
+    state: Annotated[AgentState, InjectedState],
+    direction: OrderingDirection = "ascending",
+) -> dict:
+    """calculate_table_statistic 등이 만든 numeric_scalar 결과 여러 개를 조합합니다.
+
+    서로 다른 표에서 각각 계산한 숫자를 합치거나 비교할 때 사용합니다.
+    서로 다른 표를 calculate_table_statistic 하나에 직접 섞을 수 없으므로,
+    표마다 각각 계산한 뒤 이 tool로 조합하세요. LLM은 어떤 결과들을
+    어떤 연산으로 조합할지만 지정하고, 실제 산술은 이 tool이 수행합니다.
+
+    args:
+        variable_name(str): 조합 결과에 붙일 사람이 읽을 이름. 빈
+            문자열은 허용하지 않습니다.
+        operation(CombineOperation):
+            - 'sum': targets 전체를 더함(2개 이상)
+            - 'difference': 정확히 2개, targets[0] - targets[1]
+            - 'ratio': 정확히 2개, targets[0] / targets[1]
+            - 'percent_change': 정확히 2개,
+              (targets[1] - targets[0]) / targets[0] * 100.
+              기준은 targets[0](이전 값)입니다.
+            - 'ordering': targets를 값 기준으로 정렬해 순위를 매김
+              (2개 이상). 정렬 방향은 direction으로 지정합니다.
+        targets(list[NumericResultTarget]): 조합할 numeric_scalar
+            결과의 위치 목록. calculate_table_statistic 또는
+            combine_numeric_results가 만든 result_kind="numeric_scalar",
+            status="SUCCESS" 결과만 참조할 수 있습니다(numeric_ordering
+            결과는 참조 불가). difference/ratio/percent_change에서는
+            순서가 결과에 직접 영향을 주므로 정확히 지정하세요. 동일한
+            (result_id, item_index) 조합을 중복해서 넣을 수 없습니다
+            (이중 계산 방지).
+        state(AgentState): InjectedState로 주입되며 LLM에는 보이지
+            않습니다. tool 내부에서만 state["retrieval_results"]를
+            조회하는 데 사용합니다.
+        direction(OrderingDirection): operation='ordering'일 때만
+            사용하는 정렬 방향('ascending' 또는 'descending', 기본
+            'ascending'). 다른 operation에서는 무시됩니다. 값이 같은
+            대상은 입력 순서를 그대로 유지합니다(안정 정렬).
+
+    return:
+        dict: next_plan_seq와 조합 결과가 담긴 새 RetrievalResult 하나를
+            포함한 state update.
+            - sum/difference/ratio/percent_change가 성공하면
+              status="SUCCESS", metadata.result_kind="numeric_scalar"이고
+              items[0].fields에 변수명/연산/값/단위/사용한 값 개수가
+              담깁니다. 모든 operation은 입력 단위가 전부 완전히 같을
+              때만(모두 None이거나 모두 같은 문자열) 계산하며, calculate
+              _table_statistic의 셀 단위 정책과 달리 단위 없음과 명시된
+              단위를 같다고 보지 않습니다. sum·difference는 그 공통
+              단위를 그대로 사용합니다. ratio는 단위를 None으로,
+              percent_change는 "%"로 반환합니다.
+            - ordering이 성공하면 status="SUCCESS",
+              metadata.result_kind="numeric_ordering"이고
+              items[0].fields는 단일 value 대신 {"direction":...,
+              "unit":..., "ordered_results": [{"result_id":...,
+              "variable_name":..., "value":...}, ...]} 형태입니다.
+            - 모든 경우 입력 대상 전체의 source_references를
+              검증·병합한 결과가 함께 담기며, 하나라도 유효한 인용이
+              없으면 성공으로 처리하지 않습니다.
+            - 입력 단위가 서로 다르거나(비교 가능한 단위끼리만 허용),
+              0으로 나누게 되거나, 인용할 원본 정보가 없으면
+              status="INVALID_INPUT"이고 items는 빈 목록입니다.
+              metadata.failure_stage로 원인을 구분합니다.
+            - result_id가 존재하지 않거나, numeric_scalar
+              result_kind의 SUCCESS 결과가 아니거나, item_index가
+              존재하지 않거나, 계산 결과 형식이 아니거나, operation에
+              필요한 개수의 targets가 아니거나, 중복 target이 있거나,
+              variable_name이 비어 있으면 ValueError를 발생시킵니다.
+    """
+
+    if not variable_name.strip():
+        raise ValueError("variable_name은 비어 있을 수 없습니다.")
+    target_keys = [(target.result_id, target.item_index) for target in targets]
+    if len(target_keys) != len(set(target_keys)):
+        raise ValueError("targets에는 중복된 (result_id, item_index)를 사용할 수 없습니다.")
+
+    min_count, max_count = _COMBINE_OPERATION_INPUT_COUNTS[operation]
+    if len(targets) < min_count or (max_count is not None and len(targets) > max_count):
+        expected = (
+            f"정확히 {min_count}개" if min_count == max_count else f"최소 {min_count}개"
+        )
+        raise ValueError(
+            f"{operation}에는 targets가 {expected} 필요합니다"
+            f"(전달된 개수: {len(targets)})."
+        )
+
+    operands = [_resolve_combine_operand(target, state) for target in targets]
+    values = [operand[0] for operand in operands]
+    units = [operand[1] for operand in operands]
+    items = [operand[2] for operand in operands]
+    source_result_ids = [target.result_id for target in targets]
+
+    result_id, plan_id, next_plan_seq = _next_derived_ids(state)
+    request_query = json.dumps(
+        {
+            "operation": operation,
+            "direction": direction if operation == "ordering" else None,
+            "targets": [target.model_dump() for target in targets],
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+    def invalid(reason: str, failure_stage: str) -> dict:
+        result = _build_calculation_invalid_result(
+            result_id=result_id,
+            plan_id=plan_id,
+            query=request_query,
+            reason=reason,
+            failure_stage=failure_stage,
+            source_result_ids=source_result_ids,
+        )
+        return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
+
+    source_references = _merge_derived_source_references(items)
+    if not source_references:
+        return invalid("조합 결과에 연결할 원본 공시 인용 정보가 없습니다.", "citation_check")
+
+    distinct_units = set(units)
+    if len(distinct_units) > 1:
+        unit_labels = sorted(
+            "(없음)" if unit is None else unit for unit in distinct_units
+        )
+        return invalid(
+            f"입력들의 단위가 서로 달라 조합할 수 없습니다: {unit_labels}",
+            "unit_check",
+        )
+    input_unit = units[0]
+
+    if operation == "sum":
+        value = sum(values)
+        unit = input_unit
+    elif operation == "difference":
+        value = values[0] - values[1]
+        unit = input_unit
+    elif operation == "ratio":
+        if values[1] == 0:
+            return invalid("두 번째 값이 0이어서 나눌 수 없습니다.", "calculation")
+        value = values[0] / values[1]
+        unit = None
+    elif operation == "percent_change":
+        if values[0] == 0:
+            return invalid("기준값(첫 번째 값)이 0이어서 증감률을 계산할 수 없습니다.", "calculation")
+        value = (values[1] - values[0]) / values[0] * 100
+        unit = "%"
+    elif operation == "ordering":
+        ranked = sorted(
+            zip(source_result_ids, values, items),
+            key=lambda entry: entry[1],
+            reverse=(direction == "descending"),
+        )
+        fields = {
+            "variable_name": variable_name,
+            "operation": operation,
+            "direction": direction,
+            "unit": input_unit,
+            "input_count": len(values),
+            "ordered_results": [
+                {
+                    "result_id": ranked_result_id,
+                    "variable_name": (ranked_item.get("fields") or {}).get("variable_name"),
+                    "value": str(ranked_value),
+                }
+                for ranked_result_id, ranked_value, ranked_item in ranked
+            ],
+        }
+        result_item = {
+            "type": "record",
+            "fields": fields,
+            "source_references": source_references,
+        }
+        result = RetrievalResult(
+            result_id=result_id,
+            plan_id=plan_id,
+            source="derived",
+            status="SUCCESS",
+            query=request_query,
+            items=[result_item],
+            result_count=1,
+            metadata={
+                "source_result_ids": source_result_ids,
+                "result_kind": RESULT_KIND_NUMERIC_ORDERING,
+            },
+        )
+        return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
+    else:
+        raise ValueError(f"지원하지 않는 operation입니다: {operation}")
+
+    result_item = {
+        "type": "record",
+        "fields": {
+            "variable_name": variable_name,
+            "operation": operation,
+            "value": str(value),
+            "unit": unit,
+            "input_count": len(values),
+        },
+        "source_references": source_references,
+    }
+    result = RetrievalResult(
+        result_id=result_id,
+        plan_id=plan_id,
+        source="derived",
+        status="SUCCESS",
+        query=request_query,
+        items=[result_item],
+        result_count=1,
+        metadata={
+            "source_result_ids": source_result_ids,
+            "result_kind": RESULT_KIND_NUMERIC_SCALAR,
+        },
     )
     return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
 

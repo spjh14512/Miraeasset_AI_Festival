@@ -184,6 +184,7 @@ def test_sum_of_whole_table_column_succeeds():
     assert fields["value"] == "2000"
     assert fields["operation"] == "sum"
     assert fields["input_count"] == 2
+    assert result.metadata["result_kind"] == "numeric_scalar"
 
 
 def test_mean_of_whole_table_column_succeeds():
