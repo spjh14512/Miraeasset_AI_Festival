@@ -1,6 +1,8 @@
 import json
 import re
+import statistics
 from datetime import datetime
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -26,6 +28,7 @@ from neo4j import GraphDatabase
 from qdrant_client import QdrantClient, models
 
 from . import system_prompts as sp
+from .calculation import check_table_completeness, parse_numeric_cell
 from .compactor import compact_qdrant_point, point_requires_compaction
 from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
 from .retrieval_result_parser import (
@@ -1000,6 +1003,422 @@ class TableTarget(BaseModel):
         if not result_id:
             raise ValueError("result_id는 비어 있을 수 없습니다.")
         return result_id
+
+
+def _resolve_table_targets(
+    targets: list[TableTarget],
+    column: str,
+    state: AgentState,
+) -> list[dict[str, Any]]:
+    """TableTarget 목록을 실제 R_TABLE item dict 목록으로 해석합니다.
+
+    다음 중 하나라도 어긋나면 ValueError를 발생시켜 Retriever LLM이 tool
+    호출을 다시 만들게 합니다(state에 결과를 남기지 않음). 이 조건들은
+    LLM이 애초에 존재하지 않거나 사용할 수 없는 대상을 지정한
+    구조적 오류이기 때문입니다.
+
+    - result_id가 state에 없음
+    - 그 RetrievalResult의 status가 SUCCESS가 아님(finish의 SUCCESS 전용
+      선택 규칙과 동일한 원칙)
+    - item_index가 범위를 벗어남
+    - 가리킨 item이 R_TABLE이 아님
+    - 가리킨 item에 column이 없음
+
+    item 내부의 record 구조나 chunk 완전성처럼 값을 직접 들여다봐야
+    아는 문제는 여기서 검증하지 않고 check_table_completeness와
+    calculate_table_statistic의 나머지 로직이 담당합니다.
+    """
+
+    results_by_id = {
+        result.result_id: result
+        for result in state.get("retrieval_results", [])
+    }
+    resolved: list[dict[str, Any]] = []
+    for target in targets:
+        result = results_by_id.get(target.result_id)
+        if result is None:
+            raise ValueError(f"RetrievalResult를 찾지 못했습니다: {target.result_id}")
+        if result.status != "SUCCESS":
+            raise ValueError(
+                f"{target.result_id}의 status가 SUCCESS가 아니어서 참조할 수 "
+                f"없습니다(status={result.status})."
+            )
+        if target.item_index >= len(result.items):
+            raise ValueError(
+                f"{target.result_id}에 item_index {target.item_index}가 없습니다"
+                f"(item 개수: {len(result.items)})."
+            )
+        item = result.items[target.item_index]
+        if not isinstance(item, dict) or item.get("type") != "r_table":
+            raise ValueError(
+                f"{target.result_id}의 item {target.item_index}는 R_TABLE이 아닙니다."
+            )
+        columns = item.get("columns")
+        if not isinstance(columns, list) or column not in columns:
+            raise ValueError(
+                f"{target.result_id}의 item {target.item_index}에 "
+                f"'{column}' 열이 없습니다."
+            )
+        resolved.append(item)
+    return resolved
+
+
+def _next_derived_ids(state: AgentState) -> tuple[str, str, int]:
+    """계산 결과에 쓸 plan_id/result_id를 next_plan_seq에서 직접 만듭니다.
+
+    검색 계획이 아니므로 Plan.from_plan_draft()는 사용하지 않습니다.
+    """
+
+    next_plan_seq = state.get("next_plan_seq", 1)
+    plan_id = f"plan_{next_plan_seq}"
+    return f"derived:{plan_id}", plan_id, next_plan_seq
+
+
+def _normalized_id(value: Any) -> str | None:
+    """문자열이면 strip한 뒤 비어 있지 않을 때만 반환하고, 아니면 None을 반환합니다."""
+
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _extract_source_reference(item: dict[str, Any]) -> dict[str, str] | None:
+    """R_TABLE item의 metadata에서 인용용 disclosure/section/evidence id를 뽑습니다.
+
+    id는 모두 strip 후 비어 있지 않아야 유효한 것으로 인정합니다.
+    evidence_id가 있는데 section_id가 없으면(Citation의 계층 규칙 위반)
+    이 item에는 유효한 인용이 없는 것으로 처리합니다 — _extract_citations가
+    이런 조합을 조용히 버리기 때문에, 여기서 미리 걸러내지 않으면
+    source_references에는 들어있지만 실제 답변에는 인용되지 않는
+    결과가 생깁니다.
+    """
+
+    metadata = item.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    disclosure_id = _normalized_id(metadata.get("disclosure_id"))
+    if disclosure_id is None:
+        return None
+    section_id = _normalized_id(metadata.get("section_id"))
+    evidence_id = _normalized_id(metadata.get("evidence_id"))
+    if evidence_id is not None and section_id is None:
+        return None
+    reference: dict[str, str] = {"disclosure_id": disclosure_id}
+    if section_id is not None:
+        reference["section_id"] = section_id
+    if evidence_id is not None:
+        reference["evidence_id"] = evidence_id
+    return reference
+
+
+def _collect_source_references(
+    items: list[dict[str, Any]],
+) -> list[dict[str, str]] | None:
+    """모든 item에 유효한 인용 정보가 있는지 확인하고 중복 없이 모읍니다.
+
+    items 중 단 하나라도 유효한 인용을 뽑을 수 없으면 전체를 신뢰할 수
+    없는 것으로 보고 None을 반환합니다(일부 chunk만 인용이 있다고 해서
+    나머지 chunk의 값까지 인용된 것처럼 보이면 안 되기 때문입니다).
+    """
+
+    seen: set[tuple[str, str | None, str | None]] = set()
+    references: list[dict[str, str]] = []
+    for item in items:
+        reference = _extract_source_reference(item)
+        if reference is None:
+            return None
+        key = (
+            reference["disclosure_id"],
+            reference.get("section_id"),
+            reference.get("evidence_id"),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        references.append(reference)
+    return references
+
+
+def _collect_table_units(items: list[dict[str, Any]]) -> list[str]:
+    """item들의 table_metadata.units에 선언된 표 단위를 중복 없이 모읍니다.
+
+    셀 자체에 단위가 없을 때(예: 표 전체가 "단위: 백만원"이라고만 표시된
+    경우) 계산 결과에 붙일 단위를 보완하는 데 사용합니다. 후보가 여러
+    개면 이 열에 어떤 단위가 적용되는지 확정할 수 없으므로, 호출부에서
+    후보가 정확히 하나일 때만 unit으로 채택해야 합니다.
+    """
+
+    units: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        table_metadata = item.get("table_metadata")
+        if not isinstance(table_metadata, dict):
+            continue
+        declared = table_metadata.get("units")
+        if not isinstance(declared, list):
+            continue
+        for entry in declared:
+            if isinstance(entry, str) and entry and entry not in seen:
+                seen.add(entry)
+                units.append(entry)
+    return units
+
+
+_RECORD_EXTRACTION_ERROR = object()
+
+
+def _extract_cell_value(record: Any, column: str) -> str | None | object:
+    """record에서 column 값을 안전하게 꺼냅니다.
+
+    RetrievalResult.items는 검증되지 않은 dict이므로, record가 dict가
+    아니거나 values가 없거나 dict가 아니거나 column key 자체가 없거나
+    셀 값이 str/None이 아니면 예외를 던지지 않고 `_RECORD_EXTRACTION_ERROR`
+    sentinel을 반환합니다. 정상적으로 존재하는 값(문자열 또는 진짜
+    결측인 None)만 그대로 반환합니다.
+    """
+
+    if not isinstance(record, dict):
+        return _RECORD_EXTRACTION_ERROR
+    values = record.get("values")
+    if not isinstance(values, dict) or column not in values:
+        return _RECORD_EXTRACTION_ERROR
+    cell = values[column]
+    if cell is not None and not isinstance(cell, str):
+        return _RECORD_EXTRACTION_ERROR
+    return cell
+
+
+def _apply_calculation_operation(
+    operation: CalculationOperation,
+    values: list[Decimal],
+) -> tuple[Decimal | None, str | None]:
+    """지정한 연산을 values에 적용합니다.
+
+    계산에 성공하면 (결과값, None)을, 계산할 수 없으면 (None, 실패 사유)를
+    반환합니다. mode는 동률이 여러 개면 임의로 하나를 고르지 않고
+    계산 불가로 처리합니다.
+    """
+
+    if operation == "sum":
+        return sum(values), None
+    if operation == "mean":
+        return sum(values) / len(values), None
+    if operation == "median":
+        return statistics.median(values), None
+    if operation == "max":
+        return max(values), None
+    if operation == "min":
+        return min(values), None
+    if operation == "mode":
+        modes = statistics.multimode(values)
+        if len(modes) > 1:
+            return None, "최빈값이 여러 개로 동률입니다."
+        return modes[0], None
+    raise ValueError(f"지원하지 않는 operation입니다: {operation}")
+
+
+def _build_calculation_invalid_result(
+    *,
+    result_id: str,
+    plan_id: str,
+    query: str,
+    reason: str,
+    failure_stage: str,
+    source_result_ids: list[str],
+) -> RetrievalResult:
+    return RetrievalResult(
+        result_id=result_id,
+        plan_id=plan_id,
+        source="derived",
+        status="INVALID_INPUT",
+        query=query,
+        items=[],
+        result_count=0,
+        metadata={
+            "failure_stage": failure_stage,
+            "reason": reason,
+            "source_result_ids": source_result_ids,
+        },
+    )
+
+
+@tool
+def calculate_table_statistic(
+    variable_name: str,
+    operation: CalculationOperation,
+    column: str,
+    targets: list[TableTarget],
+    state: Annotated[AgentState, InjectedState],
+) -> dict:
+    """검색된 R_TABLE의 한 열에 통계 연산을 적용하고 결과를 새 RetrievalResult로 state에 저장합니다.
+
+    R_TABLE에만 사용할 수 있습니다. LLM은 숫자를 직접 계산하거나
+    전달하지 않습니다 — 어떤 열에 어떤 연산을 적용할지만 지정하면, 실제
+    값 추출과 연산은 이 tool이 state에서 직접 수행합니다.
+
+    args:
+        variable_name(str): 계산 결과에 붙일 사람이 읽을 이름.
+            예: "삼성전자 2024년 매출액 합계". 빈 문자열은 허용하지 않습니다.
+        operation(CalculationOperation): 'sum', 'mean', 'median', 'max',
+            'min', 'mode' 중 하나
+        column(str): 집계할 R_TABLE의 열 이름. 대상 표의 columns에
+            정확히 존재해야 합니다. 빈 문자열은 허용하지 않습니다.
+        targets(list[TableTarget]): 집계 대상 R_TABLE의 위치 목록(최소
+            1개). result_id와 item_index로 정확히 존재하는 R_TABLE
+            item을 가리켜야 합니다. 하나의 표가 여러 chunk로 나뉘어
+            서로 다른 result_id에 저장된 경우에만 여러 개를 나열하세요.
+            서로 다른 표(예: 서로 다른 기업·기간의 표)를 섞지 마세요 —
+            표마다 각각 calculate_table_statistic을 호출한 뒤 비교
+            전용 tool로 비교하세요.
+        state(AgentState): InjectedState로 주입되며 LLM에는 보이지
+            않습니다. tool 내부에서만 state["retrieval_results"]를
+            조회하는 데 사용합니다.
+
+    return:
+        dict: next_plan_seq와 계산 결과가 담긴 새 RetrievalResult 하나를
+            포함한 state update.
+            - 계산에 성공하면 status="SUCCESS"이고 items에
+              {"type": "record", "fields": {변수명/연산/값/단위/사용한
+              값 개수}, "source_references": [원본 인용 정보]}가
+              담깁니다. 셀 자체에 단위가 없으면 표 전체 단위(정확히
+              하나로 확정될 때만)로 보완합니다. 대상 item 중 하나라도
+              유효한 인용 정보(disclosure_id, 그리고 evidence_id가
+              있다면 그에 대응하는 section_id)가 없으면 성공으로
+              처리하지 않습니다.
+            - 표가 불완전하거나(chunk 누락, 일부 record 제외 등),
+              값을 계산할 수 없거나(비정상 값 포함, 단위 혼재, 표
+              단위 후보가 여러 개라 확정할 수 없음, 최빈값 동률, 모든
+              값이 결측 등), record 구조 자체가 잘못됐거나, 인용할
+              원본 정보가 없으면 status="INVALID_INPUT"이고 items는
+              빈 목록입니다. metadata.failure_stage로 원인 단계
+              (completeness_check/citation_check/record_shape/
+              numeric_parsing/unit_check/calculation)를 구분합니다.
+            - result_id가 존재하지 않거나, 그 RetrievalResult의
+              status가 SUCCESS가 아니거나, item_index가 존재하지
+              않거나, 가리킨 item이 R_TABLE이 아니거나, column이 없거나,
+              targets가 비어 있거나, variable_name/column이 비어
+              있으면 ValueError를 발생시킵니다(state에 결과를 남기지
+              않고 tool 호출 자체를 다시 만들어야 합니다).
+    """
+
+    if not targets:
+        raise ValueError("targets에는 최소 하나의 TableTarget이 필요합니다.")
+    if not variable_name.strip():
+        raise ValueError("variable_name은 비어 있을 수 없습니다.")
+    if not column.strip():
+        raise ValueError("column은 비어 있을 수 없습니다.")
+
+    resolved_items = _resolve_table_targets(targets, column, state)
+    result_id, plan_id, next_plan_seq = _next_derived_ids(state)
+    source_result_ids = [target.result_id for target in targets]
+    request_query = json.dumps(
+        {
+            "operation": operation,
+            "column": column,
+            "targets": [target.model_dump() for target in targets],
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+    def invalid(reason: str, failure_stage: str) -> dict:
+        result = _build_calculation_invalid_result(
+            result_id=result_id,
+            plan_id=plan_id,
+            query=request_query,
+            reason=reason,
+            failure_stage=failure_stage,
+            source_result_ids=source_result_ids,
+        )
+        return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
+
+    completeness = check_table_completeness(resolved_items, column)
+    if not completeness.is_complete:
+        return invalid(
+            completeness.reason or "표가 완전하지 않습니다.",
+            "completeness_check",
+        )
+
+    source_references = _collect_source_references(resolved_items)
+    if not source_references:
+        return invalid(
+            "계산 결과에 연결할 원본 공시 인용 정보가 없습니다.",
+            "citation_check",
+        )
+
+    parsed_values: list[Decimal] = []
+    units: set[str] = set()
+    for item in resolved_items:
+        for record in item["records"]:
+            cell = _extract_cell_value(record, column)
+            if cell is _RECORD_EXTRACTION_ERROR:
+                return invalid(
+                    f"'{column}' 값을 가진 record 구조가 올바르지 않습니다.",
+                    "record_shape",
+                )
+            parsed = parse_numeric_cell(cell)
+            if parsed.is_missing:
+                continue
+            if parsed.is_invalid:
+                return invalid(
+                    f"'{column}' 열에 숫자로 해석할 수 없는 값이 있습니다: {parsed.raw!r}",
+                    "numeric_parsing",
+                )
+            parsed_values.append(parsed.value)
+            if parsed.unit is not None:
+                units.add(parsed.unit)
+
+    if len(units) > 1:
+        return invalid(
+            f"'{column}' 열에 서로 다른 단위가 섞여 있습니다: {sorted(units)}",
+            "unit_check",
+        )
+
+    table_units = _collect_table_units(resolved_items)
+    unit = next(iter(units)) if units else None
+    if unit is None:
+        if len(table_units) > 1:
+            return invalid(
+                f"'{column}' 열의 단위를 표에서 하나로 확정할 수 없습니다: {table_units}",
+                "unit_check",
+            )
+        if len(table_units) == 1:
+            unit = table_units[0]
+
+    if not parsed_values:
+        return invalid(
+            f"'{column}' 열에 계산할 수 있는 값이 없습니다(모든 값이 결측).",
+            "numeric_parsing",
+        )
+
+    value, operation_error = _apply_calculation_operation(operation, parsed_values)
+    if operation_error is not None:
+        return invalid(operation_error, "calculation")
+
+    fields: dict[str, Any] = {
+        "variable_name": variable_name,
+        "operation": operation,
+        "value": str(value),
+        "unit": unit,
+        "input_count": len(parsed_values),
+    }
+    result_item = {
+        "type": "record",
+        "fields": fields,
+        "source_references": source_references,
+    }
+    result = RetrievalResult(
+        result_id=result_id,
+        plan_id=plan_id,
+        source="derived",
+        status="SUCCESS",
+        query=request_query,
+        items=[result_item],
+        result_count=1,
+        metadata={"source_result_ids": source_result_ids},
+    )
+    return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
 
 
 # retriever llm에 현재 state를 전달하기 위해 HumanMessage를 생성하는 함수
