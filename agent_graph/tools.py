@@ -968,7 +968,39 @@ def finish(
         "retrieval_finish_reason": reason,
         "selected_result_ids": selected_result_ids
     }
-    
+
+
+CalculationOperation = Literal["sum", "mean", "median", "max", "min", "mode"]
+
+
+class TableTarget(BaseModel):
+    """calculate_table_statistic이 참조할 R_TABLE item 하나의 주소입니다.
+
+    result_id는 대상 RetrievalResult, item_index는 그 RetrievalResult.items
+    안에서 이 R_TABLE이 위치한 인덱스입니다. 하나의 표가 여러 chunk로 나뉘어
+    서로 다른 result_id에 저장된 경우, 이 표를 여러 개 나열해 함께 참조합니다.
+    """
+
+    result_id: str = Field(
+        ...,
+        min_length=1,
+        description="참조할 RetrievalResult의 result_id",
+    )
+    item_index: int = Field(
+        ...,
+        ge=0,
+        strict=True,
+        description="RetrievalResult.items 안에서 이 R_TABLE의 위치",
+    )
+
+    @field_validator("result_id")
+    @classmethod
+    def validate_result_id(cls, value: str) -> str:
+        result_id = value.strip()
+        if not result_id:
+            raise ValueError("result_id는 비어 있을 수 없습니다.")
+        return result_id
+
 
 # retriever llm에 현재 state를 전달하기 위해 HumanMessage를 생성하는 함수
 def build_retriever_human_message(state: AgentState) -> HumanMessage:
