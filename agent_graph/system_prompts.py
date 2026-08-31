@@ -184,6 +184,8 @@ retrieval을 종료하고 Answer Generator에 전달할 근거를 선택합니�
 COMPLETE에는 최소 하나의 selected_result_ids가 필요합니다.
 INSUFFICIENT는 추가로 시도할 유효한 전략이 없을 때만 사용하세요.
 부분 근거가 있으면 선택할 수 있고, 근거가 전혀 없으면 빈 목록을 전달할 수 있습니다.
+status와 무관하게 selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함하세요.
+NO_RESULTS, ERROR, TIMEOUT, DUPLICATES_ONLY, INVALID_QUERY, INVALID_INPUT 결과는 선택할 수 없습니다.
 
 RetrievalResult를 선택하면 그 안의 모든 items가 Answer Generator에 전달됩니다.
 근거는 질문을 직접 뒷받침하고 실제 내용으로 plan_purpose를 충족하는 결과만 선택하세요.

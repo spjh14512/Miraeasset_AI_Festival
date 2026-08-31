@@ -916,17 +916,28 @@ def _validate_finish_selection(
     if len(selected_result_ids) != len(set(selected_result_ids)):
         raise ValueError("selected_result_ids에는 중복 ID를 사용할 수 없습니다.")
 
-    result_ids = {
-        result.result_id
+    results_by_id = {
+        result.result_id: result
         for result in state.get("retrieval_results", [])
     }
     missing = [
         result_id
         for result_id in selected_result_ids
-        if result_id not in result_ids
+        if result_id not in results_by_id
     ]
     if missing:
         raise ValueError(f"RetrievalResult를 찾지 못했습니다: {missing}")
+
+    not_success = [
+        result_id
+        for result_id in selected_result_ids
+        if results_by_id[result_id].status != "SUCCESS"
+    ]
+    if not_success:
+        raise ValueError(
+            "SUCCESS 상태가 아닌 RetrievalResult는 선택할 수 없습니다: "
+            f"{not_success}"
+        )
 
 
 @tool
@@ -943,7 +954,8 @@ def finish(
     args:
         status(FinishStatus): 'COMPLETE' 또는 'INSUFFICIENT'
         reason(str): status를 그렇게 판단한 이유를 설명하는 간략한 한국어 문장. INSUFFICIENT라면 추가로 유효한 검색 전략이 없는 이유를 설명하며, 추가 검색이 필요하다고 작성하지 않습니다.
-        selected_result_ids(list[str]): Answer Generator가 사용할 RetrievalResult ID 목록
+        selected_result_ids(list[str]): Answer Generator가 사용할 RetrievalResult ID 목록.
+            status와 무관하게 SUCCESS 상태의 RetrievalResult만 선택할 수 있습니다.
 
     return:
         dict: retrieval_status와 검증된 selected_result_ids를 포함한 state update
