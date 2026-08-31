@@ -115,6 +115,89 @@ def test_sum_of_three_results_succeeds():
     assert update["retrieval_results"][0].items[0]["fields"]["value"] == "6"
 
 
+def test_mean_of_two_results_succeeds():
+    # 기초/기말 평균 같은 지표를 겨냥한 케이스.
+    state = _state(
+        _derived_result("derived:plan_1", value="100"),
+        _derived_result("derived:plan_2", value="200"),
+    )
+
+    update = _invoke(
+        variable_name="기초기말평균",
+        operation="mean",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    assert result.metadata["result_kind"] == "numeric_scalar"
+    assert Decimal(result.items[0]["fields"]["value"]) == Decimal("150")
+
+
+def test_mean_of_three_results_succeeds():
+    state = _state(
+        _derived_result("derived:plan_1", value="1"),
+        _derived_result("derived:plan_2", value="2"),
+        _derived_result("derived:plan_3", value="3"),
+    )
+
+    update = _invoke(
+        variable_name="평균",
+        operation="mean",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2"), _target("derived:plan_3")],
+        state=state,
+    )
+
+    assert Decimal(update["retrieval_results"][0].items[0]["fields"]["value"]) == Decimal("2")
+
+
+def test_mean_requires_at_least_two_results():
+    state = _state(_derived_result("derived:plan_1", value="100"))
+
+    with pytest.raises(ValueError, match="mean"):
+        _invoke(
+            variable_name="평균",
+            operation="mean",
+            targets=[_target("derived:plan_1")],
+            state=state,
+        )
+
+
+def test_mean_uses_common_unit():
+    state = _state(
+        _derived_result("derived:plan_1", value="100", unit="백만원"),
+        _derived_result("derived:plan_2", value="200", unit="백만원"),
+    )
+
+    update = _invoke(
+        variable_name="평균",
+        operation="mean",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        state=state,
+    )
+
+    assert update["retrieval_results"][0].items[0]["fields"]["unit"] == "백만원"
+
+
+def test_mean_rejects_mismatched_units():
+    state = _state(
+        _derived_result("derived:plan_1", value="100", unit="백만원"),
+        _derived_result("derived:plan_2", value="200", unit="주"),
+    )
+
+    update = _invoke(
+        variable_name="평균",
+        operation="mean",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "unit_check"
+
+
 def test_difference_succeeds_with_correct_order():
     state = _state(
         _derived_result("derived:plan_1", value="500"),
@@ -147,6 +230,85 @@ def test_ratio_succeeds():
     fields = update["retrieval_results"][0].items[0]["fields"]
     assert fields["value"] == "25"
     assert fields["unit"] is None
+
+
+def test_percent_ratio_succeeds():
+    # ROA = 당기순이익 / 자산총계 * 100 같은 케이스를 겨냥함.
+    state = _state(
+        _derived_result("derived:plan_1", value="10"),
+        _derived_result("derived:plan_2", value="100"),
+    )
+
+    update = _invoke(
+        variable_name="ROA",
+        operation="percent_ratio",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        state=state,
+    )
+
+    fields = update["retrieval_results"][0].items[0]["fields"]
+    assert Decimal(fields["value"]) == Decimal("10")
+    assert fields["unit"] == "%"
+
+
+def test_percent_ratio_by_zero_makes_invalid_input():
+    state = _state(
+        _derived_result("derived:plan_1", value="10"),
+        _derived_result("derived:plan_2", value="0"),
+    )
+
+    update = _invoke(
+        variable_name="ROA",
+        operation="percent_ratio",
+        targets=[_target("derived:plan_1"), _target("derived:plan_2")],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "calculation"
+
+
+def test_percent_ratio_rejects_three_targets():
+    state = _state(
+        _derived_result("derived:plan_1", value="10"),
+        _derived_result("derived:plan_2", value="100"),
+        _derived_result("derived:plan_3", value="1"),
+    )
+
+    with pytest.raises(ValueError, match="percent_ratio"):
+        _invoke(
+            variable_name="ROA",
+            operation="percent_ratio",
+            targets=[_target("derived:plan_1"), _target("derived:plan_2"), _target("derived:plan_3")],
+            state=state,
+        )
+
+
+def test_percent_ratio_differs_from_ratio_and_percent_change():
+    # 같은 두 값(10, 100)에 대해 세 연산이 서로 다른 값을 내야 한다
+    # (percent_ratio를 ratio나 percent_change와 혼동해서 구현하지
+    # 않았는지 확인).
+    state = _state(
+        _derived_result("derived:plan_1", value="10"),
+        _derived_result("derived:plan_2", value="100"),
+    )
+    targets = [_target("derived:plan_1"), _target("derived:plan_2")]
+
+    ratio_value = Decimal(_invoke(
+        variable_name="v", operation="ratio", targets=targets, state=state,
+    )["retrieval_results"][0].items[0]["fields"]["value"])
+    percent_ratio_value = Decimal(_invoke(
+        variable_name="v", operation="percent_ratio", targets=targets, state=state,
+    )["retrieval_results"][0].items[0]["fields"]["value"])
+    percent_change_value = Decimal(_invoke(
+        variable_name="v", operation="percent_change", targets=targets, state=state,
+    )["retrieval_results"][0].items[0]["fields"]["value"])
+
+    assert ratio_value == Decimal("0.1")
+    assert percent_ratio_value == Decimal("10")
+    assert percent_change_value == Decimal("900")
+    assert len({ratio_value, percent_ratio_value, percent_change_value}) == 3
 
 
 def test_ratio_by_zero_makes_invalid_input():

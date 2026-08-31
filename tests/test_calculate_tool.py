@@ -6,7 +6,12 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from agent_graph.state import RetrievalResult
-from agent_graph.tools import CalculationOperation, TableTarget, calculate_table_statistic
+from agent_graph.tools import (
+    CalculationOperation,
+    TableRowSelector,
+    TableTarget,
+    calculate_table_statistic,
+)
 
 
 def test_table_target_accepts_valid_reference():
@@ -704,3 +709,350 @@ def test_next_plan_seq_uses_state_counter_not_plan_from_plan_draft():
     assert result.plan_id == "plan_7"
     assert result.result_id == "derived:plan_7"
     assert update["next_plan_seq"] == 8
+
+
+# --- TableRowSelector ---------------------------------------------------
+
+
+def test_table_row_selector_accepts_valid_input():
+    selector = TableRowSelector(label_column="구분", labels=["유동부채"])
+
+    assert selector.label_column == "구분"
+    assert selector.labels == ["유동부채"]
+
+
+def test_table_row_selector_strips_label_column_and_labels():
+    selector = TableRowSelector(label_column="  구분  ", labels=["  유동부채  "])
+
+    assert selector.label_column == "구분"
+    assert selector.labels == ["유동부채"]
+
+
+def test_table_row_selector_rejects_blank_label_column():
+    with pytest.raises(ValidationError):
+        TableRowSelector(label_column="   ", labels=["유동부채"])
+
+
+def test_table_row_selector_rejects_empty_labels_list():
+    with pytest.raises(ValidationError):
+        TableRowSelector(label_column="구분", labels=[])
+
+
+def test_table_row_selector_rejects_blank_label():
+    with pytest.raises(ValidationError):
+        TableRowSelector(label_column="구분", labels=["유동부채", "   "])
+
+
+def test_table_row_selector_rejects_duplicate_labels():
+    with pytest.raises(ValidationError):
+        TableRowSelector(label_column="구분", labels=["유동부채", "유동부채"])
+
+
+# --- calculate_table_statistic + row_selector 통합 -----------------------
+
+
+def _financial_statement_item(rows: list[tuple[str, str]], **kwargs: Any) -> dict[str, Any]:
+    """(계정과목, 금액) 쌍 목록으로 재무제표 형태의 R_TABLE item을 만듭니다."""
+
+    records = [
+        {"record_index": index, "values": {"구분": label, "금액": amount}}
+        for index, (label, amount) in enumerate(rows)
+    ]
+    return _r_table_item(values=[amount for _, amount in rows], records=records, **kwargs)
+
+
+def test_row_selector_picks_single_matching_row():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "9999"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    assert result.items[0]["fields"]["value"] == "100"
+
+
+def test_row_selector_does_not_partially_match_similar_label():
+    # "유동부채"는 "비유동부채"의 부분 문자열이지만 정확히 일치해야만
+    # 매치되므로, "비유동부채" 행은 절대 섞이면 안 된다.
+    item = _financial_statement_item([
+        ("비유동부채", "9999"),
+        ("유동부채", "100"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    assert update["retrieval_results"][0].items[0]["fields"]["value"] == "100"
+
+
+def test_row_selector_with_multiple_labels_sums_each_matched_row():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "50"),
+        ("자본금", "9999"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="총부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채", "비유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    assert result.items[0]["fields"]["value"] == "150"
+    assert result.items[0]["fields"]["input_count"] == 2
+
+
+def test_row_selector_missing_label_makes_invalid_input():
+    item = _financial_statement_item([("자본금", "9999")])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "row_selection"
+    assert result.items == []
+
+
+def test_row_selector_duplicate_matches_make_invalid_input_not_auto_sum():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("유동부채", "200"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "row_selection"
+
+
+def test_row_selector_with_missing_label_column_raises_value_error():
+    item = _financial_statement_item([("유동부채", "100")])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    with pytest.raises(ValueError, match="label_column"):
+        _invoke(
+            variable_name="유동부채",
+            operation="sum",
+            column="금액",
+            targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+            row_selector={"label_column": "존재하지않는열", "labels": ["유동부채"]},
+            state=state,
+        )
+
+
+def test_row_selector_none_keeps_backward_compatible_full_column_sum():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "200"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="부채합계",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    assert update["retrieval_results"][0].items[0]["fields"]["value"] == "300"
+
+
+def test_row_selector_completeness_still_checked_before_row_selection():
+    # chunk_count=2인데 chunk 하나만 있으면, row_selector가 있어도
+    # 완전성 검증이 먼저 실패해야 한다(라벨이 이 chunk에 없어서
+    # row_selection으로 잘못 보고되면 안 됨).
+    item = _financial_statement_item(
+        [("유동부채", "100")],
+        chunk=("table-1", 0, 2, 0, 0),
+    )
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "completeness_check"
+
+
+def test_row_selector_fails_when_another_record_has_unreadable_label():
+    # 매치 자체는 유동부채 한 행뿐이지만, 다른 행의 label_column 값이
+    # 아예 없어서 "정확히 한 행과 일치"를 보장할 수 없다 — 조용히
+    # 건너뛰지 않고 계산을 중단해야 한다.
+    item = _r_table_item(
+        values=["100", "200"],
+        records=[
+            {"record_index": 0, "values": {"구분": "유동부채", "금액": "100"}},
+            {"record_index": 1, "values": {"금액": "200"}},
+        ],
+    )
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "row_selection"
+    assert result.items == []
+
+
+def test_row_selector_fails_when_another_record_has_blank_label():
+    item = _r_table_item(
+        values=["100", "200"],
+        records=[
+            {"record_index": 0, "values": {"구분": "유동부채", "금액": "100"}},
+            {"record_index": 1, "values": {"구분": "   ", "금액": "200"}},
+        ],
+    )
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="유동부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "row_selection"
+
+
+def test_row_selector_rejects_selected_row_with_missing_value():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "-"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="총부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채", "비유동부채"]},
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_INPUT"
+    assert result.metadata["failure_stage"] == "numeric_parsing"
+    assert result.items == []
+
+
+def test_row_selector_without_selector_still_skips_missing_values():
+    # row_selector가 없는 기존 전체 열 집계 모드에서는 결측 제외
+    # 정책을 그대로 유지해야 한다(이번 수정으로 회귀하면 안 됨).
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "-"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="합계",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    result = update["retrieval_results"][0]
+    assert result.status == "SUCCESS"
+    assert result.items[0]["fields"]["value"] == "100"
+    assert result.items[0]["fields"]["input_count"] == 1
+
+
+def test_row_selector_success_records_which_rows_were_used():
+    item = _financial_statement_item([
+        ("유동부채", "100"),
+        ("비유동부채", "200"),
+    ])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="총부채",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        row_selector={"label_column": "구분", "labels": ["유동부채", "비유동부채"]},
+        state=state,
+    )
+
+    fields = update["retrieval_results"][0].items[0]["fields"]
+    assert fields["row_selection"] == {
+        "label_column": "구분",
+        "labels": ["유동부채", "비유동부채"],
+    }
+
+
+def test_row_selector_absent_omits_row_selection_field():
+    item = _financial_statement_item([("유동부채", "100")])
+    state = _state(_retrieval_result("retrieval:plan_1", [item]))
+
+    update = _invoke(
+        variable_name="합계",
+        operation="sum",
+        column="금액",
+        targets=[{"result_id": "retrieval:plan_1", "item_index": 0}],
+        state=state,
+    )
+
+    assert "row_selection" not in update["retrieval_results"][0].items[0]["fields"]

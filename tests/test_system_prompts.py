@@ -51,7 +51,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "result_id를 dependencies에 넣은 Qdrant Plan" in prompt
     assert "selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함" in prompt
     assert "INVALID_INPUT 결과는 선택할 수 없습니다" in prompt
-    assert "calculate_table_statistic(variable_name, operation, column, targets)" in prompt
+    assert "calculate_table_statistic(variable_name, operation, column, targets, row_selector)" in prompt
     assert "combine_numeric_results(variable_name, operation, targets, direction)" in prompt
     assert "숫자 계산은 암산하지 말고" in prompt
     assert "하나의 호출에 섞지 마세요" in prompt
@@ -64,6 +64,14 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "targets에 중복해서 넣을 수 없습니다" in prompt
     assert "나누는 값이 0이거나" in prompt
     assert "ordering 결과(numeric_ordering)는 대상으로 쓸 수 없습니다" in prompt
+    assert "operation=mean: targets 전체의 평균(2개 이상)" in prompt
+    assert "operation=percent_ratio: 정확히 2개, targets[0] / targets[1] * 100" in prompt
+    assert "percent_ratio와 다릅니다" in prompt
+    assert "numeric_scalar 결과(sum/mean/difference/ratio/percent_ratio/percent_change)" in prompt
+    assert "row_selector={label_column, labels}" in prompt
+    assert "부분 일치는 하지 않습니다" in prompt
+    assert "이미 표에 소계·합계 행이 있으면" in prompt
+    assert "row_selector의 label이 표에서 하나도 없거나 여러 행과 일치하거나" in prompt
 
 
 def test_answer_generator_prompt_matches_compacted_qdrant_output():

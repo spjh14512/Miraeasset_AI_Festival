@@ -1005,10 +1005,56 @@ class TableTarget(BaseModel):
         return result_id
 
 
+class TableRowSelector(BaseModel):
+    """calculate_table_statistic이 표 전체가 아니라 특정 계정과목(행)만 계산하게 하는 선택자입니다.
+
+    지정하지 않으면(기본값 None) 대상 표의 모든 행을 계산 대상으로
+    삼습니다(기존 동작과 동일). 지정하면 label_column 열의 값이 공백만
+    정규화한 뒤 정확히 일치하는 행만 골라 계산합니다. 부분 일치는
+    지원하지 않습니다 — "유동부채"로 찾으면 그 글자를 포함할 뿐인
+    "비유동부채" 같은 행은 매치되지 않습니다. labels를 여러 개 지정하면
+    (예: ["유동부채", "비유동부채"]) 각각 정확히 한 행과 매치되어야 하며,
+    그 값들에 operation(sum 등)을 적용합니다.
+    """
+
+    label_column: str = Field(
+        ...,
+        min_length=1,
+        description="행을 식별하는 라벨 열 이름(예: '구분')",
+    )
+    labels: list[str] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "선택할 라벨 값 목록. 각 라벨은 대상 표 전체에서 정확히 "
+            "하나의 행과만 일치해야 합니다."
+        ),
+    )
+
+    @field_validator("label_column")
+    @classmethod
+    def validate_label_column(cls, value: str) -> str:
+        label_column = value.strip()
+        if not label_column:
+            raise ValueError("label_column은 비어 있을 수 없습니다.")
+        return label_column
+
+    @field_validator("labels")
+    @classmethod
+    def validate_labels(cls, value: list[str]) -> list[str]:
+        normalized = [label.strip() for label in value]
+        if any(not label for label in normalized):
+            raise ValueError("labels에는 빈 문자열을 사용할 수 없습니다.")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("labels에는 중복 값을 사용할 수 없습니다.")
+        return normalized
+
+
 def _resolve_table_targets(
     targets: list[TableTarget],
     column: str,
     state: AgentState,
+    row_selector: TableRowSelector | None = None,
 ) -> list[dict[str, Any]]:
     """TableTarget 목록을 실제 R_TABLE item dict 목록으로 해석합니다.
 
@@ -1023,10 +1069,13 @@ def _resolve_table_targets(
     - item_index가 범위를 벗어남
     - 가리킨 item이 R_TABLE이 아님
     - 가리킨 item에 column이 없음
+    - row_selector가 주어졌는데 가리킨 item에 label_column이 없음
 
-    item 내부의 record 구조나 chunk 완전성처럼 값을 직접 들여다봐야
-    아는 문제는 여기서 검증하지 않고 check_table_completeness와
-    calculate_table_statistic의 나머지 로직이 담당합니다.
+    column/label_column의 "존재 여부"는 item마다 즉시 확인할 수 있는
+    구조적 성질이라 여기서 검증합니다. 반면 특정 label이 실제로 몇 개의
+    행과 일치하는지는 chunk가 전부 모여야 결론 낼 수 있으므로(다른 chunk에
+    있을 수 있음) 여기서 검증하지 않고, check_table_completeness로 완전성을
+    확인한 뒤 calculate_table_statistic 본문에서 처리합니다.
     """
 
     results_by_id = {
@@ -1058,6 +1107,11 @@ def _resolve_table_targets(
             raise ValueError(
                 f"{target.result_id}의 item {target.item_index}에 "
                 f"'{column}' 열이 없습니다."
+            )
+        if row_selector is not None and row_selector.label_column not in columns:
+            raise ValueError(
+                f"{target.result_id}의 item {target.item_index}에 "
+                f"label_column '{row_selector.label_column}'이 없습니다."
             )
         resolved.append(item)
     return resolved
@@ -1297,6 +1351,7 @@ def _validate_calculate_call(
     column: str,
     targets: list[TableTarget],
     state: AgentState,
+    row_selector: TableRowSelector | None = None,
 ) -> list[dict[str, Any]]:
     """calculate_table_statistic의 구조적 오류를 검증하고 해석된 R_TABLE item들을 반환합니다.
 
@@ -1313,7 +1368,65 @@ def _validate_calculate_call(
         raise ValueError("variable_name은 비어 있을 수 없습니다.")
     if not column.strip():
         raise ValueError("column은 비어 있을 수 없습니다.")
-    return _resolve_table_targets(targets, column, state)
+    return _resolve_table_targets(targets, column, state, row_selector)
+
+
+def _select_labeled_records(
+    resolved_items: list[dict[str, Any]],
+    row_selector: TableRowSelector,
+) -> tuple[list[dict[str, Any]] | None, str | None]:
+    """resolved_items 전체에서 row_selector.labels와 정확히 일치하는 record를 하나씩 찾습니다.
+
+    각 label은 label_column 값을 공백만 정규화한 뒤(strip) 정확히
+    비교합니다. 부분 일치는 하지 않습니다. 반환값은
+    (선택된 record 목록, 실패 사유)입니다. label이 하나도 매치되지
+    않거나 여러 record와 매치되면 자동으로 무시하거나 합치지 않고
+    (None, 사유)를 반환합니다 — chunk가 전부 모인 뒤에만 호출되므로,
+    여기서 매치가 없다는 것은 그 label이 이 표에 정말 없다는 뜻입니다.
+
+    label_column 값을 읽을 수 없는(record가 dict가 아니거나 값이 없거나
+    문자열이 아니거나 공백뿐인) record가 하나라도 있으면 즉시 실패로
+    처리합니다. 그런 record를 조용히 건너뛰면, 그 record가 사실은
+    요청한 label과 같은 행이었는지 판별할 수 없어 "정확히 한 행과
+    일치"한다는 보장이 깨지기 때문입니다.
+
+    입력 예시:
+        resolved_items=[{...columns:["구분","당기금액"], records:[
+            {"record_index":0,"values":{"구분":"유동부채","당기금액":"100"}},
+            {"record_index":1,"values":{"구분":"비유동부채","당기금액":"200"}},
+        ]}]
+        row_selector=TableRowSelector(label_column="구분", labels=["유동부채"])
+
+    출력 예시:
+        ([{"record_index":0,"values":{"구분":"유동부채","당기금액":"100"}}], None)
+    """
+
+    matches: dict[str, list[dict[str, Any]]] = {label: [] for label in row_selector.labels}
+    for item in resolved_items:
+        for record in item.get("records", []):
+            cell = _extract_cell_value(record, row_selector.label_column)
+            if not isinstance(cell, str) or not cell.strip():
+                return None, (
+                    f"label_column '{row_selector.label_column}' 값을 읽을 수 "
+                    "없는 행이 있어 라벨을 안전하게 선택할 수 없습니다."
+                )
+            normalized = cell.strip()
+            if normalized in matches:
+                matches[normalized].append(record)
+
+    missing = [label for label, records in matches.items() if not records]
+    if missing:
+        return None, (
+            f"label_column '{row_selector.label_column}'에서 다음 label을 "
+            f"찾지 못했습니다: {missing}"
+        )
+    duplicated = [label for label, records in matches.items() if len(records) > 1]
+    if duplicated:
+        return None, (
+            f"label_column '{row_selector.label_column}'에서 다음 label이 "
+            f"여러 행과 일치해 자동으로 합산하지 않습니다: {duplicated}"
+        )
+    return [matches[label][0] for label in row_selector.labels], None
 
 
 @tool
@@ -1323,6 +1436,7 @@ def calculate_table_statistic(
     column: str,
     targets: list[TableTarget],
     state: Annotated[AgentState, InjectedState],
+    row_selector: TableRowSelector | None = None,
 ) -> dict:
     """검색된 R_TABLE의 한 열에 통계 연산을 적용하고 결과를 새 RetrievalResult로 state에 저장합니다.
 
@@ -1347,35 +1461,59 @@ def calculate_table_statistic(
         state(AgentState): InjectedState로 주입되며 LLM에는 보이지
             않습니다. tool 내부에서만 state["retrieval_results"]를
             조회하는 데 사용합니다.
+        row_selector(TableRowSelector | None): 지정하면 표 전체가 아니라
+            특정 계정과목(행)만 계산 대상으로 삼습니다. label_column(예:
+            "구분") 열의 값이 공백만 정규화한 뒤 정확히 일치하는 행만
+            골라 그 값들에 operation을 적용합니다. 부분 일치는 하지
+            않습니다("유동부채"로 찾아도 "비유동부채"는 매치되지
+            않습니다). labels를 여러 개 지정하면(예: 총부채를 구하려고
+            ["유동부채", "비유동부채"]) 각각 정확히 한 행과 매치되어야
+            합니다. label_column 값을 읽을 수 없는 행이 하나라도 있으면
+            "정확히 한 행과 일치"를 보장할 수 없으므로 계산을 중단합니다.
+            선택된 행 중 하나라도 값이 결측이면(전체 열 집계와 달리)
+            조용히 제외하지 않고 계산을 중단합니다 — 사용자가 명시한
+            행을 빠뜨리면 안 되기 때문입니다. 생략하면(기본값 None)
+            기존처럼 표의 모든 행을 계산 대상으로 삼고, 결측 행은
+            제외한 채 계산합니다.
 
     return:
         dict: next_plan_seq와 계산 결과가 담긴 새 RetrievalResult 하나를
             포함한 state update.
             - 계산에 성공하면 status="SUCCESS"이고 items에
               {"type": "record", "fields": {변수명/연산/값/단위/사용한
-              값 개수}, "source_references": [원본 인용 정보]}가
+              값 개수, row_selector 사용 시 row_selection:{label_column,
+              labels}}, "source_references": [원본 인용 정보]}가
               담깁니다. 셀 자체에 단위가 없으면 표 전체 단위(정확히
               하나로 확정될 때만)로 보완합니다. 대상 item 중 하나라도
               유효한 인용 정보(disclosure_id, 그리고 evidence_id가
               있다면 그에 대응하는 section_id)가 없으면 성공으로
               처리하지 않습니다.
             - 표가 불완전하거나(chunk 누락, 일부 record 제외 등),
-              값을 계산할 수 없거나(비정상 값 포함, 단위 혼재, 표
-              단위 후보가 여러 개라 확정할 수 없음, 최빈값 동률, 모든
-              값이 결측 등), record 구조 자체가 잘못됐거나, 인용할
-              원본 정보가 없으면 status="INVALID_INPUT"이고 items는
-              빈 목록입니다. metadata.failure_stage로 원인 단계
-              (completeness_check/citation_check/record_shape/
-              numeric_parsing/unit_check/calculation)를 구분합니다.
+              row_selector의 label이 하나도 없거나 여러 행과 일치하거나
+              label_column을 읽을 수 없는 행이 있거나, row_selector로
+              선택한 행 중 결측값이 있거나, 값을 계산할 수 없거나
+              (비정상 값 포함, 단위 혼재, 표 단위 후보가 여러 개라
+              확정할 수 없음, 최빈값 동률, 모든 값이 결측 등), record
+              구조 자체가 잘못됐거나, 인용할 원본 정보가 없으면
+              status="INVALID_INPUT"이고 items는 빈 목록입니다.
+              metadata.failure_stage로 원인 단계
+              (completeness_check/citation_check/row_selection/
+              record_shape/numeric_parsing/unit_check/calculation)를
+              구분합니다.
             - result_id가 존재하지 않거나, 그 RetrievalResult의
               status가 SUCCESS가 아니거나, item_index가 존재하지
-              않거나, 가리킨 item이 R_TABLE이 아니거나, column이 없거나,
-              targets가 비어 있거나, variable_name/column이 비어
-              있으면 ValueError를 발생시킵니다(state에 결과를 남기지
-              않고 tool 호출 자체를 다시 만들어야 합니다).
+              않거나, 가리킨 item이 R_TABLE이 아니거나, column이나
+              row_selector.label_column이 없거나, targets가 비어
+              있거나, variable_name/column이 비어 있으면 ValueError를
+              발생시킵니다(state에 결과를 남기지 않고 tool 호출 자체를
+              다시 만들어야 합니다). label이 실제로 몇 개와 일치하는지는
+              구조적 오류가 아니므로 여기 포함되지 않습니다(위 INVALID_INPUT
+              참고).
     """
 
-    resolved_items = _validate_calculate_call(variable_name, column, targets, state)
+    resolved_items = _validate_calculate_call(
+        variable_name, column, targets, state, row_selector,
+    )
     result_id, plan_id, next_plan_seq = _next_derived_ids(state)
     source_result_ids = [target.result_id for target in targets]
     request_query = json.dumps(
@@ -1383,6 +1521,7 @@ def calculate_table_statistic(
             "operation": operation,
             "column": column,
             "targets": [target.model_dump() for target in targets],
+            "row_selector": row_selector.model_dump() if row_selector else None,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -1413,27 +1552,44 @@ def calculate_table_statistic(
             "citation_check",
         )
 
+    if row_selector is not None:
+        records_to_scan, selection_error = _select_labeled_records(
+            resolved_items, row_selector,
+        )
+        if selection_error is not None:
+            return invalid(selection_error, "row_selection")
+    else:
+        records_to_scan = [
+            record
+            for item in resolved_items
+            for record in item.get("records", [])
+        ]
+
     parsed_values: list[Decimal] = []
     units: set[str] = set()
-    for item in resolved_items:
-        for record in item["records"]:
-            cell = _extract_cell_value(record, column)
-            if cell is _RECORD_EXTRACTION_ERROR:
+    for record in records_to_scan:
+        cell = _extract_cell_value(record, column)
+        if cell is _RECORD_EXTRACTION_ERROR:
+            return invalid(
+                f"'{column}' 값을 가진 record 구조가 올바르지 않습니다.",
+                "record_shape",
+            )
+        parsed = parse_numeric_cell(cell)
+        if parsed.is_missing:
+            if row_selector is not None:
                 return invalid(
-                    f"'{column}' 값을 가진 record 구조가 올바르지 않습니다.",
-                    "record_shape",
-                )
-            parsed = parse_numeric_cell(cell)
-            if parsed.is_missing:
-                continue
-            if parsed.is_invalid:
-                return invalid(
-                    f"'{column}' 열에 숫자로 해석할 수 없는 값이 있습니다: {parsed.raw!r}",
+                    f"'{column}' 열에서 선택한 행 중 하나가 결측값입니다: {parsed.raw!r}",
                     "numeric_parsing",
                 )
-            parsed_values.append(parsed.value)
-            if parsed.unit is not None:
-                units.add(parsed.unit)
+            continue
+        if parsed.is_invalid:
+            return invalid(
+                f"'{column}' 열에 숫자로 해석할 수 없는 값이 있습니다: {parsed.raw!r}",
+                "numeric_parsing",
+            )
+        parsed_values.append(parsed.value)
+        if parsed.unit is not None:
+            units.add(parsed.unit)
 
     if len(units) > 1:
         return invalid(
@@ -1469,6 +1625,11 @@ def calculate_table_statistic(
         "unit": unit,
         "input_count": len(parsed_values),
     }
+    if row_selector is not None:
+        fields["row_selection"] = {
+            "label_column": row_selector.label_column,
+            "labels": row_selector.labels,
+        }
     result_item = {
         "type": "record",
         "fields": fields,
@@ -1490,7 +1651,9 @@ def calculate_table_statistic(
     return {"next_plan_seq": next_plan_seq + 1, "retrieval_results": [result]}
 
 
-CombineOperation = Literal["sum", "difference", "ratio", "percent_change", "ordering"]
+CombineOperation = Literal[
+    "sum", "mean", "difference", "ratio", "percent_ratio", "percent_change", "ordering",
+]
 OrderingDirection = Literal["ascending", "descending"]
 
 # result_kind는 derived RetrievalResult가 어떤 모양의 값을 담고 있는지
@@ -1503,8 +1666,10 @@ RESULT_KIND_NUMERIC_ORDERING = "numeric_ordering"
 # operation별 허용되는 targets 개수 범위. 위쪽 경계가 None이면 상한 없음.
 _COMBINE_OPERATION_INPUT_COUNTS: dict[CombineOperation, tuple[int, int | None]] = {
     "sum": (2, None),
+    "mean": (2, None),
     "difference": (2, 2),
     "ratio": (2, 2),
+    "percent_ratio": (2, 2),
     "percent_change": (2, 2),
     "ordering": (2, None),
 }
@@ -1657,21 +1822,31 @@ def combine_numeric_results(
             문자열은 허용하지 않습니다.
         operation(CombineOperation):
             - 'sum': targets 전체를 더함(2개 이상)
+            - 'mean': targets 전체의 평균(2개 이상). 기초·기말 평균
+              같은 지표에 사용
             - 'difference': 정확히 2개, targets[0] - targets[1]
-            - 'ratio': 정확히 2개, targets[0] / targets[1]
+            - 'ratio': 정확히 2개, targets[0] / targets[1]. 배수로
+              표현하는 지표(PER, 회전율 등)에 사용
+            - 'percent_ratio': 정확히 2개, targets[0] / targets[1] * 100.
+              ROI·ROA·ROE처럼 백분율로 표현하는 비율 지표에 사용
+              (예: ROA = 당기순이익 / 자산총계 * 100). 기준값(분자)이
+              targets[0], 나누는 값(분모)이 targets[1]입니다.
             - 'percent_change': 정확히 2개,
               (targets[1] - targets[0]) / targets[0] * 100.
-              기준은 targets[0](이전 값)입니다.
+              기준은 targets[0](이전 값)입니다. percent_ratio와
+              혼동하지 마세요 — percent_change는 "증감률"(예: 전년
+              대비 몇 % 늘었는지), percent_ratio는 서로 다른 두
+              항목의 "비율"(예: 순이익이 자산의 몇 %인지)입니다.
             - 'ordering': targets를 값 기준으로 정렬해 순위를 매김
               (2개 이상). 정렬 방향은 direction으로 지정합니다.
         targets(list[NumericResultTarget]): 조합할 numeric_scalar
             결과의 위치 목록. calculate_table_statistic 또는
             combine_numeric_results가 만든 result_kind="numeric_scalar",
             status="SUCCESS" 결과만 참조할 수 있습니다(numeric_ordering
-            결과는 참조 불가). difference/ratio/percent_change에서는
-            순서가 결과에 직접 영향을 주므로 정확히 지정하세요. 동일한
-            (result_id, item_index) 조합을 중복해서 넣을 수 없습니다
-            (이중 계산 방지).
+            결과는 참조 불가). difference/ratio/percent_ratio/
+            percent_change에서는 순서가 결과에 직접 영향을 주므로
+            정확히 지정하세요. 동일한 (result_id, item_index) 조합을
+            중복해서 넣을 수 없습니다(이중 계산 방지).
         state(AgentState): InjectedState로 주입되며 LLM에는 보이지
             않습니다. tool 내부에서만 state["retrieval_results"]를
             조회하는 데 사용합니다.
@@ -1683,14 +1858,15 @@ def combine_numeric_results(
     return:
         dict: next_plan_seq와 조합 결과가 담긴 새 RetrievalResult 하나를
             포함한 state update.
-            - sum/difference/ratio/percent_change가 성공하면
-              status="SUCCESS", metadata.result_kind="numeric_scalar"이고
-              items[0].fields에 변수명/연산/값/단위/사용한 값 개수가
-              담깁니다. 모든 operation은 입력 단위가 전부 완전히 같을
-              때만(모두 None이거나 모두 같은 문자열) 계산하며, calculate
-              _table_statistic의 셀 단위 정책과 달리 단위 없음과 명시된
-              단위를 같다고 보지 않습니다. sum·difference는 그 공통
-              단위를 그대로 사용합니다. ratio는 단위를 None으로,
+            - sum/mean/difference/ratio/percent_ratio/percent_change가
+              성공하면 status="SUCCESS", metadata.result_kind=
+              "numeric_scalar"이고 items[0].fields에 변수명/연산/값/
+              단위/사용한 값 개수가 담깁니다. 모든 operation은 입력
+              단위가 전부 완전히 같을 때만(모두 None이거나 모두 같은
+              문자열) 계산하며, calculate_table_statistic의 셀 단위
+              정책과 달리 단위 없음과 명시된 단위를 같다고 보지
+              않습니다. sum·mean·difference는 그 공통 단위를 그대로
+              사용합니다. ratio는 단위를 None으로, percent_ratio와
               percent_change는 "%"로 반환합니다.
             - ordering이 성공하면 status="SUCCESS",
               metadata.result_kind="numeric_ordering"이고
@@ -1757,6 +1933,9 @@ def combine_numeric_results(
     if operation == "sum":
         value = sum(values)
         unit = input_unit
+    elif operation == "mean":
+        value = sum(values) / len(values)
+        unit = input_unit
     elif operation == "difference":
         value = values[0] - values[1]
         unit = input_unit
@@ -1765,6 +1944,11 @@ def combine_numeric_results(
             return invalid("두 번째 값이 0이어서 나눌 수 없습니다.", "calculation")
         value = values[0] / values[1]
         unit = None
+    elif operation == "percent_ratio":
+        if values[1] == 0:
+            return invalid("두 번째 값이 0이어서 나눌 수 없습니다.", "calculation")
+        value = values[0] / values[1] * 100
+        unit = "%"
     elif operation == "percent_change":
         if values[0] == 0:
             return invalid("기준값(첫 번째 값)이 0이어서 증감률을 계산할 수 없습니다.", "calculation")
@@ -2349,6 +2533,7 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             validated.column,
             validated.targets,
             state,
+            validated.row_selector,
         )
         return
     if name == "combine_numeric_results":
