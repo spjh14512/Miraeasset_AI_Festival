@@ -30,6 +30,19 @@ def _result(result_id: str, item_count: int = 2) -> RetrievalResult:
     )
 
 
+def _failed_result(result_id: str, status: str = "NO_RESULTS") -> RetrievalResult:
+    return RetrievalResult(
+        result_id=result_id,
+        plan_id=result_id.removeprefix("retrieval:"),
+        source="qdrant",
+        status=status,
+        query="검색 쿼리",
+        items=[],
+        result_count=0,
+        metadata={"plan_purpose": "질문의 핵심 정보 확인"}
+    )
+
+
 def _state():
     return {
         "question_id": "question-1",
@@ -105,6 +118,46 @@ def test_finish_rejects_duplicate_result_ids():
             ],
             "state": _state(),
         })
+
+
+def test_finish_rejects_non_success_selection_for_complete():
+    state = _state()
+    state["retrieval_results"].append(_failed_result("retrieval:plan_3"))
+
+    with pytest.raises(ValueError, match="SUCCESS 상태가 아닌"):
+        finish.invoke({
+            "status": "COMPLETE",
+            "reason": "완료",
+            "selected_result_ids": ["retrieval:plan_3"],
+            "state": state,
+        })
+
+
+def test_finish_rejects_non_success_selection_for_insufficient():
+    state = _state()
+    state["retrieval_results"].append(_failed_result("retrieval:plan_3"))
+
+    with pytest.raises(ValueError, match="SUCCESS 상태가 아닌"):
+        finish.invoke({
+            "status": "INSUFFICIENT",
+            "reason": "근거를 찾지 못했습니다.",
+            "selected_result_ids": ["retrieval:plan_3"],
+            "state": state,
+        })
+
+
+def test_finish_allows_success_selection_alongside_failed_result_in_state():
+    state = _state()
+    state["retrieval_results"].append(_failed_result("retrieval:plan_3"))
+
+    update = finish.invoke({
+        "status": "INSUFFICIENT",
+        "reason": "일부 근거만 확보했습니다.",
+        "selected_result_ids": ["retrieval:plan_1"],
+        "state": state,
+    })
+
+    assert update["selected_result_ids"] == ["retrieval:plan_1"]
 
 
 def test_answer_message_contains_all_items_from_selected_result():

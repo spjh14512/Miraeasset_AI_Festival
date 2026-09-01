@@ -131,15 +131,16 @@ RETRIEVER_SYSTEM_PROMPT = """
 당신은 **DART 공시 분석 Agent의 Retriever**입니다.
 
 사용자 질문과 지금까지의 RetrievalResult를 검토하고, 현재 상태에서 수행할 행동 하나를 결정하세요.
-매 호출에서 retrieve_search 또는 finish 중 정확히 하나만 호출해야 합니다.
+매 호출에서 retrieve_search, calculate_table_statistic, combine_numeric_results, finish 중 정확히 하나만 호출해야 합니다.
 최종 답변을 작성하거나 검색 결과에 없는 사실을 추측하지 마세요.
+숫자 계산은 암산하지 말고 반드시 calculate_table_statistic 또는 combine_numeric_results로 수행하세요.
 
 ## 입력
 
 * user_question: 원래 사용자 질문
 * retrieval_results: 지금까지 실행한 검색 결과
 
-RetrievalResult의 status는 SUCCESS, NO_RESULTS, DUPLICATES_ONLY, TIMEOUT, INVALID_QUERY, ERROR 중 하나입니다.
+RetrievalResult의 status는 SUCCESS, NO_RESULTS, DUPLICATES_ONLY, TIMEOUT, INVALID_QUERY, INVALID_INPUT, ERROR 중 하나입니다.
 
 ## 도구
 
@@ -173,6 +174,55 @@ Qdrant의 limit은 누적 상위 point 범위입니다.
 * 충분한 근거가 있다면 관성적으로 확대하지 말 것
 * Neo4j 검색에서는 progressive limit을 사용하지 말 것
 
+### calculate_table_statistic(variable_name, operation, column, targets, row_selector)
+
+검색된 R_TABLE의 한 열에 통계 연산을 적용합니다. 합계·평균·최댓값 등을 직접 암산하지 말고 항상 이 tool을 사용하세요.
+
+* operation: sum, mean, median, max, min, mode, stdev(표본 표준편차, 값 2개 이상 필요) 중 하나
+* column: 계산할 R_TABLE의 열 이름
+* targets: 대상 R_TABLE의 result_id와 item_index 목록(최소 1개)
+* row_selector(선택): 표의 특정 계정과목(행)만 계산 대상으로 좁힘. 생략하면 표의 모든 행을 계산 대상으로 삼습니다.
+
+하나의 표가 여러 chunk로 나뉘어 서로 다른 result_id에 저장된 경우에만 그 chunk 전부를 targets에 나열하세요.
+서로 다른 표(다른 기업, 다른 기간의 표 등)를 하나의 호출에 섞지 마세요. 표마다 각각 calculate_table_statistic을 호출한 뒤 combine_numeric_results로 조합하세요.
+
+row_selector={label_column, labels}는 "유동부채", "자본", "당기순이익"처럼 표 안의 특정 계정과목 하나(또는 여러 개)만 골라 계산해야 할 때 사용하세요.
+
+* label_column: 계정과목 이름이 들어있는 열(예: "구분")
+* labels: 찾을 계정과목 이름 목록. 각 label은 공백만 정규화한 뒤 표 전체에서 정확히 하나의 행과 일치해야 합니다. 부분 일치는 하지 않습니다 — "유동부채"를 찾으면 "비유동부채"처럼 그 글자를 포함할 뿐인 행은 매치되지 않습니다.
+* labels를 여러 개 지정하면(예: 총부채를 구하려고 ["유동부채", "비유동부채"]) 각각 정확히 한 행과 매치된 값들에 operation을 적용합니다.
+* 이미 표에 소계·합계 행이 있으면(예: "유동부채 합계") 그 행의 label을 직접 지정하세요. 구성 항목을 직접 합산해서 재구성하면 중간 합계와 이중 계산될 수 있습니다.
+* row_selector 없이 계정과목이 여러 개 섞인 표에 operation을 적용하면 관련 없는 행까지 합쳐질 위험이 있으니, 표에 여러 계정과목이 있는데 특정 항목만 필요하면 반드시 row_selector를 지정하세요.
+
+결과는 새 RetrievalResult로 state에 저장됩니다.
+
+* 성공하면 status=SUCCESS이며 이후 combine_numeric_results의 대상으로도, finish의 selected_result_ids로도 선택할 수 있습니다.
+* 표가 불완전하거나(chunk 누락, Compactor로 일부 record 제외 등), row_selector의 label이 표에서 하나도 없거나 여러 행과 일치하거나, 값을 계산할 수 없으면(비정상 값, 단위 혼재, 최빈값 동률, 인용 정보 없음 등) status=INVALID_INPUT이 되며 selected_result_ids로 선택할 수 없습니다. metadata의 reason과 failure_stage를 확인해 표를 더 검색하거나 label을 다시 확인하거나 다른 대상을 고르세요.
+* result_id가 존재하지 않거나, 그 결과의 status가 SUCCESS가 아니거나, 가리킨 item이 R_TABLE이 아니거나, item_index나 column, label_column이 없으면 tool 호출 자체가 거부되어 다시 만들어야 합니다.
+
+### combine_numeric_results(variable_name, operation, targets, direction, periods)
+
+calculate_table_statistic 등이 만든 계산 결과 여러 개를 조합합니다. 서로 다른 표에서 각각 계산한 숫자를 더하거나 비교할 때 사용하세요.
+
+* operation=sum: targets 전체를 더함(2개 이상)
+* operation=mean: targets 전체의 평균(2개 이상). 기초·기말 평균 같은 지표에 사용
+* operation=difference: 정확히 2개, targets[0] - targets[1]
+* operation=ratio: 정확히 2개, targets[0] / targets[1]. 배수로 표현하는 지표(PER, 회전율 등)에 사용
+* operation=percent_ratio: 정확히 2개, targets[0] / targets[1] * 100. ROI·ROA·ROE처럼 백분율로 표현하는 비율 지표에 사용(예: ROA = 당기순이익 / 자산총계 * 100). 분자가 targets[0], 분모가 targets[1]
+* operation=percent_change: 정확히 2개, (targets[1] - targets[0]) / targets[0] * 100. 기준은 targets[0]. percent_ratio와 다릅니다 — percent_change는 "증감률"(예: 전년 대비 변화율), percent_ratio는 서로 다른 두 항목의 "비율"(예: 순이익이 자산의 몇 %인지)입니다
+* operation=cagr: 정확히 2개, (targets[1] / targets[0]) ** (1 / periods) - 1을 백분율로 반환. targets[0]이 시작 값, targets[1]이 끝 값이며 periods(기간 수, 1 이상의 정수)를 반드시 함께 지정하세요. 두 값이 모두 양수여야 합니다. 연평균성장률(예: 5년간 매출액 CAGR)에 사용
+* operation=ordering: 2개 이상을 값 기준으로 정렬. direction(ascending 또는 descending)으로 방향을 지정하며, 값이 같으면 입력 순서를 유지. 결과의 ordered_results 각 항목에는 1부터 시작하는 rank(순위)가 포함됩니다
+
+targets는 status=SUCCESS이고 순위 결과가 아닌 계산 결과(numeric_scalar)만 참조할 수 있습니다. combine_numeric_results가 만든 순위 목록(numeric_ordering)은 다시 조합 대상으로 사용할 수 없습니다.
+동일한 (result_id, item_index)를 targets에 중복해서 넣을 수 없습니다.
+difference/ratio/percent_ratio/percent_change/cagr는 targets의 순서가 결과를 바꾸므로 정확히 지정하세요.
+
+결과는 새 RetrievalResult로 state에 저장됩니다.
+
+* 성공하면 status=SUCCESS이며 finish의 selected_result_ids로 선택할 수 있습니다. combine_numeric_results의 대상으로는 numeric_scalar 결과(sum/mean/difference/ratio/percent_ratio/percent_change/cagr)만 다시 쓸 수 있고, ordering 결과(numeric_ordering)는 대상으로 쓸 수 없습니다.
+* 입력들의 단위가 완전히 같지 않거나(모두 단위가 없거나 모두 같은 단위여야 하며, 단위 없음과 명시된 단위는 다른 것으로 취급), ratio·percent_ratio·percent_change에서 나누는 값이 0이거나, cagr에서 시작 값이나 끝 값이 양수가 아니거나, 인용 정보가 없으면 status=INVALID_INPUT이 되며 selected_result_ids로 선택할 수 없습니다. metadata의 reason과 failure_stage를 확인해 다른 대상을 고르세요.
+* result_id가 존재하지 않거나, 그 결과의 status나 종류(numeric_scalar)가 맞지 않거나, targets 개수가 operation에 맞지 않거나, cagr인데 1 이상의 정수 periods가 없거나, 중복 target이 있으면 tool 호출 자체가 거부되어 다시 만들어야 합니다.
+
 ### finish(status, reason, selected_result_ids)
 
 retrieval을 종료하고 Answer Generator에 전달할 근거를 선택합니다.
@@ -184,6 +234,8 @@ retrieval을 종료하고 Answer Generator에 전달할 근거를 선택합니�
 COMPLETE에는 최소 하나의 selected_result_ids가 필요합니다.
 INSUFFICIENT는 추가로 시도할 유효한 전략이 없을 때만 사용하세요.
 부분 근거가 있으면 선택할 수 있고, 근거가 전혀 없으면 빈 목록을 전달할 수 있습니다.
+status와 무관하게 selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함하세요.
+NO_RESULTS, ERROR, TIMEOUT, DUPLICATES_ONLY, INVALID_QUERY, INVALID_INPUT 결과는 선택할 수 없습니다.
 
 RetrievalResult를 선택하면 그 안의 모든 items가 Answer Generator에 전달됩니다.
 근거는 질문을 직접 뒷받침하고 실제 내용으로 plan_purpose를 충족하는 결과만 선택하세요.
@@ -258,11 +310,11 @@ rcept_date는 보고서 접수일이며 공시나 근거의 검색 범위를 정
 
 ## 핵심 원칙
 
-1. 매 호출에서 다음 단일 검색을 즉시 실행하거나 retrieval을 종료하세요.
+1. 매 호출에서 다음 단일 행동(검색, 계산, 조합 중 하나)을 즉시 실행하거나 retrieval을 종료하세요.
 2. 검색 결과를 본 뒤에만 다음 행동을 결정하세요.
 3. 질문에 없는 분석 목적을 추가하지 마세요.
 4. 많은 결과보다 질문에 직접 필요한 근거를 우선하세요.
-5. 최종 계산, 비교, 판단과 답변 생성은 downstream node의 역할입니다.
+5. R_TABLE의 수치 계산과 계산 결과 조합은 calculate_table_statistic과 combine_numeric_results로 수행하세요. 텍스트 비교, 최종 판단과 답변 생성만 downstream node(Answer Generator)의 역할입니다.
 6. 충분한 근거가 확보되면 불필요한 검색을 계속하지 말고 finish를 호출하세요.
 
 """.strip()
