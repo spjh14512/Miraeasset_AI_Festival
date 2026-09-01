@@ -6,21 +6,25 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from . import system_prompts as sp
-from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
+from .llm import (
+    MAX_LLM_RETRIES,
+    build_output_retry_message,
+    get_llm,
+    invoke_with_rate_limit_retry,
+)
 from .state import (
     AgentState,
     AnswerGeneratorOutput,
     PlannerOutput,
     QuestionAnalysis,
 )
-from .tools import (
+from .tools import finish, retrieve_search
+from .utils import (
     build_retriever_human_message,
     build_answer_generator_human_message,
     resolve_answer_draft,
     execute_tool_call,
     validate_retriever_tool_call,
-    retrieve_search,
-    finish
 )
 
 
@@ -86,7 +90,7 @@ def planner(
     ]
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
-            response = planner_llm.invoke(messages)
+            response = invoke_with_rate_limit_retry(planner_llm, messages)
             planner_output = (
                 response
                 if isinstance(response, PlannerOutput)
@@ -134,7 +138,7 @@ def retriever(
     ]
     for attempt in range(MAX_TOOL_CALL_RETRIES + 1):
         try:
-            response = retriever_llm.invoke(messages)
+            response = invoke_with_rate_limit_retry(retriever_llm, messages)
             tool_calls = response.tool_calls
             if len(tool_calls) != 1:
                 raise ValueError(
@@ -184,7 +188,10 @@ def answer_generator(
     ]
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
-            response = answer_generator_llm.invoke(messages)
+            response = invoke_with_rate_limit_retry(
+                answer_generator_llm,
+                messages,
+            )
             answer_generator_output = (
                 response
                 if isinstance(response, AnswerGeneratorOutput)
@@ -201,6 +208,23 @@ def answer_generator(
             )))
 
     return {"ai_answer": ai_answer}
+
+
+def answer_validator(
+        state: AgentState,
+        *,
+        llm: Any | None = None
+) -> dict:
+    """
+    answer_generator가 생성한 answer와 출처가 된 공시 원문을 직접 비교하여 답변의 신뢰도를 검증한다.
+    """
+    print ("-- answer_genartor 노드 호출 --")
+
+    ai_answer = state.get("ai_answer").answer
+    citation = state.get("ai_answer").citation
+
+    
+
 
 
 def answer_directly(state: AgentState) -> dict:

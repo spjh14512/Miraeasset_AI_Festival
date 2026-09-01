@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from agent_graph import graph as graph_module
-from agent_graph import tools
+from agent_graph import utils as tools
 from agent_graph.compactor import CompactorOutput, compact_qdrant_point
 from agent_graph.state import (
     AnswerGeneratorOutput,
@@ -10,7 +10,7 @@ from agent_graph.state import (
     QuestionAnalysis,
     RetrievalResult,
 )
-from agent_graph.tools import QdrantQueryToolArgs
+from agent_graph.utils import QdrantQueryToolArgs
 from qdrant_client.http.models import ScoredPoint
 
 

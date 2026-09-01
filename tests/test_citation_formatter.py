@@ -5,7 +5,7 @@ import json
 import pytest
 
 from agent_graph.state import Citation
-from agent_graph.tools import CITATION_CONTEXT_QUERY, format_citations
+from agent_graph.utils import CITATION_CONTEXT_QUERY, format_citations
 
 
 class _Neo4jSession:

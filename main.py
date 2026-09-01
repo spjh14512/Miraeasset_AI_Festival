@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from agent_graph.graph import graph
 from agent_graph.state import AgentState, Citation
-from agent_graph.tools import format_citations
+from agent_graph.utils import format_citations
 
 
 class AnswerResponse(BaseModel):

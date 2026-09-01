@@ -5,10 +5,10 @@ import json
 import pytest
 
 from agent_graph.state import QuestionAnalysis, RetrievalResult
-from agent_graph.tools import (
+from agent_graph.tools import finish
+from agent_graph.utils import (
     build_answer_generator_human_message,
     execute_tool_call,
-    finish,
 )
 
 

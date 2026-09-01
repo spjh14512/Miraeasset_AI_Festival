@@ -9,7 +9,12 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import system_prompts as sp
-from .llm import MAX_LLM_RETRIES, build_output_retry_message, get_llm
+from .llm import (
+    MAX_LLM_RETRIES,
+    build_output_retry_message,
+    get_llm,
+    invoke_with_rate_limit_retry,
+)
 from .state import Plan
 
 
@@ -198,7 +203,7 @@ def compact_qdrant_point(
     available = set(available_item_ids)
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
-            result = compactor_llm.invoke(messages)
+            result = invoke_with_rate_limit_retry(compactor_llm, messages)
             output = (
                 result
                 if isinstance(result, CompactorOutput)

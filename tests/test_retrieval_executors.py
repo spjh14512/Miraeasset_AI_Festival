@@ -7,9 +7,10 @@ from neo4j import Record as Neo4jRecord
 from qdrant_client import models
 from qdrant_client.http.models import QueryResponse, ScoredPoint
 
-from agent_graph import tools
+from agent_graph import utils as tools
+from agent_graph.tools import retrieve_search
 from agent_graph.state import Plan, RetrievalResult
-from agent_graph.tools import CypherQuery, QdrantQuery, QdrantQueryToolArgs
+from agent_graph.utils import CypherQuery, QdrantQuery, QdrantQueryToolArgs
 from vector_db.text2vector import HybridEmbedding, SparseEmbedding
 
 
@@ -386,7 +387,7 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
 
     monkeypatch.setattr(tools, "query_builder", reject_repeated_filter)
 
-    update = tools.retrieve_search.invoke({
+    update = retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -422,7 +423,7 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         lambda *_: raw_result
     )
 
-    update = tools.retrieve_search.invoke({
+    update = retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -469,7 +470,7 @@ def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
         lambda *_: QueryResponse(points=[point]),
     )
 
-    update = tools.retrieve_search.invoke({
+    update = retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -511,7 +512,7 @@ def test_retrieve_search_preserves_timeout_as_result(monkeypatch):
 
     monkeypatch.setattr(tools, "query_executor", raise_timeout)
 
-    update = tools.retrieve_search.invoke({
+    update = retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -559,7 +560,7 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
 
     monkeypatch.setattr(tools, "compact_qdrant_point", compact)
 
-    update = tools.retrieve_search.invoke({
+    update = retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -620,7 +621,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
 
     monkeypatch.setattr(tools, "query_executor", execute)
 
-    first_update = tools.retrieve_search.invoke({
+    first_update = retrieve_search.invoke({
         "plan": first_plan,
         "limit": 5,
         "state": {
@@ -632,7 +633,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
     })
     first_result = first_update["retrieval_results"][0]
 
-    second_update = tools.retrieve_search.invoke({
+    second_update = retrieve_search.invoke({
         "plan": second_plan,
         "limit": 10,
         "state": {
@@ -671,7 +672,7 @@ def test_retrieve_search_rejects_non_progressive_qdrant_limit():
     )
 
     try:
-        tools.retrieve_search.invoke({
+        retrieve_search.invoke({
             "plan": plan,
             "limit": 4,
             "state": {
@@ -740,7 +741,7 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
         lambda *_: ([], None),
     )
 
-    tools.retrieve_search.invoke({
+    retrieve_search.invoke({
         "plan": plan,
         "state": {
             "question_id": "question-1",
@@ -765,7 +766,7 @@ def test_retrieve_search_rejects_missing_dependency():
     )
 
     try:
-        tools.retrieve_search.invoke({
+        retrieve_search.invoke({
             "plan": plan,
             "state": {
                 "question_id": "question-1",

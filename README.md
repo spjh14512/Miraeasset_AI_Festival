@@ -181,5 +181,7 @@ uv run python -m knowledge_graph.insert_events --input data/event/manifest.jsonl
 
 ### Qdrant insert
 ```powershell
-uv run python -m vector_db.insert_points --limit <공시_개수> --random-seed <시드> --batch-size 100
+uv run python -m vector_db.insert_points --limit <공시_개수> --random-seed <시드> --batch-size 128 --embedding-buffer-size 512
 ```
+
+GPU embedding은 기본적으로 82°C에서 일시정지하고 72°C 이하에서 재개합니다.

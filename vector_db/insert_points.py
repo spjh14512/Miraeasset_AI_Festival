@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from collections import Counter
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections import Counter, deque
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,13 @@ from knowledge_graph.insertDSE import (
     select_disclosures,
     valid_manifest_rows,
 )
+from vector_db.bgem3_token_counter import count_bge_m3_tokens
+from vector_db.gpu_thermal_guard import (
+    DEFAULT_GPU_PAUSE_TEMPERATURE,
+    DEFAULT_GPU_RESUME_TEMPERATURE,
+    DEFAULT_GPU_TEMPERATURE_POLL_SECONDS,
+    GpuThermalGuard,
+)
 from vector_db.point_builder import (
     SPARSE_VECTOR_NAME,
     VECTOR_NAME,
@@ -34,6 +42,11 @@ from vector_db.text2vector import HybridEmbedding, texts_to_hybrid_vectors
 
 BatchVectorizer = Callable[[Sequence[str]], list[HybridEmbedding]]
 LatestVersionLookup = Callable[[Sequence[str]], dict[str, bool]]
+TokenCounter = Callable[[str], int]
+
+DEFAULT_EMBEDDING_BUFFER_SIZE = 512
+DEFAULT_UPLOAD_BATCH_SIZE = 128
+MAX_PENDING_UPLOADS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,7 +82,50 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Use the same value as insertDSE.py to select the same disclosures.",
     )
-    parser.add_argument("--batch-size", type=int, default=100)
+    parser.add_argument(
+        "--resume-from",
+        default=None,
+        metavar="DISCLOSURE_ID",
+        help=(
+            "With --all, resume from this disclosure inclusively. Accepts "
+            "d{rcept_no} or the raw receipt number."
+        ),
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_UPLOAD_BATCH_SIZE,
+        help="Maximum number of Points per Qdrant request.",
+    )
+    parser.add_argument(
+        "--embedding-buffer-size",
+        type=int,
+        default=DEFAULT_EMBEDDING_BUFFER_SIZE,
+        help=(
+            "Number of Point inputs collected across fragments before "
+            "token-length-bucketed embedding."
+        ),
+    )
+    parser.add_argument(
+        "--gpu-pause-temperature",
+        type=int,
+        default=DEFAULT_GPU_PAUSE_TEMPERATURE,
+    )
+    parser.add_argument(
+        "--gpu-resume-temperature",
+        type=int,
+        default=DEFAULT_GPU_RESUME_TEMPERATURE,
+    )
+    parser.add_argument(
+        "--gpu-temperature-poll-seconds",
+        type=float,
+        default=DEFAULT_GPU_TEMPERATURE_POLL_SECONDS,
+    )
+    parser.add_argument(
+        "--disable-gpu-thermal-guard",
+        action="store_true",
+        help="Disable temperature-based pauses before embedding windows.",
+    )
     parser.add_argument("--data-root", type=Path, default=Path("data"))
     parser.add_argument(
         "--schema",
@@ -413,6 +469,7 @@ def embed_point_inputs_batch(
     point_inputs: Sequence[PointInput],
     *,
     vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
+    token_counter: TokenCounter | None = None,
 ) -> dict[str, HybridEmbedding]:
     """Embed unique contextual texts with the local batch vectorizer."""
     unique_texts: dict[str, str] = {}
@@ -430,6 +487,18 @@ def embed_point_inputs_batch(
     keys = list(unique_texts)
     if not keys:
         return {}
+    if token_counter is not None:
+        token_counts: dict[str, int] = {}
+        for key in keys:
+            token_count = token_counter(unique_texts[key])
+            if (
+                not isinstance(token_count, int)
+                or isinstance(token_count, bool)
+                or token_count < 0
+            ):
+                raise ValueError("token_counter must return a non-negative integer")
+            token_counts[key] = token_count
+        keys.sort(key=token_counts.__getitem__)
     vectors = vectorizer([unique_texts[key] for key in keys])
     if not isinstance(vectors, list) or len(vectors) != len(keys):
         raise ValueError("Batch vectorizer returned an unexpected vector count")
@@ -468,6 +537,102 @@ def upsert_point_dicts(
     return inserted
 
 
+def ingest_point_inputs(
+    point_inputs: Iterable[PointInput],
+    *,
+    client: QdrantClient,
+    schema: QdrantSchema,
+    embedding_buffer_size: int,
+    upload_batch_size: int,
+    vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
+    token_counter: TokenCounter = count_bge_m3_tokens,
+    thermal_guard: GpuThermalGuard | None = None,
+) -> int:
+    """Embed across fragment boundaries and overlap bounded Qdrant writes."""
+    if (
+        not isinstance(embedding_buffer_size, int)
+        or isinstance(embedding_buffer_size, bool)
+        or embedding_buffer_size < 1
+    ):
+        raise ValueError("--embedding-buffer-size must be positive")
+    if (
+        not isinstance(upload_batch_size, int)
+        or isinstance(upload_batch_size, bool)
+        or upload_batch_size < 1
+    ):
+        raise ValueError("--batch-size must be positive")
+    if not callable(vectorizer):
+        raise ValueError("vectorizer must be callable")
+    if not callable(token_counter):
+        raise ValueError("token_counter must be callable")
+
+    embedding_buffer: list[PointInput] = []
+    upload_buffer: list[dict[str, Any]] = []
+    pending_uploads: deque[Future[int]] = deque()
+    inserted = 0
+    executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="qdrant-upload")
+
+    def collect_oldest_upload() -> None:
+        nonlocal inserted
+        inserted += pending_uploads.popleft().result()
+
+    def submit_upload(points: Sequence[Mapping[str, Any]]) -> None:
+        while len(pending_uploads) >= MAX_PENDING_UPLOADS:
+            collect_oldest_upload()
+        point_batch = list(points)
+        pending_uploads.append(
+            executor.submit(
+                upsert_point_dicts,
+                client,
+                schema,
+                point_batch,
+                batch_size=upload_batch_size,
+            )
+        )
+
+    def flush_upload_batches(*, include_remainder: bool) -> None:
+        while len(upload_buffer) >= upload_batch_size:
+            point_batch = upload_buffer[:upload_batch_size]
+            del upload_buffer[:upload_batch_size]
+            submit_upload(point_batch)
+        if include_remainder and upload_buffer:
+            point_batch = list(upload_buffer)
+            upload_buffer.clear()
+            submit_upload(point_batch)
+
+    def embed_and_buffer(inputs: Sequence[PointInput]) -> None:
+        if not inputs:
+            return
+        if thermal_guard is not None:
+            thermal_guard.wait_until_ready()
+        embeddings = embed_point_inputs_batch(
+            inputs,
+            vectorizer=vectorizer,
+            token_counter=token_counter,
+        )
+        upload_buffer.extend(assemble_qdrant_points(inputs, embeddings))
+        flush_upload_batches(include_remainder=False)
+
+    try:
+        for point_input in point_inputs:
+            if not isinstance(point_input, PointInput):
+                raise ValueError("point_inputs must contain PointInput items")
+            embedding_buffer.append(point_input)
+            if len(embedding_buffer) >= embedding_buffer_size:
+                inputs = list(embedding_buffer)
+                embedding_buffer.clear()
+                embed_and_buffer(inputs)
+
+        embed_and_buffer(embedding_buffer)
+        embedding_buffer.clear()
+        flush_upload_batches(include_remainder=True)
+        while pending_uploads:
+            collect_oldest_upload()
+        return inserted
+    finally:
+        executor.shutdown(wait=True, cancel_futures=True)
+
+
 def _qdrant_client_from_env() -> QdrantClient:
     load_dotenv()
     host = os.getenv("QDRANT_HOST", "").strip()
@@ -491,10 +656,28 @@ def run(
     random_seed: int | None,
     batch_size: int,
     dry_run: bool,
+    embedding_buffer_size: int = DEFAULT_EMBEDDING_BUFFER_SIZE,
     client: QdrantClient | None = None,
     vectorizer: BatchVectorizer = texts_to_hybrid_vectors,
     latest_version_lookup: LatestVersionLookup = latest_version_statuses_from_neo4j,
+    token_counter: TokenCounter = count_bge_m3_tokens,
+    thermal_guard: GpuThermalGuard | None = None,
+    resume_from: str | None = None,
 ) -> dict[str, Any]:
+    if (
+        not isinstance(batch_size, int)
+        or isinstance(batch_size, bool)
+        or batch_size < 1
+    ):
+        raise ValueError("--batch-size must be positive")
+    if (
+        not isinstance(embedding_buffer_size, int)
+        or isinstance(embedding_buffer_size, bool)
+        or embedding_buffer_size < 1
+    ):
+        raise ValueError("--embedding-buffer-size must be positive")
+    if resume_from is not None and limit is not None:
+        raise ValueError("--resume-from can only be used with --all")
     selected = (
         all_disclosures(data_root)
         if limit is None
@@ -504,6 +687,30 @@ def run(
             random_seed=random_seed,
         )
     )
+    normalized_resume_from = None
+    if resume_from is not None:
+        resume_value = str(resume_from).strip()
+        if resume_value.startswith("d"):
+            resume_value = resume_value[1:]
+        if len(resume_value) != 14 or not resume_value.isdigit():
+            raise ValueError(
+                "--resume-from must be d{14-digit rcept_no} or a 14-digit rcept_no"
+            )
+        normalized_resume_from = f"d{resume_value}"
+        resume_index = next(
+            (
+                index
+                for index, item in enumerate(selected)
+                if f"d{item[0]['rcept_no']}" == normalized_resume_from
+            ),
+            None,
+        )
+        if resume_index is None:
+            raise ValueError(
+                "--resume-from disclosure is not present in the complete "
+                f"disclosure set: {normalized_resume_from}"
+            )
+        selected = selected[resume_index:]
     disclosure_ids = [f"d{item[0]['rcept_no']}" for item in selected]
     latest_version_statuses = latest_version_lookup(disclosure_ids)
     resolved_client = client
@@ -517,7 +724,9 @@ def run(
     point_counts: Counter[str] = Counter()
     fragment_count = 0
     inserted = 0
-    try:
+
+    def selected_point_inputs() -> Iterator[PointInput]:
+        nonlocal fragment_count
         for section_manifest, evidence_manifest, document_manifest in selected:
             disclosure_id = f"d{section_manifest['rcept_no']}"
             for _, point_inputs in iter_fragment_point_inputs(
@@ -530,19 +739,24 @@ def run(
                 fragment_count += 1
                 for point_input in point_inputs:
                     point_counts[str(point_input.payload["point_kind"])] += 1
-                if dry_run or not point_inputs:
-                    continue
-                embeddings = embed_point_inputs_batch(
-                    point_inputs,
-                    vectorizer=vectorizer,
-                )
-                points = assemble_qdrant_points(point_inputs, embeddings)
-                inserted += upsert_point_dicts(
-                    resolved_client,
-                    schema,
-                    points,
-                    batch_size=batch_size,
-                )
+                    yield point_input
+
+    try:
+        point_input_stream = selected_point_inputs()
+        if dry_run:
+            for _ in point_input_stream:
+                pass
+        else:
+            inserted = ingest_point_inputs(
+                point_input_stream,
+                client=resolved_client,
+                schema=schema,
+                embedding_buffer_size=embedding_buffer_size,
+                upload_batch_size=batch_size,
+                vectorizer=vectorizer,
+                token_counter=token_counter,
+                thermal_guard=thermal_guard,
+            )
     finally:
         if owns_client and resolved_client is not None:
             resolved_client.close()
@@ -556,19 +770,32 @@ def run(
         "inserted": inserted,
         "point_kinds": dict(sorted(point_counts.items())),
         "rcept_nos": rcept_nos,
+        "resume_from": normalized_resume_from,
     }
 
 
 def main() -> int:
     args = parse_args()
     schema = load_qdrant_schema(args.schema)
+    thermal_guard = None
+    if not args.disable_gpu_thermal_guard:
+        thermal_guard = GpuThermalGuard(
+            pause_temperature=args.gpu_pause_temperature,
+            resume_temperature=args.gpu_resume_temperature,
+            poll_seconds=args.gpu_temperature_poll_seconds,
+        )
+        temperature = thermal_guard.validate()
+        print(f"GPU thermal guard ready: {temperature}°C.")
     result = run(
         data_root=args.data_root,
         schema=schema,
         limit=args.limit,
         random_seed=args.random_seed,
         batch_size=args.batch_size,
+        embedding_buffer_size=args.embedding_buffer_size,
         dry_run=args.dry_run,
+        thermal_guard=thermal_guard,
+        resume_from=args.resume_from,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

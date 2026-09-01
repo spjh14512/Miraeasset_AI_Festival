@@ -275,6 +275,145 @@ def test_batch_embedding_deduplicates_contextual_text():
     }
 
 
+def _point_input(index: int, text: str) -> PointInput:
+    return PointInput(
+        id=f"00000000-0000-0000-0000-{index:012d}",
+        contextual_text=text,
+        embedding_cache_key=f"cache-{index}",
+        payload={"point_kind": "TEXT", "order": index},
+    )
+
+
+def _hybrid_embedding(index: int) -> HybridEmbedding:
+    return HybridEmbedding(
+        dense=(float(index),),
+        sparse=SparseEmbedding(indices=(index + 1,), values=(0.5,)),
+    )
+
+
+def test_batch_embedding_sorts_unique_texts_by_token_length():
+    captured = []
+
+    def vectorizer(texts):
+        captured.append(list(texts))
+        return [_hybrid_embedding(index) for index, _ in enumerate(texts)]
+
+    result = insert_points.embed_point_inputs_batch(
+        [
+            _point_input(1, "long text"),
+            _point_input(2, "x"),
+            _point_input(3, "medium"),
+        ],
+        vectorizer=vectorizer,
+        token_counter=len,
+    )
+
+    assert captured == [["x", "medium", "long text"]]
+    assert set(result) == {"cache-1", "cache-2", "cache-3"}
+
+
+def test_ingestion_batches_across_fragment_boundaries_and_flushes_remainders():
+    client = _Client(exists=True)
+    vectorizer_calls = []
+
+    def vectorizer(texts):
+        vectorizer_calls.append(list(texts))
+        return [_hybrid_embedding(index) for index, _ in enumerate(texts)]
+
+    inserted = insert_points.ingest_point_inputs(
+        (_point_input(index, str(7 - index)) for index in range(7)),
+        client=client,
+        schema=_schema(),
+        embedding_buffer_size=4,
+        upload_batch_size=3,
+        vectorizer=vectorizer,
+        token_counter=lambda text: int(text),
+    )
+
+    assert inserted == 7
+    assert vectorizer_calls == [["4", "5", "6", "7"], ["1", "2", "3"]]
+    assert [len(call["points"]) for call in client.upserts] == [3, 3, 1]
+    assert [
+        point.payload["order"]
+        for call in client.upserts
+        for point in call["points"]
+    ] == list(range(7))
+    assert [
+        point.vector["evidence_dense"]
+        for call in client.upserts
+        for point in call["points"]
+    ] == [[3.0], [2.0], [1.0], [0.0], [2.0], [1.0], [0.0]]
+
+
+def test_ingestion_checks_thermal_guard_before_each_embedding_window():
+    client = _Client(exists=True)
+
+    class ThermalGuard:
+        def __init__(self):
+            self.calls = 0
+
+        def wait_until_ready(self):
+            self.calls += 1
+
+    thermal_guard = ThermalGuard()
+    inserted = insert_points.ingest_point_inputs(
+        [_point_input(index, str(index)) for index in range(5)],
+        client=client,
+        schema=_schema(),
+        embedding_buffer_size=2,
+        upload_batch_size=5,
+        vectorizer=lambda texts: [
+            _hybrid_embedding(index) for index, _ in enumerate(texts)
+        ],
+        token_counter=int,
+        thermal_guard=thermal_guard,
+    )
+
+    assert inserted == 5
+    assert thermal_guard.calls == 3
+
+
+def test_ingestion_propagates_background_writer_errors():
+    class FailingClient(_Client):
+        def upsert(self, **kwargs):
+            raise RuntimeError("upload failed")
+
+    with pytest.raises(RuntimeError, match="upload failed"):
+        insert_points.ingest_point_inputs(
+            [_point_input(1, "text")],
+            client=FailingClient(exists=True),
+            schema=_schema(),
+            embedding_buffer_size=1,
+            upload_batch_size=1,
+            vectorizer=lambda texts: [_hybrid_embedding(0)],
+            token_counter=len,
+        )
+
+
+@pytest.mark.parametrize(
+    ("embedding_buffer_size", "upload_batch_size", "message"),
+    [
+        (0, 1, "embedding-buffer-size"),
+        (1, 0, "batch-size"),
+    ],
+)
+def test_ingestion_rejects_invalid_buffer_sizes(
+    embedding_buffer_size,
+    upload_batch_size,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        insert_points.ingest_point_inputs(
+            [],
+            client=_Client(),
+            schema=_schema(),
+            embedding_buffer_size=embedding_buffer_size,
+            upload_batch_size=upload_batch_size,
+            vectorizer=lambda texts: [],
+            token_counter=len,
+        )
+
+
 def test_upsert_uses_named_vectors_and_requested_batch_size():
     client = _Client(exists=True)
     points = [

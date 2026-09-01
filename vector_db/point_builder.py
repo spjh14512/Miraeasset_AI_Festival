@@ -50,6 +50,7 @@ class _RTableCanonicalChunk:
     records: tuple[Mapping[str, Any], ...]
     canonical: dict[str, Any]
     size_bytes: int
+    limit_exceeded: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +61,7 @@ class _RTablePointPart:
     contextual_text: str
     row_start_index: int | None
     row_end_index: int | None
+    limit_exceeded: bool = False
 
 
 def to_neo4j_evidence_id(source_evidence_id: str) -> str:
@@ -433,18 +435,15 @@ def _chunk_r_table_records_by_canonical_size(
     empty_canonical = {**full_canonical, "records": []}
     base_size = _compact_json_size_bytes(empty_canonical)
     if base_size > max_bytes:
-        # Repeated table metadata and headers alone cannot fit the limit, so row
-        # partitioning cannot produce a compliant chunk. Preserve the table
-        # boundary only within the explicit indivisible hard limit.
-        if full_size > hard_max_bytes:
-            raise ValueError(
-                "R_TABLE header-only canonical exceeds the hard byte limit"
-            )
+        # Repeated table metadata and headers alone cannot fit the target limit,
+        # so row partitioning cannot produce a compliant chunk. Preserve the
+        # table boundary and mark an overflow beyond the hard limit for review.
         return [
             _RTableCanonicalChunk(
                 records=ordered_records,
                 canonical=full_canonical,
                 size_bytes=full_size,
+                limit_exceeded=full_size > hard_max_bytes,
             )
         ]
 
@@ -504,15 +503,12 @@ def _chunk_r_table_records_by_canonical_size(
     for grouped in grouped_records:
         canonical = _r_table_canonical(evidence, grouped)
         size_bytes = _compact_json_size_bytes(canonical)
-        if size_bytes > hard_max_bytes:
-            raise ValueError(
-                "R_TABLE indivisible record exceeds the hard byte limit"
-            )
         chunks.append(
             _RTableCanonicalChunk(
                 records=grouped,
                 canonical=canonical,
                 size_bytes=size_bytes,
+                limit_exceeded=size_bytes > hard_max_bytes,
             )
         )
     return chunks
@@ -540,6 +536,7 @@ def _point_payload(
     row_end_index: int | None = None,
     chunk_index: int | None = None,
     chunk_count: int | None = None,
+    limit_exceeded: bool = False,
 ) -> dict[str, Any]:
     if point_kind not in POINT_KINDS:
         raise ValueError(f"Unsupported point_kind: {point_kind}")
@@ -610,6 +607,8 @@ def _point_payload(
             "row_start_index": row_start_index,
             "row_end_index": row_end_index,
         }
+    if limit_exceeded:
+        payload["limit_exceeded"] = True
     return payload
 
 
@@ -627,6 +626,7 @@ def _point_input(
     row_end_index: int | None = None,
     chunk_index: int | None = None,
     chunk_count: int | None = None,
+    limit_exceeded: bool = False,
 ) -> PointInput:
     return PointInput(
         id=str(uuid5(POINT_ID_NAMESPACE, identity_key)),
@@ -644,6 +644,7 @@ def _point_input(
             row_end_index=row_end_index,
             chunk_index=chunk_index,
             chunk_count=chunk_count,
+            limit_exceeded=limit_exceeded,
         ),
     )
 
@@ -851,6 +852,7 @@ def build_point_inputs(
                             if preserve_row_range or partition_was_split
                             else None
                         ),
+                        limit_exceeded=canonical_chunk.limit_exceeded,
                     )
                 )
 
@@ -922,6 +924,7 @@ def build_point_inputs(
                     row_end_index=part.row_end_index if is_chunked else None,
                     chunk_index=chunk_index if is_chunked else None,
                     chunk_count=chunk_count,
+                    limit_exceeded=part.limit_exceeded,
                 )
             )
 
