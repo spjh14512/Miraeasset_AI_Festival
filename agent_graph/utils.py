@@ -883,17 +883,28 @@ def _validate_finish_selection(
     if len(selected_result_ids) != len(set(selected_result_ids)):
         raise ValueError("selected_result_ids에는 중복 ID를 사용할 수 없습니다.")
 
-    result_ids = {
-        result.result_id
+    results_by_id = {
+        result.result_id: result
         for result in state.get("retrieval_results", [])
     }
     missing = [
         result_id
         for result_id in selected_result_ids
-        if result_id not in result_ids
+        if result_id not in results_by_id
     ]
     if missing:
         raise ValueError(f"RetrievalResult를 찾지 못했습니다: {missing}")
+
+    not_success = [
+        result_id
+        for result_id in selected_result_ids
+        if results_by_id[result_id].status != "SUCCESS"
+    ]
+    if not_success:
+        raise ValueError(
+            "SUCCESS 상태가 아닌 RetrievalResult는 선택할 수 없습니다: "
+            f"{not_success}"
+        )
 
 
 # retriever llm에 현재 state를 전달하기 위해 HumanMessage를 생성하는 함수
@@ -1389,7 +1400,14 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
     """Retriever의 tool schema와 state 참조를 실행 전에 검증합니다."""
 
     # tools가 utils를 import하므로 실행 시점에 불러와 순환 import를 피합니다.
-    from .tools import finish, retrieve_search
+    from .tools import (
+        _validate_calculate_call,
+        _validate_combine_call,
+        calculate_table_statistic,
+        combine_numeric_results,
+        finish,
+        retrieve_search,
+    )
 
     if not isinstance(tool_call, dict):
         raise ValueError("tool call은 object 형식이어야 합니다.")
@@ -1411,6 +1429,26 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             state,
         )
         return
+    if name == "calculate_table_statistic":
+        validated = calculate_table_statistic.tool_call_schema.model_validate(args)
+        _validate_calculate_call(
+            validated.variable_name,
+            validated.column,
+            validated.targets,
+            state,
+            validated.row_selector,
+        )
+        return
+    if name == "combine_numeric_results":
+        validated = combine_numeric_results.tool_call_schema.model_validate(args)
+        _validate_combine_call(
+            validated.variable_name,
+            validated.operation,
+            validated.targets,
+            state,
+            validated.periods,
+        )
+        return
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 
 
@@ -1418,7 +1456,12 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
     """검증된 Retriever tool call을 실제 LangChain tool에 전달합니다."""
 
     # tools가 utils를 import하므로 실행 시점에 불러와 순환 import를 피합니다.
-    from .tools import finish, retrieve_search
+    from .tools import (
+        calculate_table_statistic,
+        combine_numeric_results,
+        finish,
+        retrieve_search,
+    )
 
     name = tool_call["name"]
     args = tool_call["args"]
@@ -1427,6 +1470,10 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
         return retrieve_search.invoke({**args, "state": state})
     if name == "finish":
         return finish.invoke({**args, "state": state})
+    if name == "calculate_table_statistic":
+        return calculate_table_statistic.invoke({**args, "state": state})
+    if name == "combine_numeric_results":
+        return combine_numeric_results.invoke({**args, "state": state})
 
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 

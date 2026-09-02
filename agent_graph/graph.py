@@ -18,7 +18,12 @@ from .state import (
     PlannerOutput,
     QuestionAnalysis,
 )
-from .tools import finish, retrieve_search
+from .tools import (
+    calculate_table_statistic,
+    combine_numeric_results,
+    finish,
+    retrieve_search,
+)
 from .utils import (
     build_retriever_human_message,
     build_answer_generator_human_message,

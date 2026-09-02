@@ -6,8 +6,8 @@ from agent_graph.state import AnswerGeneratorOutput, Citation, RetrievalResult
 from agent_graph.tools import (
     calculate_table_statistic,
     combine_numeric_results,
-    resolve_answer_draft,
 )
+from agent_graph.utils import resolve_answer_draft
 
 
 def _r_table_item(
