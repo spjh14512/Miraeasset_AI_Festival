@@ -7,7 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 from agent_graph.state import RetrievalResult
-from agent_graph.tools import NumericResultTarget, combine_numeric_results
+from agent_graph.tools import combine_numeric_results
+from agent_graph.utils import NumericResultTarget
 
 
 def _derived_result(

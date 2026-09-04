@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from datetime import date
+import json
+
 import pytest
 from pydantic import ValidationError
 
-from agent_graph.graph import planner, route_after_analysis
+from agent_graph.graph import question_analyzer, route_after_analysis
 from agent_graph.state import (
     PlanDraft,
-    PlannerOutput,
+    QuestionAnalyzerOutput,
     QuestionAnalysis,
+    SubQuestion,
 )
+from agent_graph.utils import build_retriever_human_message
 
 
 def _plan_draft() -> PlanDraft:
@@ -20,12 +25,33 @@ def _plan_draft() -> PlanDraft:
     )
 
 
+def _sub_question() -> SubQuestion:
+    return SubQuestion(
+        question="삼성전자의 시설 투자 내용은 무엇인가?",
+        entities=[{
+            "mention": "삼성전자",
+            "roles": ["ISSUER"],
+            "canonical_name": "삼성전자",
+            "match_status": "MATCHED",
+        }],
+        events=[{
+            "event_type": "시설 투자",
+            "candidate_event_types": [],
+            "confidence": "HIGH",
+        }],
+        intents=["DETAIL"],
+        periods=[],
+        requested_facts=["시설 투자 내용"],
+    )
+
+
 def test_retrieve_decision_does_not_create_a_plan():
-    output = PlannerOutput(
+    output = QuestionAnalyzerOutput(
         question_analysis=QuestionAnalysis(
             decision="retrieve",
             normalized_question="삼성전자 시설 투자를 알려줘",
             decision_reason="공시 Evidence가 필요합니다.",
+            sub_questions=[_sub_question()],
         ),
     )
 
@@ -34,9 +60,9 @@ def test_retrieve_decision_does_not_create_a_plan():
     }
 
 
-def test_planner_output_rejects_plans_for_every_decision():
+def test_question_analyzer_output_rejects_plans_for_every_decision():
     with pytest.raises(ValidationError, match="plans"):
-        PlannerOutput(
+        QuestionAnalyzerOutput(
             question_analysis=QuestionAnalysis(
                 decision="direct",
                 normalized_question="안녕하세요",
@@ -52,6 +78,29 @@ def test_clarify_decision_requires_a_clarification_question():
             decision="clarify",
             normalized_question="매출을 알려줘",
             decision_reason="대상 기업과 기간이 필요합니다.",
+        )
+
+
+def test_retrieve_output_requires_a_sub_question():
+    with pytest.raises(ValidationError, match="sub_questions"):
+        QuestionAnalyzerOutput(
+            question_analysis=QuestionAnalysis(
+                decision="retrieve",
+                normalized_question="삼성전자 시설 투자를 알려줘",
+                decision_reason="공시 Evidence가 필요합니다.",
+            )
+        )
+
+
+def test_multiple_sub_questions_require_synthesis_requirement():
+    with pytest.raises(ValidationError, match="synthesis_requirement"):
+        QuestionAnalyzerOutput(
+            question_analysis=QuestionAnalysis(
+                decision="retrieve",
+                normalized_question="삼성전자와 SK하이닉스의 투자를 비교해줘",
+                decision_reason="두 기업의 공시 Evidence가 필요합니다.",
+                sub_questions=[_sub_question(), _sub_question()],
+            )
         )
 
 
@@ -95,8 +144,8 @@ def test_route_after_analysis(analysis, expected):
     assert route_after_analysis(state) == expected
 
 
-class _FakeStructuredPlanner:
-    def __init__(self, result: PlannerOutput):
+class _FakeStructuredQuestionAnalyzer:
+    def __init__(self, result: QuestionAnalyzerOutput):
         self.result = result
         self.messages = None
 
@@ -106,8 +155,8 @@ class _FakeStructuredPlanner:
 
 
 class _FakeLlm:
-    def __init__(self, result: PlannerOutput):
-        self.structured = _FakeStructuredPlanner(result)
+    def __init__(self, result: QuestionAnalyzerOutput):
+        self.structured = _FakeStructuredQuestionAnalyzer(result)
         self.schema = None
         self.method = None
 
@@ -117,18 +166,19 @@ class _FakeLlm:
         return self.structured
 
 
-def test_planner_returns_analysis_without_plans():
+def test_question_analyzer_returns_analysis_without_plans():
     expected_analysis = QuestionAnalysis(
         decision="retrieve",
         normalized_question="삼성전자 시설 투자를 알려줘",
         decision_reason="공시 Evidence가 필요합니다.",
+        sub_questions=[_sub_question()],
     )
-    expected = PlannerOutput(
+    expected = QuestionAnalyzerOutput(
         question_analysis=expected_analysis,
     )
     llm = _FakeLlm(expected)
 
-    update = planner(
+    update = question_analyzer(
         {
             "question_id": "question-1",
             "question_text": "  삼성전자 시설 투자를 알려줘  ",
@@ -141,26 +191,30 @@ def test_planner_returns_analysis_without_plans():
         "next_plan_seq": 1,
         "retrieval_status": "CONTINUE",
     }
-    assert llm.schema is PlannerOutput
-    assert llm.method == "function_calling"
-    assert llm.structured.messages[-1].content == "삼성전자 시설 투자를 알려줘"
+    assert llm.schema["title"] == "QuestionAnalyzerOutput"
+    assert llm.method == "json_schema"
+    assert json.loads(llm.structured.messages[-1].content) == {
+        "current_date": date.today().isoformat(),
+        "user_question": "삼성전자 시설 투자를 알려줘",
+    }
 
 
-def test_planner_rejects_an_empty_question():
+def test_question_analyzer_rejects_an_empty_question():
     with pytest.raises(ValueError, match="비어 있을 수 없습니다"):
-        planner(
+        question_analyzer(
             {"question_id": "question-1", "question_text": "  "},
             llm=object(),
         )
 
 
-def test_planner_rejects_initial_plan_payload():
+def test_question_analyzer_rejects_initial_plan_payload():
     with pytest.raises(ValidationError, match="plans"):
-        PlannerOutput(
+        QuestionAnalyzerOutput(
             question_analysis=QuestionAnalysis(
                 decision="retrieve",
                 normalized_question="삼성전자 시설 투자를 알려줘",
                 decision_reason="공시 Evidence가 필요합니다.",
+                sub_questions=[_sub_question()],
             ),
             plans=[PlanDraft(
                 source="qdrant",
@@ -170,3 +224,21 @@ def test_planner_rejects_initial_plan_payload():
             )],
         )
 
+
+def test_retriever_human_message_contains_full_question_analysis():
+    analysis = QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="삼성전자 시설 투자를 알려줘",
+        decision_reason="공시 Evidence가 필요합니다.",
+        sub_questions=[_sub_question()],
+    )
+
+    message = build_retriever_human_message({
+        "question_id": "question-1",
+        "question_text": "삼성전자 시설 투자를 알려줘",
+        "question_analysis": analysis,
+        "retrieval_results": [],
+    })
+    payload = json.loads(message.content.split("\n\n", 1)[1])
+
+    assert payload["question_analysis"] == analysis.model_dump(mode="json")

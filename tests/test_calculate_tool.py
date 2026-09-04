@@ -7,11 +7,11 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from agent_graph.state import RetrievalResult
-from agent_graph.tools import (
+from agent_graph.tools import calculate_table_statistic
+from agent_graph.utils import (
     CalculationOperation,
     TableRowSelector,
     TableTarget,
-    calculate_table_statistic,
 )
 
 

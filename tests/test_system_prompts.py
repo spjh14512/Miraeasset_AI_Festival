@@ -10,24 +10,32 @@ QDRANT_QUERY_SCHEMA_PATH = (
 )
 
 
-def test_planner_prompt_matches_current_retrieval_sources():
-    prompt = sp.PLANNER_SYSTEM_PROMPT
+def test_question_analyzer_prompt_matches_current_contract():
+    prompt = sp.QUESTION_ANALYZER_SYSTEM_PROMPT
 
-    assert "2023-01-02 ~ 2026-06-01" in prompt
-    assert "Company → Disclosure → Section → Evidence" in prompt
-    assert "Entity" not in prompt
-    assert "Event" not in prompt
-    assert "테마" not in prompt
-    assert "결산월" not in prompt
-    assert "question_analysis: QuestionAnalysis" in prompt
-    assert "plans: list[PlanDraft]" not in prompt
-    assert "Retriever가 `retrieve_search`를 호출할 때 즉석에서 생성" in prompt
+    assert "current_date" in prompt
+    assert "sub_questions" in prompt
+    assert "entities" in prompt
+    assert "events" in prompt
+    assert "intents" in prompt
+    assert "periods" in prompt
+    assert "requested_facts" in prompt
+    assert "synthesis_requirement" in prompt
+    assert "registry 기반 정규화" in prompt
+    assert "QuestionAnalyzerOutput" in prompt
+    assert "Plan, PlanDraft, retrieval source" in prompt
+    assert "Cypher 또는 Qdrant filter를 생성하지 마세요" in prompt
+    assert not hasattr(sp, "PLANNER_SYSTEM_PROMPT")
 
 
 def test_retriever_prompt_matches_current_state_and_qdrant_items():
     prompt = sp.RETRIEVER_SYSTEM_PROMPT
 
     assert "user_question" in prompt
+    assert "question_analysis" in prompt
+    assert "sub_questions" in prompt
+    assert "synthesis_requirement" in prompt
+    assert "정보 요구 checklist" in prompt
     assert "retrieve_search(plan, limit)" in prompt
     assert "QueryPlan" not in prompt
     assert "plan_executions" not in prompt

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 from . import system_prompts as sp
 from .llm import (
     MAX_LLM_RETRIES,
+    bind_structured_output,
     build_output_retry_message,
     get_llm,
     invoke_with_rate_limit_retry,
@@ -45,10 +46,7 @@ class CompactorOutput(BaseModel):
 
 @lru_cache(maxsize=1)
 def _get_compactor_llm() -> Any:
-    return get_llm().with_structured_output(
-        CompactorOutput,
-        method="function_calling",
-    )
+    return bind_structured_output(get_llm(), CompactorOutput)
 
 
 def _point_value(point: Any, key: str) -> Any:

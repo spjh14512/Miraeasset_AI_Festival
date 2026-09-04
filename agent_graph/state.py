@@ -15,6 +15,41 @@ RetrievalResultStatus = Literal[
     "INVALID_INPUT",
 ]
 QuestionDecision = Literal["retrieve", "direct", "clarify"]
+EntityRole = Literal[
+    "ISSUER",
+    "TARGET",
+    "COUNTERPARTY",
+    "SUBSIDIARY",
+    "INVESTEE",
+    "SHAREHOLDER",
+    "OTHER",
+]
+EntityMatchStatus = Literal["MATCHED", "AMBIGUOUS", "NOT_FOUND", "UNKNOWN"]
+EventConfidence = Literal["HIGH", "MEDIUM", "LOW"]
+QuestionIntent = Literal[
+    "DECISION",
+    "PLAN",
+    "EXECUTION",
+    "RESULT",
+    "STATUS",
+    "CHANGE",
+    "HISTORY",
+    "TREND",
+    "AMOUNT",
+    "DETAIL",
+    "EXISTENCE",
+    "COMPARISON",
+    "UNKNOWN",
+]
+PeriodKind = Literal[
+    "FILING_DATE",
+    "REPORTING_PERIOD",
+    "EVENT_DATE",
+    "AS_OF",
+    "RELATIVE_DOCUMENT",
+    "OTHER",
+]
+PeriodGranularity = Literal["DATE", "MONTH", "YEAR", "RANGE", "UNKNOWN"]
 
 
 class PlanDraft(BaseModel):
@@ -52,6 +87,77 @@ class Plan(PlanDraft):
         )
 
 
+class EntityMention(BaseModel):
+    """질문에 등장한 기업 등 검색 대상 entity를 나타냅니다."""
+
+    mention: str = Field(..., min_length=1)
+    roles: list[EntityRole] = Field(..., min_length=1)
+    canonical_name: str | None = None
+    match_status: EntityMatchStatus = "UNKNOWN"
+
+    @field_validator("mention")
+    @classmethod
+    def normalize_mention(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("roles")
+    @classmethod
+    def deduplicate_roles(cls, value: list[EntityRole]) -> list[EntityRole]:
+        return list(dict.fromkeys(value))
+
+
+class EventAnalysis(BaseModel):
+    """질문이 가리키는 사건 유형 후보와 분석 확신도를 나타냅니다."""
+
+    event_type: str | None = None
+    candidate_event_types: list[str] = Field(default_factory=list)
+    confidence: EventConfidence = "LOW"
+
+    @field_validator("candidate_event_types")
+    @classmethod
+    def normalize_candidates(cls, value: list[str]) -> list[str]:
+        candidates = [candidate.strip() for candidate in value if candidate.strip()]
+        return list(dict.fromkeys(candidates))
+
+
+class PeriodAnalysis(BaseModel):
+    """질문에 명시되거나 암시된 기간 표현과 의미를 나타냅니다."""
+
+    expression: str = Field(..., min_length=1)
+    kind: PeriodKind
+    normalized_value: str | None = None
+    granularity: PeriodGranularity = "UNKNOWN"
+
+    @field_validator("expression")
+    @classmethod
+    def normalize_expression(cls, value: str) -> str:
+        return value.strip()
+
+
+class SubQuestion(BaseModel):
+    """독립적으로 검색 가능한 하나의 정보 요구를 나타냅니다."""
+
+    question: str = Field(..., min_length=1)
+    entities: list[EntityMention] = Field(default_factory=list)
+    events: list[EventAnalysis] = Field(default_factory=list)
+    intents: list[QuestionIntent] = Field(..., min_length=1)
+    periods: list[PeriodAnalysis] = Field(default_factory=list)
+    requested_facts: list[str] = Field(..., min_length=1)
+
+    @field_validator("question")
+    @classmethod
+    def normalize_question(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("intents", "requested_facts")
+    @classmethod
+    def deduplicate_non_empty_values(cls, value: list[str]) -> list[str]:
+        normalized = [item.strip() for item in value if item.strip()]
+        if not normalized:
+            raise ValueError("하나 이상의 값이 필요합니다.")
+        return list(dict.fromkeys(normalized))
+
+
 class QuestionAnalysis(BaseModel):
     """질문의 처리 경로와 정규화 결과를 나타낸다."""
 
@@ -63,6 +169,8 @@ class QuestionAnalysis(BaseModel):
         description="Routing 결정을 설명하는 짧은 근거",
     )
     clarification_question: str | None = None
+    sub_questions: list[SubQuestion] = Field(default_factory=list)
+    synthesis_requirement: str | None = None
 
     @model_validator(mode="after")
     def validate_decision_payload(self) -> "QuestionAnalysis":
@@ -77,12 +185,23 @@ class QuestionAnalysis(BaseModel):
         return self
 
 
-class PlannerOutput(BaseModel):
-    """Planner가 한 번의 호출로 생성하는 질문 분석 결과입니다."""
+class QuestionAnalyzerOutput(BaseModel):
+    """Question Analyzer가 한 번의 호출로 생성하는 분석 결과입니다."""
 
     model_config = ConfigDict(extra="forbid")
 
     question_analysis: QuestionAnalysis
+
+    @model_validator(mode="after")
+    def validate_analysis(self) -> "QuestionAnalyzerOutput":
+        analysis = self.question_analysis
+        if analysis.decision == "retrieve" and not analysis.sub_questions:
+            raise ValueError("retrieve 결정에는 하나 이상의 sub_questions가 필요합니다.")
+        if len(analysis.sub_questions) > 1 and not analysis.synthesis_requirement:
+            raise ValueError(
+                "여러 sub_questions를 생성한 경우 synthesis_requirement가 필요합니다."
+            )
+        return self
 
 
 class RetrievalResult(BaseModel):

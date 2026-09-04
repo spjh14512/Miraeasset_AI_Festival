@@ -6,7 +6,7 @@ from agent_graph.compactor import CompactorOutput, compact_qdrant_point
 from agent_graph.state import (
     AnswerGeneratorOutput,
     Plan,
-    PlannerOutput,
+    QuestionAnalyzerOutput,
     QuestionAnalysis,
     RetrievalResult,
 )
@@ -66,7 +66,7 @@ def _answer_state() -> dict:
     }
 
 
-def test_planner_retries_invalid_structured_output():
+def test_question_analyzer_retries_invalid_structured_output():
     llm = _SequenceLlm([
         {
             "question_analysis": {
@@ -75,14 +75,25 @@ def test_planner_retries_invalid_structured_output():
                 "decision_reason": "검색이 필요합니다.",
             }
         },
-        PlannerOutput(question_analysis=QuestionAnalysis(
+        QuestionAnalyzerOutput(question_analysis=QuestionAnalysis(
             decision="retrieve",
             normalized_question="삼성전자 정보",
             decision_reason="검색이 필요합니다.",
+            sub_questions=[{
+                "question": "삼성전자의 정보는 무엇인가?",
+                "entities": [{
+                    "mention": "삼성전자",
+                    "roles": ["ISSUER"],
+                }],
+                "events": [],
+                "intents": ["DETAIL"],
+                "periods": [],
+                "requested_facts": ["기업 정보"],
+            }],
         )),
     ])
 
-    update = graph_module.planner({
+    update = graph_module.question_analyzer({
         "question_id": "question-1",
         "question_text": "삼성전자 정보를 알려줘",
     }, llm=llm)

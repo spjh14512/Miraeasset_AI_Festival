@@ -1,3 +1,5 @@
+import json
+from datetime import date
 from functools import lru_cache
 from typing import Any
 
@@ -8,6 +10,7 @@ from pydantic import ValidationError
 from . import system_prompts as sp
 from .llm import (
     MAX_LLM_RETRIES,
+    bind_structured_output,
     build_output_retry_message,
     get_llm,
     invoke_with_rate_limit_retry,
@@ -15,10 +18,15 @@ from .llm import (
 from .state import (
     AgentState,
     AnswerGeneratorOutput,
-    PlannerOutput,
+    QuestionAnalyzerOutput,
     QuestionAnalysis,
 )
-from .tools import finish, retrieve_search
+from .tools import (
+    calculate_table_statistic,
+    combine_numeric_results,
+    finish,
+    retrieve_search,
+)
 from .utils import (
     build_retriever_human_message,
     build_answer_generator_human_message,
@@ -36,13 +44,12 @@ MAX_TOOL_CALL_RETRIES = MAX_LLM_RETRIES
 
 
 @lru_cache(maxsize=1)
-def _build_planner_llm() -> Any:
-    """공용 LLM에 planner structured output을 한 번 binding한다."""
+def _build_question_analyzer_llm() -> Any:
+    """공용 LLM에 Question Analyzer structured output을 한 번 binding합니다."""
 
-    return get_llm().with_structured_output(
-        PlannerOutput,
-        method="function_calling",
-    )
+    return bind_structured_output(get_llm(), QuestionAnalyzerOutput)
+
+
 @lru_cache(maxsize=1)
 def _build_retriever_llm() -> Any:
     """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
@@ -50,64 +57,67 @@ def _build_retriever_llm() -> Any:
     return get_llm().bind_tools(
         [retrieve_search, calculate_table_statistic, combine_numeric_results, finish],
     )
+
+
 @lru_cache(maxsize=1)
 def _build_answer_generator_llm() -> Any:
     """공용 LLM에 answer generator structured output을 한 번 binding한다."""
 
-    return get_llm().with_structured_output(
-        AnswerGeneratorOutput,
-        method="function_calling"
-    )
+    return bind_structured_output(get_llm(), AnswerGeneratorOutput)
 
 
 # Actual Node
 
 
-def planner(
+def question_analyzer(
     state: AgentState,
     *,
     llm: Any | None = None,
 ) -> dict:
-    """사용자의 질문을 분석하고 routing 결정을 생성합니다."""
+    """질문을 작은 정보 요구로 분석하고 routing 결정을 생성합니다."""
 
-    print("-- planner 노드 호출 --")
+    print("-- question_analyzer 노드 호출 --")
 
     question = state["question_text"].strip()
     if not question:
         raise ValueError("question_text는 비어 있을 수 없습니다.")
 
-    planner_llm = (
-        _build_planner_llm()
+    question_analyzer_llm = (
+        _build_question_analyzer_llm()
         if llm is None
-        else llm.with_structured_output(
-            PlannerOutput,
-            method="function_calling",
-        )
+        else bind_structured_output(llm, QuestionAnalyzerOutput)
     )
     messages = [
-        SystemMessage(content=sp.PLANNER_SYSTEM_PROMPT),
-        HumanMessage(content=question),
+        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT),
+        HumanMessage(content=json.dumps(
+            {
+                "current_date": date.today().isoformat(),
+                "user_question": question,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )),
     ]
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
-            response = invoke_with_rate_limit_retry(planner_llm, messages)
-            planner_output = (
+            response = invoke_with_rate_limit_retry(question_analyzer_llm, messages)
+            analyzer_output = (
                 response
-                if isinstance(response, PlannerOutput)
-                else PlannerOutput.model_validate(response)
+                if isinstance(response, QuestionAnalyzerOutput)
+                else QuestionAnalyzerOutput.model_validate(response)
             )
             break
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
             messages.append(HumanMessage(content=build_output_retry_message(
-                "PlannerOutput",
+                "QuestionAnalyzerOutput",
                 error,
             )))
 
-    print("질문 분석 결과:\n", planner_output, "\n" + "\n\n")
+    print("질문 분석 결과:\n", analyzer_output, "\n" + "\n\n")
     return {
-        "question_analysis": planner_output.question_analysis,
+        "question_analysis": analyzer_output.question_analysis,
         "next_plan_seq": state.get("next_plan_seq", 1),
         "retrieval_status": "CONTINUE"
     }
@@ -176,10 +186,7 @@ def answer_generator(
     answer_generator_llm = (
         _build_answer_generator_llm()
         if llm is None
-        else llm.with_structured_output(
-            AnswerGeneratorOutput,
-            method="function_calling"
-        )   
+        else bind_structured_output(llm, AnswerGeneratorOutput)
     )
 
     messages = [
@@ -267,7 +274,7 @@ def route_after_retrieval(state: AgentState) -> str:
 
 # Node
 
-graph_builder.add_node("planner", planner)
+graph_builder.add_node("question_analyzer", question_analyzer)
 graph_builder.add_node("retriever", retriever)
 graph_builder.add_node("answer_generator", answer_generator)
 graph_builder.add_node("answer_directly", answer_directly)
@@ -276,9 +283,9 @@ graph_builder.add_node("request_clarification", request_clarification)
 
 # Edge
 
-graph_builder.set_entry_point("planner")
+graph_builder.set_entry_point("question_analyzer")
 graph_builder.add_conditional_edges(
-    "planner",
+    "question_analyzer",
     route_after_analysis,
     {
         "retrieve": "retriever",

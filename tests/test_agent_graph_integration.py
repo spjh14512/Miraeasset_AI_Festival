@@ -27,7 +27,7 @@ class _FakeAnswerLlm:
         self._structured = _FakeStructuredLlm(result)
 
     def with_structured_output(self, _schema, *, method):
-        assert method == "function_calling"
+        assert method == "json_schema"
         return self._structured
 
 
