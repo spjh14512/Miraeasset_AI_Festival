@@ -90,6 +90,7 @@ def test_retriever_can_finish_with_tool_interface():
     assert update["selected_result_ids"] == ["retrieval:plan_1"]
     assert {tool.name for tool in llm.bound_tools} == {
         "retrieve_search",
+        "retrieve_correction_history",
         "calculate_table_statistic",
         "combine_numeric_results",
         "finish",

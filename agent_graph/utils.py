@@ -65,6 +65,29 @@ RETURN citation.disclosure_id AS disclosure_id,
        s.section_path AS section_path,
        e.heading_path AS heading_path
 """.strip()
+CORRECTION_HISTORY_QUERY = """
+MATCH path = (latest:Disclosure {id: $disclosure_id})-[:CORRECTS*1..]->(oldest:Disclosure)
+WHERE latest.is_latest_version = true
+  AND NOT EXISTS {
+    MATCH (oldest)-[:CORRECTS]->(:Disclosure)
+  }
+WITH nodes(path) AS versions, relationships(path) AS corrections
+UNWIND range(size(corrections) - 1, 0, -1) AS correction_index
+WITH versions[correction_index + 1] AS before,
+     versions[correction_index] AS after,
+     corrections[correction_index] AS correction,
+     size(corrections) - correction_index AS sequence
+RETURN sequence,
+       before.id AS before_disclosure_id,
+       before.report_name AS before_report_name,
+       after.id AS after_disclosure_id,
+       after.id AS disclosure_id,
+       after.report_name AS after_report_name,
+       correction.correction_date AS correction_date,
+       correction.reason AS reason,
+       correction.def AS correction_content
+ORDER BY sequence
+""".strip()
 
 load_dotenv()
 neo4j_uri = os.getenv("NEO4J_URI")
@@ -796,6 +819,31 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
         query=cypher_query.cypher,
         parameters=cypher_query.parameters
     )
+
+
+def correction_history_executor(
+    disclosure_id: str,
+    plan_id: str,
+) -> RetrievalResult:
+    """최신 공시에서 최초 공시까지의 정정 관계를 오래된 순서로 조회합니다."""
+
+    parameters = {"disclosure_id": disclosure_id}
+    try:
+        with neo4j_driver.session() as session:
+            result = list(session.run(CORRECTION_HISTORY_QUERY, parameters))
+    except Exception as error:
+        raise RuntimeError("Neo4j 정정이력 조회 중 오류 발생!") from error
+
+    return parse_neo4j_response(
+        result,
+        plan_id=plan_id,
+        query=CORRECTION_HISTORY_QUERY,
+        parameters=parameters,
+        metadata={
+            "requested_disclosure_id": disclosure_id,
+            "history_order": "oldest_to_latest",
+        },
+    )
     
 
 def query_executor(qdrant_query: QdrantQuery) -> Any:
@@ -1406,6 +1454,7 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
         calculate_table_statistic,
         combine_numeric_results,
         finish,
+        retrieve_correction_history,
         retrieve_search,
     )
 
@@ -1420,6 +1469,9 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             state.get("next_plan_seq", 1),
         )
         _resolve_plan_dependencies(executable_plan, state)
+        return
+    if name == "retrieve_correction_history":
+        retrieve_correction_history.tool_call_schema.model_validate(args)
         return
     if name == "finish":
         validated = finish.tool_call_schema.model_validate(args)
@@ -1460,6 +1512,7 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
         calculate_table_statistic,
         combine_numeric_results,
         finish,
+        retrieve_correction_history,
         retrieve_search,
     )
 
@@ -1468,6 +1521,8 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
 
     if name == "retrieve_search":
         return retrieve_search.invoke({**args, "state": state})
+    if name == "retrieve_correction_history":
+        return retrieve_correction_history.invoke({**args, "state": state})
     if name == "finish":
         return finish.invoke({**args, "state": state})
     if name == "calculate_table_statistic":

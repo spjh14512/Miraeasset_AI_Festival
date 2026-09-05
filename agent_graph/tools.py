@@ -22,6 +22,7 @@ from .utils import (
     _execute_retrieval_plan,
     _resolve_plan_dependencies,
     _validate_finish_selection,
+    correction_history_executor,
 )
 
 
@@ -88,6 +89,58 @@ def retrieve_search(
     if executable_plan.source == "qdrant":
         update["retrieved_qdrant_point_ids"] = previous_point_ids + new_point_ids
     return update
+
+
+@tool
+def retrieve_correction_history(
+    disclosure_id: Annotated[
+        str,
+        Field(
+            pattern=r"^d\d{14}$",
+            description="정정이력을 조회할 최신 공시 ID(d + 숫자 14자리)",
+        ),
+    ],
+    state: Annotated[AgentState, InjectedState],
+) -> dict:
+    """최신 공시 ID에 연결된 전체 CORRECTS 이력을 조회합니다.
+
+    정정 관계의 날짜, 사유, 정정내용을 최초 정정부터 최신 정정 순서로
+    RetrievalResult에 추가합니다. 일반 공시 검색이나 Qdrant는 실행하지 않습니다.
+    """
+
+    next_plan_seq = state.get("next_plan_seq", 1)
+    plan_id = f"plan_{next_plan_seq}"
+    try:
+        retrieval_result = correction_history_executor(disclosure_id, plan_id)
+    except RuntimeError as error:
+        retrieval_result = RetrievalResult(
+            result_id=f"retrieval:{plan_id}",
+            plan_id=plan_id,
+            source="neo4j",
+            status=_classify_execution_error(error),
+            query="retrieve correction history by disclosure_id",
+            items=[],
+            result_count=0,
+            metadata={
+                "failure_stage": "query_executor",
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+                "requested_disclosure_id": disclosure_id,
+                "plan_purpose": "공시 정정이력 확인",
+            },
+        )
+    else:
+        retrieval_result = retrieval_result.model_copy(update={
+            "metadata": {
+                **retrieval_result.metadata,
+                "plan_purpose": "공시 정정이력 확인",
+            }
+        })
+
+    return {
+        "next_plan_seq": next_plan_seq + 1,
+        "retrieval_results": [retrieval_result],
+    }
 
 
 @tool

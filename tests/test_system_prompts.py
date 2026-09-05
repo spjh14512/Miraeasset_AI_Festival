@@ -29,6 +29,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
 
     assert "user_question" in prompt
     assert "retrieve_search(plan, limit)" in prompt
+    assert "retrieve_correction_history(disclosure_id)" in prompt
     assert "QueryPlan" not in prompt
     assert "plan_executions" not in prompt
     assert "COMPLETE" in prompt
@@ -153,6 +154,14 @@ def test_retrieval_prompts_enforce_latest_disclosure_version():
     assert "automatic_filters" in schema
     assert "is_latest_version" in schema
     assert "llm_output: forbidden" in schema
+
+
+def test_retriever_prompt_limits_correction_history_to_explicit_requests():
+    prompt = sp.RETRIEVER_SYSTEM_PROMPT
+
+    assert "정정 이력을 명시적으로 요구하면" in prompt
+    assert "일반 검색에서 최신 disclosure_id를 확인한 뒤" in prompt
+    assert "정정이력을 묻지 않은 일반 질문에는 호출하지 마세요" in prompt
 
 
 def test_compactor_prompt_prefers_recall_when_uncertain():
