@@ -70,6 +70,42 @@ class _Client:
         self.closed = True
 
 
+def test_main_skips_thermal_guard_when_cuda_is_unavailable(monkeypatch, capsys):
+    args = SimpleNamespace(
+        schema=Path("schema.yaml"),
+        disable_gpu_thermal_guard=False,
+        gpu_pause_temperature=82,
+        gpu_resume_temperature=72,
+        gpu_temperature_poll_seconds=10.0,
+        data_root=Path("data"),
+        limit=None,
+        random_seed=None,
+        batch_size=128,
+        embedding_buffer_size=512,
+        dry_run=True,
+        resume_from=None,
+    )
+    captured = {}
+    monkeypatch.setattr(insert_points, "parse_args", lambda: args)
+    monkeypatch.setattr(insert_points, "load_qdrant_schema", lambda path: _schema())
+    monkeypatch.setattr(insert_points, "cuda_is_available", lambda: False)
+    monkeypatch.setattr(
+        insert_points,
+        "GpuThermalGuard",
+        lambda **kwargs: pytest.fail("thermal guard must not be created"),
+    )
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return {"status": "ok"}
+
+    monkeypatch.setattr(insert_points, "run", fake_run)
+
+    assert insert_points.main() == 0
+    assert captured["thermal_guard"] is None
+    assert "using CPU embedding" in capsys.readouterr().out
+
+
 def test_loads_current_qdrant_schema():
     schema = insert_points.load_qdrant_schema(
         Path("vector_db/qdrant_schema.yaml")

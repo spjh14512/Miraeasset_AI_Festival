@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 
 import vector_db.text2vector as text2vector
@@ -12,6 +10,7 @@ def embedding_environment(monkeypatch):
     monkeypatch.setenv("MODEL_NAME", "bge-m3")
     monkeypatch.setenv("VECTOR_DIMENSION", "1024")
     monkeypatch.setattr(text2vector, "load_dotenv", lambda: None)
+    monkeypatch.setattr(text2vector, "cuda_is_available", lambda: True)
     text2vector._load_model.cache_clear()
     yield
 
@@ -122,16 +121,7 @@ def test_text_to_hybrid_vector_preserves_single_text_api(monkeypatch):
     assert result.sparse.indices == (1, 42)
 
 
-def test_build_model_requires_cuda(monkeypatch):
-    torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: False))
-    monkeypatch.setattr(text2vector, "_torch_module", lambda: torch)
-
-    with pytest.raises(text2vector.LocalEmbeddingError, match="CUDA is required"):
-        text2vector._build_model("BAAI/bge-m3", "D:/model-cache")
-
-
-def test_build_model_uses_cuda_zero_and_fp16(monkeypatch):
-    torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True))
+def test_build_model_falls_back_to_cpu_and_fp32(monkeypatch):
     captured = {}
 
     class FakeModel:
@@ -139,7 +129,30 @@ def test_build_model_uses_cuda_zero_and_fp16(monkeypatch):
             captured["model_name"] = model_name
             captured["kwargs"] = kwargs
 
-    monkeypatch.setattr(text2vector, "_torch_module", lambda: torch)
+    monkeypatch.setattr(text2vector, "cuda_is_available", lambda: False)
+    monkeypatch.setattr(text2vector, "_bge_m3_model_class", lambda: FakeModel)
+
+    text2vector._build_model("BAAI/bge-m3", "D:/model-cache")
+
+    assert captured == {
+        "model_name": "BAAI/bge-m3",
+        "kwargs": {
+            "devices": "cpu",
+            "use_fp16": False,
+            "normalize_embeddings": True,
+            "cache_dir": "D:/model-cache",
+        },
+    }
+
+
+def test_build_model_uses_cuda_zero_and_fp16(monkeypatch):
+    captured = {}
+
+    class FakeModel:
+        def __init__(self, model_name, **kwargs):
+            captured["model_name"] = model_name
+            captured["kwargs"] = kwargs
+
     monkeypatch.setattr(text2vector, "_bge_m3_model_class", lambda: FakeModel)
 
     text2vector._build_model("BAAI/bge-m3", "D:/model-cache")
@@ -153,6 +166,20 @@ def test_build_model_uses_cuda_zero_and_fp16(monkeypatch):
             "cache_dir": "D:/model-cache",
         },
     }
+
+
+def test_cpu_embedding_uses_smaller_batch(monkeypatch):
+    model = _Model()
+    monkeypatch.setattr(text2vector, "cuda_is_available", lambda: False)
+    monkeypatch.setattr(
+        text2vector,
+        "_load_model",
+        lambda model_name, model_cache_dir: model,
+    )
+
+    text2vector.texts_to_hybrid_vectors(["first", "second"])
+
+    assert model.calls[0][1]["batch_size"] == 4
 
 
 @pytest.mark.parametrize("value", ["", "   ", None, 123])

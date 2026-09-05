@@ -22,7 +22,9 @@ MODEL_CACHE_DIR_ENV = "EMBEDDING_MODEL_CACHE_DIR"
 DEFAULT_MODEL_NAME = "BAAI/bge-m3"
 DEFAULT_MODEL_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "model_cache"
 CUDA_DEVICE = "cuda:0"
+CPU_DEVICE = "cpu"
 EMBEDDING_BATCH_SIZE = 32
+CPU_EMBEDDING_BATCH_SIZE = 4
 EMBEDDING_MAX_LENGTH = 3000
 
 
@@ -126,6 +128,16 @@ def _torch_module() -> Any:
     return torch
 
 
+def cuda_is_available() -> bool:
+    """Return whether local PyTorch can use CUDA device zero."""
+    torch = _torch_module()
+    return bool(torch.cuda.is_available())
+
+
+def _embedding_batch_size() -> int:
+    return EMBEDDING_BATCH_SIZE if cuda_is_available() else CPU_EMBEDDING_BATCH_SIZE
+
+
 def _bge_m3_model_class() -> Any:
     try:
         from FlagEmbedding import BGEM3FlagModel
@@ -138,18 +150,15 @@ def _bge_m3_model_class() -> Any:
 
 def _build_model(model_name: str, model_cache_dir: str) -> Any:
     _configure_quiet_embedding_output()
-    torch = _torch_module()
-    if not torch.cuda.is_available():
-        raise LocalEmbeddingError(
-            f"CUDA is required but unavailable for device {CUDA_DEVICE}"
-        )
+    use_cuda = cuda_is_available()
+    device = CUDA_DEVICE if use_cuda else CPU_DEVICE
 
     model_class = _bge_m3_model_class()
     try:
         return model_class(
             model_name,
-            devices=CUDA_DEVICE,
-            use_fp16=True,
+            devices=device,
+            use_fp16=use_cuda,
             normalize_embeddings=True,
             cache_dir=model_cache_dir,
         )
@@ -289,7 +298,7 @@ def texts_to_vectors(texts: Sequence[str]) -> list[list[float]]:
     try:
         result = model.encode(
             validated_texts,
-            batch_size=EMBEDDING_BATCH_SIZE,
+            batch_size=_embedding_batch_size(),
             max_length=EMBEDDING_MAX_LENGTH,
             return_dense=True,
             return_sparse=False,
@@ -314,7 +323,7 @@ def texts_to_hybrid_vectors(texts: Sequence[str]) -> list[HybridEmbedding]:
     try:
         result = model.encode(
             validated_texts,
-            batch_size=EMBEDDING_BATCH_SIZE,
+            batch_size=_embedding_batch_size(),
             max_length=EMBEDDING_MAX_LENGTH,
             return_dense=True,
             return_sparse=True,
@@ -356,12 +365,15 @@ def text_to_hybrid_vector(text: str) -> HybridEmbedding:
 
 
 __all__ = [
+    "CPU_DEVICE",
+    "CPU_EMBEDDING_BATCH_SIZE",
     "CUDA_DEVICE",
     "EMBEDDING_BATCH_SIZE",
     "EMBEDDING_MAX_LENGTH",
     "HybridEmbedding",
     "LocalEmbeddingError",
     "SparseEmbedding",
+    "cuda_is_available",
     "text_to_hybrid_vector",
     "text_to_vector",
     "texts_to_hybrid_vectors",

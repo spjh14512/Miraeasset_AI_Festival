@@ -37,7 +37,11 @@ from vector_db.point_builder import (
     assemble_qdrant_points,
     build_point_inputs,
 )
-from vector_db.text2vector import HybridEmbedding, texts_to_hybrid_vectors
+from vector_db.text2vector import (
+    HybridEmbedding,
+    cuda_is_available,
+    texts_to_hybrid_vectors,
+)
 
 
 BatchVectorizer = Callable[[Sequence[str]], list[HybridEmbedding]]
@@ -778,7 +782,7 @@ def main() -> int:
     args = parse_args()
     schema = load_qdrant_schema(args.schema)
     thermal_guard = None
-    if not args.disable_gpu_thermal_guard:
+    if not args.disable_gpu_thermal_guard and cuda_is_available():
         thermal_guard = GpuThermalGuard(
             pause_temperature=args.gpu_pause_temperature,
             resume_temperature=args.gpu_resume_temperature,
@@ -786,6 +790,8 @@ def main() -> int:
         )
         temperature = thermal_guard.validate()
         print(f"GPU thermal guard ready: {temperature}°C.")
+    elif not args.disable_gpu_thermal_guard:
+        print("CUDA unavailable; using CPU embedding without GPU thermal guard.")
     result = run(
         data_root=args.data_root,
         schema=schema,
