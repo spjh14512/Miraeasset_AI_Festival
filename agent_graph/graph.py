@@ -36,6 +36,7 @@ from .utils import (
     assign_subquestion_ids,
     build_retriever_human_message,
     build_answer_generator_human_message,
+    load_universe_table,
     resolve_answer_draft,
     execute_tool_call,
     run_narrow_scope_agent,
@@ -104,7 +105,9 @@ def question_analyzer(
         else bind_structured_output(llm, QuestionAnalyzerOutput)
     )
     messages = [
-        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT),
+        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT.format(
+            universe_table=load_universe_table(),
+        )),
         HumanMessage(content=json.dumps(
             {
                 "current_date": date.today().isoformat(),

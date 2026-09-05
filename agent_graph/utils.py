@@ -65,6 +65,10 @@ NEO4J_SCHEMA_PATH = (
 QDRANT_QUERY_SCHEMA_PATH = Path(__file__).with_name("qdrant_query_schema.yaml")
 DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
 DOCUMENT_MANIFEST_PATH = DATA_ROOT / "manifest.jsonl"
+# data/는 git에 포함되지 않으므로 저장소에 추적되는 DOCS/ 사본을 읽습니다.
+UNIVERSE_TABLE_PATH = (
+    Path(__file__).resolve().parents[1] / "DOCS" / "universe.tsv"
+)
 CITATION_CONTEXT_QUERY = """
 UNWIND $citations AS citation
 MATCH (d:Disclosure {id: citation.disclosure_id})
@@ -429,6 +433,13 @@ def _load_qdrant_query_schema() -> str:
     """Qdrant query schema 문서를 한 번 읽어 캐시합니다."""
 
     return QDRANT_QUERY_SCHEMA_PATH.read_text(encoding="utf-8")
+
+
+@lru_cache(maxsize=1)
+def load_universe_table() -> str:
+    """기업 마스터 TSV를 한 번 읽어 캐시합니다."""
+
+    return UNIVERSE_TABLE_PATH.read_text(encoding="utf-8")
 
 
 @lru_cache(maxsize=1)

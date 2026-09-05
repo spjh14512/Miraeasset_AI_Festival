@@ -21,7 +21,8 @@ def test_question_analyzer_prompt_matches_current_contract():
     assert "periods" in prompt
     assert "requested_facts" in prompt
     assert "synthesis_requirement" in prompt
-    assert "registry 기반 정규화" in prompt
+    assert "기업 Registry" in prompt
+    assert "{universe_table}" in prompt
     assert "QuestionAnalyzerOutput" in prompt
     assert "Plan, PlanDraft, retrieval source" in prompt
     assert "Cypher 또는 Qdrant filter를 생성하지 마세요" in prompt

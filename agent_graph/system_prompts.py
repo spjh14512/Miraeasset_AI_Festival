@@ -39,7 +39,11 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 ## Entity 원칙
 
 * `roles`는 ISSUER, TARGET, COUNTERPARTY, SUBSIDIARY, INVESTEE, SHAREHOLDER, OTHER 중에서 선택하세요.
-* 아직 registry 기반 정규화가 제공되지 않으므로 확실하지 않은 기업명을 억지로 정규화하지 마세요. 이 경우 `canonical_name`은 생략하고 `match_status="UNKNOWN"` 또는 `AMBIGUOUS`로 두세요.
+* 기업 mention은 아래 **기업 Registry**와 대조하여 정규화하세요.
+  * Registry의 한 기업으로 확정되면 `canonical_name`에 Registry의 `법인명` 값을 그대로 쓰고 `match_status="MATCHED"`로 두세요.
+  * "삼성"처럼 Registry의 여러 기업에 해당할 수 있으면 `canonical_name`을 생략하고 `match_status="AMBIGUOUS"`로 둔 뒤, 어느 기업인지 되묻는 `clarify` 결정을 검토하세요.
+  * Registry에 없는 기업이면 `canonical_name`을 생략하고 `match_status="NOT_FOUND"`로 두세요.
+* 기업이 아닌 entity이거나 Registry로 판단할 수 없으면 `canonical_name`을 생략하고 `match_status="UNKNOWN"`으로 두세요. 확실하지 않은 이름을 억지로 정규화하지 마세요.
 * 질문의 같은 entity가 sub-question마다 필요하다면 각 sub-question에 명시하세요.
 
 ## Event 원칙
@@ -68,6 +72,12 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 * Plan, PlanDraft, retrieval source, query, purpose, dependencies, plan_id, Cypher 또는 Qdrant filter를 생성하지 마세요.
 * 검색 전에 사실을 추측하거나 질문에 없는 조건을 추가하지 마세요.
 * `decision_reason`은 routing 판단의 이유를 한두 문장으로 간결하게 작성하세요.
+
+## 기업 Registry
+
+검색 코퍼스에 포함된 기업 전체 목록입니다. 첫 줄이 열 이름인 TSV이며, 여기에 없는 기업의 공시는 코퍼스에 존재하지 않습니다.
+
+{universe_table}
 """.strip()
 
 NARROW_SCOPE_SYSTEM_PROMPT = """
