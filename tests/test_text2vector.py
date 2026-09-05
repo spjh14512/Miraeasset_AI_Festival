@@ -9,6 +9,7 @@ import vector_db.text2vector as text2vector
 def embedding_environment(monkeypatch):
     monkeypatch.setenv("MODEL_NAME", "bge-m3")
     monkeypatch.setenv("VECTOR_DIMENSION", "1024")
+    monkeypatch.setenv("EMBEDDING_DEVICE", "auto")
     monkeypatch.setattr(text2vector, "load_dotenv", lambda: None)
     monkeypatch.setattr(text2vector, "cuda_is_available", lambda: True)
     text2vector._load_model.cache_clear()
@@ -180,6 +181,33 @@ def test_cpu_embedding_uses_smaller_batch(monkeypatch):
     text2vector.texts_to_hybrid_vectors(["first", "second"])
 
     assert model.calls[0][1]["batch_size"] == 4
+
+
+def test_explicit_cpu_device_does_not_probe_cuda(monkeypatch):
+    monkeypatch.setenv("EMBEDDING_DEVICE", "cpu")
+    monkeypatch.setattr(
+        text2vector,
+        "cuda_is_available",
+        lambda: pytest.fail("CUDA must not be probed for explicit CPU mode"),
+    )
+
+    assert text2vector.embedding_device() == "cpu"
+
+
+def test_embedding_progress_is_reported(monkeypatch, capsys):
+    model = _Model()
+    monkeypatch.setattr(
+        text2vector,
+        "_load_model",
+        lambda model_name, model_cache_dir: model,
+    )
+
+    text2vector.texts_to_hybrid_vectors(["first", "second"])
+
+    output = capsys.readouterr().out
+    assert "Embedding started: texts=2" in output
+    assert "device=cuda:0" in output
+    assert "Embedding completed: texts=2" in output
 
 
 @pytest.mark.parametrize("value", ["", "   ", None, 123])

@@ -88,7 +88,11 @@ def test_main_skips_thermal_guard_when_cuda_is_unavailable(monkeypatch, capsys):
     captured = {}
     monkeypatch.setattr(insert_points, "parse_args", lambda: args)
     monkeypatch.setattr(insert_points, "load_qdrant_schema", lambda path: _schema())
-    monkeypatch.setattr(insert_points, "cuda_is_available", lambda: False)
+    monkeypatch.setattr(
+        insert_points,
+        "embedding_device",
+        lambda: insert_points.CPU_DEVICE,
+    )
     monkeypatch.setattr(
         insert_points,
         "GpuThermalGuard",

@@ -38,8 +38,9 @@ from vector_db.point_builder import (
     build_point_inputs,
 )
 from vector_db.text2vector import (
+    CPU_DEVICE,
     HybridEmbedding,
-    cuda_is_available,
+    embedding_device,
     texts_to_hybrid_vectors,
 )
 
@@ -782,7 +783,7 @@ def main() -> int:
     args = parse_args()
     schema = load_qdrant_schema(args.schema)
     thermal_guard = None
-    if not args.disable_gpu_thermal_guard and cuda_is_available():
+    if not args.disable_gpu_thermal_guard and embedding_device() != CPU_DEVICE:
         thermal_guard = GpuThermalGuard(
             pause_temperature=args.gpu_pause_temperature,
             resume_temperature=args.gpu_resume_temperature,

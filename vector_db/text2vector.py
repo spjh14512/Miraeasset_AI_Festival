@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
@@ -18,6 +19,7 @@ from dotenv import load_dotenv
 MODEL_NAME_ENV = "MODEL_NAME"
 VECTOR_DIMENSION_ENV = "VECTOR_DIMENSION"
 MODEL_CACHE_DIR_ENV = "EMBEDDING_MODEL_CACHE_DIR"
+EMBEDDING_DEVICE_ENV = "EMBEDDING_DEVICE"
 
 DEFAULT_MODEL_NAME = "BAAI/bge-m3"
 DEFAULT_MODEL_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "model_cache"
@@ -46,10 +48,8 @@ class HybridEmbedding:
 
 @lru_cache(maxsize=1)
 def _configure_quiet_embedding_output() -> None:
-    """Hide third-party embedding progress and routine logs, but keep exceptions."""
+    """Reduce routine logs while leaving download and inference progress visible."""
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
-    os.environ.setdefault("TQDM_DISABLE", "1")
 
     for logger_name in (
         "FlagEmbedding",
@@ -63,14 +63,6 @@ def _configure_quiet_embedding_output() -> None:
         from transformers.utils import logging as transformers_logging
 
         transformers_logging.set_verbosity_error()
-        transformers_logging.disable_progress_bar()
-    except ImportError:
-        pass
-
-    try:
-        from huggingface_hub.utils import disable_progress_bars
-
-        disable_progress_bars()
     except ImportError:
         pass
 
@@ -131,11 +123,39 @@ def _torch_module() -> Any:
 def cuda_is_available() -> bool:
     """Return whether local PyTorch can use CUDA device zero."""
     torch = _torch_module()
-    return bool(torch.cuda.is_available())
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            return bool(torch.cuda.is_available())
+    except (RuntimeError, OSError):
+        return False
+
+
+def embedding_device() -> str:
+    """Resolve EMBEDDING_DEVICE without probing CUDA when CPU is explicit."""
+    load_dotenv()
+    requested = os.getenv(EMBEDDING_DEVICE_ENV, "auto").strip().casefold()
+    if requested in {"", "auto"}:
+        return CUDA_DEVICE if cuda_is_available() else CPU_DEVICE
+    if requested == CPU_DEVICE:
+        return CPU_DEVICE
+    if requested in {"cuda", CUDA_DEVICE}:
+        if not cuda_is_available():
+            raise LocalEmbeddingError(
+                f"{EMBEDDING_DEVICE_ENV} requests CUDA, but CUDA is unavailable"
+            )
+        return CUDA_DEVICE
+    raise LocalEmbeddingError(
+        f"{EMBEDDING_DEVICE_ENV} must be one of: auto, cpu, cuda, cuda:0"
+    )
 
 
 def _embedding_batch_size() -> int:
-    return EMBEDDING_BATCH_SIZE if cuda_is_available() else CPU_EMBEDDING_BATCH_SIZE
+    return (
+        EMBEDDING_BATCH_SIZE
+        if embedding_device() == CUDA_DEVICE
+        else CPU_EMBEDDING_BATCH_SIZE
+    )
 
 
 def _bge_m3_model_class() -> Any:
@@ -148,30 +168,44 @@ def _bge_m3_model_class() -> Any:
     return BGEM3FlagModel
 
 
-def _build_model(model_name: str, model_cache_dir: str) -> Any:
+def _build_model(
+    model_name: str,
+    model_cache_dir: str,
+    *,
+    device: str | None = None,
+) -> Any:
     _configure_quiet_embedding_output()
-    use_cuda = cuda_is_available()
-    device = CUDA_DEVICE if use_cuda else CPU_DEVICE
+    resolved_device = device or embedding_device()
+    use_cuda = resolved_device == CUDA_DEVICE
 
     model_class = _bge_m3_model_class()
     try:
         return model_class(
             model_name,
-            devices=device,
+            devices=resolved_device,
             use_fp16=use_cuda,
             normalize_embeddings=True,
             cache_dir=model_cache_dir,
         )
     except Exception as error:
         raise LocalEmbeddingError(
-            f"Failed to load local embedding model: {model_name}"
+            "Failed to load local embedding model "
+            f"{model_name} on {resolved_device}: {type(error).__name__}: {error}"
         ) from error
 
 
 @lru_cache(maxsize=1)
 def _load_model(model_name: str, model_cache_dir: str) -> Any:
     """Load BGE-M3 once and reuse it across embedding batches."""
-    return _build_model(model_name, model_cache_dir)
+    device = embedding_device()
+    print(
+        f"Loading embedding model: {model_name} "
+        f"(device={device}, precision={'fp16' if device == CUDA_DEVICE else 'fp32'})",
+        flush=True,
+    )
+    model = _build_model(model_name, model_cache_dir, device=device)
+    print(f"Embedding model loaded: {model_name} (device={device})", flush=True)
+    return model
 
 
 def _validated_texts(texts: Sequence[str]) -> list[str]:
@@ -290,22 +324,34 @@ def _parse_sparse_vectors(
 
 
 def texts_to_vectors(texts: Sequence[str]) -> list[list[float]]:
-    """Embed contextual texts locally in batches on the configured CUDA GPU."""
+    """Embed contextual texts locally on the configured device."""
     validated_texts = _validated_texts(texts)
     settings = _load_settings()
     model = _load_model(settings.model_name, settings.model_cache_dir)
+    device = embedding_device()
+    batch_size = _embedding_batch_size()
+    print(
+        f"Embedding started: texts={len(validated_texts)}, device={device}, "
+        f"batch_size={batch_size}, max_length={EMBEDDING_MAX_LENGTH}, mode=dense",
+        flush=True,
+    )
 
     try:
         result = model.encode(
             validated_texts,
-            batch_size=_embedding_batch_size(),
+            batch_size=batch_size,
             max_length=EMBEDDING_MAX_LENGTH,
             return_dense=True,
             return_sparse=False,
             return_colbert_vecs=False,
         )
     except Exception as error:
-        raise LocalEmbeddingError("Local BGE-M3 embedding failed") from error
+        raise LocalEmbeddingError(
+            "Local BGE-M3 embedding failed: "
+            f"{type(error).__name__}: {error}"
+        ) from error
+
+    print(f"Embedding completed: texts={len(validated_texts)}, mode=dense", flush=True)
 
     return _parse_dense_vectors(
         result,
@@ -319,18 +365,30 @@ def texts_to_hybrid_vectors(texts: Sequence[str]) -> list[HybridEmbedding]:
     validated_texts = _validated_texts(texts)
     settings = _load_settings()
     model = _load_model(settings.model_name, settings.model_cache_dir)
+    device = embedding_device()
+    batch_size = _embedding_batch_size()
+    print(
+        f"Embedding started: texts={len(validated_texts)}, device={device}, "
+        f"batch_size={batch_size}, max_length={EMBEDDING_MAX_LENGTH}, mode=hybrid",
+        flush=True,
+    )
 
     try:
         result = model.encode(
             validated_texts,
-            batch_size=_embedding_batch_size(),
+            batch_size=batch_size,
             max_length=EMBEDDING_MAX_LENGTH,
             return_dense=True,
             return_sparse=True,
             return_colbert_vecs=False,
         )
     except Exception as error:
-        raise LocalEmbeddingError("Local BGE-M3 hybrid embedding failed") from error
+        raise LocalEmbeddingError(
+            "Local BGE-M3 hybrid embedding failed: "
+            f"{type(error).__name__}: {error}"
+        ) from error
+
+    print(f"Embedding completed: texts={len(validated_texts)}, mode=hybrid", flush=True)
 
     dense_vectors = _parse_dense_vectors(
         result,
@@ -369,11 +427,13 @@ __all__ = [
     "CPU_EMBEDDING_BATCH_SIZE",
     "CUDA_DEVICE",
     "EMBEDDING_BATCH_SIZE",
+    "EMBEDDING_DEVICE_ENV",
     "EMBEDDING_MAX_LENGTH",
     "HybridEmbedding",
     "LocalEmbeddingError",
     "SparseEmbedding",
     "cuda_is_available",
+    "embedding_device",
     "text_to_hybrid_vector",
     "text_to_vector",
     "texts_to_hybrid_vectors",
