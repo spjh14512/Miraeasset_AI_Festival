@@ -77,6 +77,29 @@ RETURN citation.disclosure_id AS disclosure_id,
        s.section_path AS section_path,
        e.heading_path AS heading_path
 """.strip()
+CORRECTION_HISTORY_QUERY = """
+MATCH path = (latest:Disclosure {id: $disclosure_id})-[:CORRECTS*1..]->(oldest:Disclosure)
+WHERE latest.is_latest_version = true
+  AND NOT EXISTS {
+    MATCH (oldest)-[:CORRECTS]->(:Disclosure)
+  }
+WITH nodes(path) AS versions, relationships(path) AS corrections
+UNWIND range(size(corrections) - 1, 0, -1) AS correction_index
+WITH versions[correction_index + 1] AS before,
+     versions[correction_index] AS after,
+     corrections[correction_index] AS correction,
+     size(corrections) - correction_index AS sequence
+RETURN sequence,
+       before.id AS before_disclosure_id,
+       before.report_name AS before_report_name,
+       after.id AS after_disclosure_id,
+       after.id AS disclosure_id,
+       after.report_name AS after_report_name,
+       correction.correction_date AS correction_date,
+       correction.reason AS reason,
+       correction.def AS correction_content
+ORDER BY sequence
+""".strip()
 
 load_dotenv()
 neo4j_uri = os.getenv("NEO4J_URI")
@@ -1619,8 +1642,41 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
         query=cypher_query.cypher,
         parameters=cypher_query.parameters
     )
+
+
+def correction_history_executor(
+    disclosure_id: str,
+    plan_id: str,
+) -> RetrievalResult:
+    """최신 공시에서 최초 공시까지의 정정 관계를 오래된 순서로 조회합니다."""
+
+    parameters = {"disclosure_id": disclosure_id}
+    try:
+        with neo4j_driver.session() as session:
+            result = list(session.run(CORRECTION_HISTORY_QUERY, parameters))
+    except Exception as error:
+        raise RuntimeError("Neo4j 정정이력 조회 중 오류 발생!") from error
+
+    return parse_neo4j_response(
+        result,
+        plan_id=plan_id,
+        query=CORRECTION_HISTORY_QUERY,
+        parameters=parameters,
+        metadata={
+            "requested_disclosure_id": disclosure_id,
+            "history_order": "oldest_to_latest",
+        },
+    )
     
 
+def query_executor(qdrant_query: QdrantQuery, exhaustive: bool = False) -> Any:
+    """Qdrant query를 실행하고 가공하지 않은 client 응답을 반환합니다.
+
+    exhaustive=True이면 filter mode에서 scroll의 next_page_offset을 끝까지
+    따라가며 조건에 맞는 point 전체를 모아 반환합니다. Retriever의 대화형
+    검색(progressive limit)에는 사용하지 않으며, Tier 3 배치 추출처럼
+    누락 없는 전수 조회가 필요한 경우에만 사용합니다.
+    """
 def query_executor(
     qdrant_query: QdrantQuery,
     *,
@@ -1665,6 +1721,8 @@ def query_executor(
 
     try:
         if qdrant_query.mode == "vector":
+            if exhaustive:
+                raise ValueError("exhaustive 조회는 filter mode에서만 사용할 수 있습니다.")
             embedding = qdrant_query.query_vector
             if not isinstance(embedding, HybridEmbedding):
                 raise ValueError("vector mode requires a hybrid query embedding")
@@ -1694,6 +1752,24 @@ def query_executor(
                 with_payload=True,
                 with_vectors=False
             )
+        elif exhaustive:
+            page_size = 100
+            records: list[Any] = []
+            offset = None
+            while True:
+                page_records, next_offset = qdrant_client.scroll(
+                    collection_name=qdrant_collection_name,
+                    scroll_filter=query_filter,
+                    limit=page_size,
+                    offset=offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                records.extend(page_records)
+                if next_offset is None:
+                    break
+                offset = next_offset
+            result = records
         else:
             result = qdrant_client.scroll(
                 collection_name=qdrant_collection_name,
@@ -2253,6 +2329,12 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
 
     # tools가 utils를 import하므로 실행 시점에 불러와 순환 import를 피합니다.
     from .tools import (
+        _validate_calculate_call,
+        _validate_combine_call,
+        calculate_table_statistic,
+        combine_numeric_results,
+        finish,
+        retrieve_correction_history,
         calculate_table_statistic,
         combine_numeric_results,
         finish,
@@ -2292,12 +2374,35 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             validated.periods,
         )
         return
+    if name == "retrieve_correction_history":
+        retrieve_correction_history.tool_call_schema.model_validate(args)
+        return
     if name == "finish":
         validated = finish.tool_call_schema.model_validate(args)
         _validate_finish_selection(
             validated.status,
             validated.selected_result_ids,
             state,
+        )
+        return
+    if name == "calculate_table_statistic":
+        validated = calculate_table_statistic.tool_call_schema.model_validate(args)
+        _validate_calculate_call(
+            validated.variable_name,
+            validated.column,
+            validated.targets,
+            state,
+            validated.row_selector,
+        )
+        return
+    if name == "combine_numeric_results":
+        validated = combine_numeric_results.tool_call_schema.model_validate(args)
+        _validate_combine_call(
+            validated.variable_name,
+            validated.operation,
+            validated.targets,
+            state,
+            validated.periods,
         )
         return
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
@@ -2311,6 +2416,7 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
         calculate_table_statistic,
         combine_numeric_results,
         finish,
+        retrieve_correction_history,
         retrieve_search,
     )
 
@@ -2319,12 +2425,18 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
 
     if name == "retrieve_search":
         return retrieve_search.invoke({**args, "state": state})
+    if name == "retrieve_correction_history":
+        return retrieve_correction_history.invoke({**args, "state": state})
     if name == "calculate_table_statistic":
         return calculate_table_statistic.invoke({**args, "state": state})
     if name == "combine_numeric_results":
         return combine_numeric_results.invoke({**args, "state": state})
     if name == "finish":
         return finish.invoke({**args, "state": state})
+    if name == "calculate_table_statistic":
+        return calculate_table_statistic.invoke({**args, "state": state})
+    if name == "combine_numeric_results":
+        return combine_numeric_results.invoke({**args, "state": state})
 
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 

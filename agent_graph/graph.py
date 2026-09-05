@@ -180,7 +180,13 @@ def retriever(
 ) -> dict:
     print("retriever 노드 호출")
 
-    tools = [retrieve_search, calculate_table_statistic, combine_numeric_results, finish]
+    tools = [
+        retrieve_search,
+        retrieve_correction_history,
+        calculate_table_statistic,
+        combine_numeric_results,
+        finish,
+    ]
 
     retriever_llm = (
         _build_retriever_llm()

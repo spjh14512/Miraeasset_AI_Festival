@@ -69,7 +69,9 @@ def test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context():
 
     assert result.status == CorrectionStatus.FOUND
     assert payload["source_document"]["rcept_no"] == "20241118000171"
-    assert payload["correction"] == {
+    correction_payload = dict(payload["correction"])
+    raw_text = correction_payload.pop("raw_text")
+    assert correction_payload == {
         "title": "정 정 신 고 (보고)",
         "correction_date": "2024-11-18",
         "target_document_name": "주요사항보고서(자기주식취득결정)",
@@ -82,6 +84,9 @@ def test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context():
             "html_id": None,
         },
     }
+    assert raw_text is not None
+    assert "정정대상 공시서류" in raw_text
+    assert "기재 내용 정정" in raw_text
     assert payload["excluded_source_refs"] == [
         {
             "syntax": "DART_XML",
@@ -97,6 +102,28 @@ def test_xml_extracts_metadata_and_keeps_current_rcept_no_from_context():
         "PARAGRAPH",
         "TABLE",
     ]
+
+
+def test_xml_raw_text_preserves_correction_cells_and_excludes_report_body():
+    document = """
+    <DOCUMENT><BODY><LIBRARY><CORRECTION>
+      <TITLE>correction report</TITLE>
+      <P>3. correction details</P>
+      <TABLE><TR><TH>item</TH><TH>before</TH><TH>after</TH></TR>
+        <TR><TD>report type</TD><TD>change</TD><TD>change and amendment</TD></TR>
+      </TABLE>
+    </CORRECTION></LIBRARY>
+    <SECTION-1><TITLE>REPORT_BODY_MUST_NOT_BE_INCLUDED</TITLE></SECTION-1>
+    </BODY></DOCUMENT>
+    """
+
+    result = extract_correction(document, context=_context())
+
+    assert result.correction is not None
+    assert result.correction.raw_text is not None
+    assert "item before after" in result.correction.raw_text
+    assert "report type change change and amendment" in result.correction.raw_text
+    assert "REPORT_BODY_MUST_NOT_BE_INCLUDED" not in result.correction.raw_text
 
 
 def test_current_rcept_no_does_not_depend_on_correction_date():
@@ -322,6 +349,8 @@ def test_exchange_html_uses_container_and_three_d8_tables():
     assert result.correction.target_document_name == "단일판매ㆍ공급계약 체결"
     assert result.correction.original_submission_date == "2025-07-28"
     assert result.correction.reason == "계약상대방 공개"
+    assert result.correction.raw_text is not None
+    assert "계약상대방 공개" in result.correction.raw_text
     assert [block.source_ref.html_id for block in result.correction_blocks] == [
         "XFormD8_Form0_Table1",
         "XFormD8_Form0_RepeatTable0",
@@ -381,6 +410,9 @@ def test_exchange_html_can_fall_back_to_d8_table_ids():
         "XFormD8_Form0_RepeatTable0",
         "XFormD8_Form0_Table0",
     ]
+    assert result.correction is not None
+    assert result.correction.raw_text is not None
+    assert "계약상대방 공개" in result.correction.raw_text
 
 
 def test_html_without_correction_markers_is_not_found():

@@ -251,6 +251,52 @@ def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
     assert client.scroll_call["scroll_filter"].must[0].match.value is True
 
 
+class _PagedQdrantClient:
+    def __init__(self, pages):
+        self.pages = list(pages)
+        self.scroll_calls: list[dict] = []
+
+    def scroll(self, **kwargs):
+        self.scroll_calls.append(kwargs)
+        return self.pages.pop(0)
+
+
+def test_query_executor_exhaustive_follows_pagination_to_completion(monkeypatch):
+    point_1 = _r_table_point("00000000-0000-0000-0000-000000000001")
+    point_2 = _r_table_point("00000000-0000-0000-0000-000000000002")
+    point_3 = _r_table_point("00000000-0000-0000-0000-000000000003")
+    client = _PagedQdrantClient([
+        ([point_1, point_2], "cursor-1"),
+        ([point_3], None),
+    ])
+    monkeypatch.setattr(tools, "qdrant_client", client)
+    query = QdrantQuery(
+        mode="filter",
+        filters=[{"key": "chunking.table_id", "match": "table-1"}],
+        limit=10,
+    )
+
+    result = tools.query_executor(query, exhaustive=True)
+
+    assert result == [point_1, point_2, point_3]
+    assert len(client.scroll_calls) == 2
+    assert client.scroll_calls[0]["offset"] is None
+    assert client.scroll_calls[1]["offset"] == "cursor-1"
+
+
+def test_query_executor_exhaustive_rejects_vector_mode(monkeypatch):
+    client = _QdrantClient(QueryResponse(points=[]))
+    monkeypatch.setattr(tools, "qdrant_client", client)
+    query = QdrantQuery(
+        mode="vector",
+        query_text="삼성전자 특별관계자",
+        query_vector=_hybrid(),
+    )
+
+    with pytest.raises(RuntimeError):
+        tools.query_executor(query, exhaustive=True)
+
+
 def test_qdrant_query_limit_is_owned_by_application():
     schema = QdrantQuery.model_json_schema()
     query = QdrantQuery(

@@ -73,6 +73,7 @@ def correction_relation_rows(path: Path) -> list[dict[str, Any]]:
             "original_submission_date": correction.get("original_submission_date"),
             "target_document_name": correction.get("target_document_name"),
             "reason": correction.get("reason"),
+            "def": correction.get("raw_text"),
         }
         previous = relations.get(source_rcept_no)
         if (
@@ -213,7 +214,8 @@ def insert_correction_relations(
                 SET relation.correction_date = row.correction_date,
                     relation.original_submission_date = row.original_submission_date,
                     relation.target_document_name = row.target_document_name,
-                    relation.reason = row.reason
+                    relation.reason = row.reason,
+                    relation.def = row.def
                 """,
                 rows=batch,
             ).consume()
