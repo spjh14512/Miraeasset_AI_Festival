@@ -846,8 +846,14 @@ def correction_history_executor(
     )
     
 
-def query_executor(qdrant_query: QdrantQuery) -> Any:
-    """Qdrant query를 실행하고 가공하지 않은 client 응답을 반환합니다."""
+def query_executor(qdrant_query: QdrantQuery, exhaustive: bool = False) -> Any:
+    """Qdrant query를 실행하고 가공하지 않은 client 응답을 반환합니다.
+
+    exhaustive=True이면 filter mode에서 scroll의 next_page_offset을 끝까지
+    따라가며 조건에 맞는 point 전체를 모아 반환합니다. Retriever의 대화형
+    검색(progressive limit)에는 사용하지 않으며, Tier 3 배치 추출처럼
+    누락 없는 전수 조회가 필요한 경우에만 사용합니다.
+    """
 
 
     must = [models.FieldCondition(
@@ -872,6 +878,8 @@ def query_executor(qdrant_query: QdrantQuery) -> Any:
 
     try:
         if qdrant_query.mode == "vector":
+            if exhaustive:
+                raise ValueError("exhaustive 조회는 filter mode에서만 사용할 수 있습니다.")
             embedding = qdrant_query.query_vector
             if not isinstance(embedding, HybridEmbedding):
                 raise ValueError("vector mode requires a hybrid query embedding")
@@ -901,6 +909,24 @@ def query_executor(qdrant_query: QdrantQuery) -> Any:
                 with_payload=True,
                 with_vectors=False
             )
+        elif exhaustive:
+            page_size = 100
+            records: list[Any] = []
+            offset = None
+            while True:
+                page_records, next_offset = qdrant_client.scroll(
+                    collection_name=qdrant_collection_name,
+                    scroll_filter=query_filter,
+                    limit=page_size,
+                    offset=offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                records.extend(page_records)
+                if next_offset is None:
+                    break
+                offset = next_offset
+            result = records
         else:
             result = qdrant_client.scroll(
                 collection_name=qdrant_collection_name,
