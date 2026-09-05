@@ -11,6 +11,12 @@ output_contract:
       owner: application
       llm_output: forbidden
       reason: 기본 retrieval은 정정 이력에서 최신 버전인 공시만 검색
+    selected_scope:
+      owner: application
+      llm_output: forbidden
+      reason: >-
+        Plan.scope_id가 있으면 Scope level에 따라 corp_name, disclosure_id 또는
+        section_id로 검색 범위를 제한. GLOBAL은 추가 filter 없음
   mode:
     type: enum
     values: ["vector", "filter"]
@@ -50,6 +56,7 @@ output_contract:
         availability: 여러 Point로 청킹된 R_TABLE에만 존재
     condition_rules:
       - is_latest_version=true는 application이 자동 적용하므로 LLM이 생성하지 않음
+      - 선택된 Scope의 ID filter는 application이 자동 적용하므로 LLM이 중복 생성하지 않음
       - 하나의 filter에는 match만 사용하고 range는 사용하지 않음
       - match 값은 string scalar만 허용
       - match에 list, array, object를 사용하지 않음

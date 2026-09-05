@@ -48,6 +48,7 @@ def _plan() -> Plan:
         query="최대주주인 특별관계자",
         purpose="특별관계자 성명 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
 
 

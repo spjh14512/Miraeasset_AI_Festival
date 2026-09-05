@@ -50,6 +50,7 @@ PeriodKind = Literal[
     "OTHER",
 ]
 PeriodGranularity = Literal["DATE", "MONTH", "YEAR", "RANGE", "UNKNOWN"]
+ScopeLevel = Literal["GLOBAL", "COMPANY", "DISCLOSURE", "SECTION"]
 
 
 class PlanDraft(BaseModel):
@@ -62,6 +63,14 @@ class PlanDraft(BaseModel):
     query: str = Field(..., min_length=1, description="검색할 자연어 정보 요구")
     purpose: str = Field(..., min_length=1, description="검색 결과가 필요한 이유")
     dependencies: list[str] = Field(..., description="이 Plan의 query 생성에 사용할 기존 RetrievalResult의 result_id 목록")
+    scope_id: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "application이 생성한 Scope의 scope_id. 범위를 좁힐 수 없는 경우에도 "
+            "GLOBAL Scope의 ID를 사용"
+        ),
+    )
 
     @field_validator("dependencies")
     @classmethod
@@ -72,6 +81,14 @@ class PlanDraft(BaseModel):
         if len(dependencies) != len(set(dependencies)):
             raise ValueError("dependencies에는 중복 result_id를 사용할 수 없습니다.")
         return dependencies
+
+    @field_validator("scope_id")
+    @classmethod
+    def validate_scope_id(cls, value: str) -> str:
+        scope_id = value.strip()
+        if not scope_id:
+            raise ValueError("scope_id는 비어 있을 수 없습니다.")
+        return scope_id
 
 
 class Plan(PlanDraft):
@@ -137,6 +154,7 @@ class PeriodAnalysis(BaseModel):
 class SubQuestion(BaseModel):
     """독립적으로 검색 가능한 하나의 정보 요구를 나타냅니다."""
 
+    subquestion_id: SkipJsonSchema[str | None] = None
     question: str = Field(..., min_length=1)
     entities: list[EntityMention] = Field(default_factory=list)
     events: list[EventAnalysis] = Field(default_factory=list)
@@ -156,6 +174,103 @@ class SubQuestion(BaseModel):
         if not normalized:
             raise ValueError("하나 이상의 값이 필요합니다.")
         return list(dict.fromkeys(normalized))
+
+
+class ScopeDraft(BaseModel):
+    """narrow_scope 내부 LLM이 선택한 계층형 검색 범위입니다."""
+
+    level: ScopeLevel
+    corp_names: list[str] = Field(default_factory=list)
+    corp_codes: list[str] = Field(default_factory=list)
+    disclosure_ids: list[str] = Field(default_factory=list)
+    section_ids: list[str] = Field(default_factory=list)
+    reason: str = Field(..., min_length=1)
+
+    @field_validator("reason")
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Scope의 필수 문자열은 비어 있을 수 없습니다.")
+        return normalized
+
+    @field_validator("corp_names", "corp_codes", "disclosure_ids", "section_ids")
+    @classmethod
+    def normalize_ids(cls, value: list[str]) -> list[str]:
+        normalized = [item.strip() for item in value]
+        if any(not item for item in normalized):
+            raise ValueError("Scope 목록에는 빈 값을 사용할 수 없습니다.")
+        return list(dict.fromkeys(normalized))
+
+    @model_validator(mode="after")
+    def validate_level(self) -> "ScopeDraft":
+        if self.level == "GLOBAL":
+            if any((self.corp_names, self.corp_codes, self.disclosure_ids, self.section_ids)):
+                raise ValueError("GLOBAL Scope에는 범위 식별자를 사용할 수 없습니다.")
+        elif self.level == "COMPANY":
+            if not self.corp_names:
+                raise ValueError("COMPANY Scope에는 corp_names가 필요합니다.")
+            if self.disclosure_ids or self.section_ids:
+                raise ValueError("COMPANY Scope에는 공시·섹션 ID를 사용할 수 없습니다.")
+        elif self.level == "DISCLOSURE":
+            if not self.disclosure_ids:
+                raise ValueError("DISCLOSURE Scope에는 disclosure_ids가 필요합니다.")
+            if self.section_ids:
+                raise ValueError("DISCLOSURE Scope에는 section_ids를 사용할 수 없습니다.")
+        elif self.level == "SECTION":
+            if not self.disclosure_ids or not self.section_ids:
+                raise ValueError(
+                    "SECTION Scope에는 disclosure_ids와 section_ids가 모두 필요합니다."
+                )
+        return self
+
+
+class Scope(ScopeDraft):
+    """Application이 ID와 원본 SubQuestion을 연결한 검색 범위 후보입니다."""
+
+    scope_id: SkipJsonSchema[str] = Field(..., min_length=1)
+    subquestion_id: str = Field(..., min_length=1)
+
+    @field_validator("scope_id", "subquestion_id")
+    @classmethod
+    def normalize_identity(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Scope 식별자는 비어 있을 수 없습니다.")
+        return normalized
+
+    @classmethod
+    def from_scope_draft(
+        cls,
+        scope_draft: ScopeDraft,
+        *,
+        subquestion_id: str,
+    ) -> "Scope":
+        normalized_subquestion_id = subquestion_id.strip()
+        if not normalized_subquestion_id:
+            raise ValueError("subquestion_id는 비어 있을 수 없습니다.")
+        return cls(
+            **scope_draft.model_dump(),
+            scope_id=f"scope_{normalized_subquestion_id}",
+            subquestion_id=normalized_subquestion_id,
+        )
+
+
+def merge_scopes(left: list[Scope], right: list[Scope]) -> list[Scope]:
+    """scope_id가 같은 후보는 최신 값으로 교체하며 Scope 목록을 병합합니다."""
+
+    validated_left = [
+        scope if isinstance(scope, Scope) else Scope.model_validate(scope)
+        for scope in left
+    ]
+    validated_right = [
+        scope if isinstance(scope, Scope) else Scope.model_validate(scope)
+        for scope in right
+    ]
+    merged = {scope.scope_id: scope for scope in validated_left}
+    for scope in validated_right:
+        merged[scope.scope_id] = scope
+    return sorted(merged.values(), key=lambda scope: scope.scope_id)
 
 
 class QuestionAnalysis(BaseModel):
@@ -293,6 +408,7 @@ class AgentState(TypedDict, total=False):
     # Question analysis and planning
     question_analysis: NotRequired[QuestionAnalysis]
     next_plan_seq: NotRequired[int]
+    scope_candidates: NotRequired[Annotated[list[Scope], merge_scopes]]
 
     # Parallel retrieval accumulation
     retrieval_results: NotRequired[

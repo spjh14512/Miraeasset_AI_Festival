@@ -9,7 +9,7 @@ from qdrant_client.http.models import QueryResponse, ScoredPoint
 
 from agent_graph import utils as tools
 from agent_graph.tools import retrieve_search
-from agent_graph.state import Plan, RetrievalResult
+from agent_graph.state import Plan, RetrievalResult, Scope
 from agent_graph.utils import CypherQuery, QdrantQuery, QdrantQueryToolArgs
 from vector_db.text2vector import HybridEmbedding, SparseEmbedding
 
@@ -18,6 +18,19 @@ def _hybrid() -> HybridEmbedding:
     return HybridEmbedding(
         dense=(0.1, 0.2),
         sparse=SparseEmbedding(indices=(1, 42), values=(0.2, 0.8)),
+    )
+
+
+def _global_scope() -> Scope:
+    return Scope(
+        scope_id="scope_1",
+        subquestion_id="subquestion_1",
+        level="GLOBAL",
+        corp_names=[],
+        corp_codes=[],
+        disclosure_ids=[],
+        section_ids=[],
+        reason="검색 범위를 더 좁힐 수 없습니다.",
     )
 
 
@@ -296,6 +309,7 @@ def test_query_builder_logs_human_message(monkeypatch, capsys):
         query="삼성전자 특별관계자",
         purpose="특별관계자 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
     monkeypatch.setattr(tools, "text_to_hybrid_vector", lambda _: _hybrid())
 
@@ -352,6 +366,7 @@ def test_query_builder_regenerates_repeated_no_results_filter(monkeypatch):
             query="삼성생명보험 취득자금 원천 재검색",
             purpose="실패한 기업명 filter를 완화하여 재검색",
             dependencies=["retrieval:plan_1"],
+            scope_id="scope_1",
         ),
         user_question="삼성생명보험의 취득자금 원천을 알려줘",
         dependencies=[failed_result],
@@ -380,6 +395,7 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
         query="필터를 완화한 후속 검색",
         purpose="NO_RESULTS 검색 보정",
         dependencies=["retrieval:plan_1"],
+        scope_id="scope_1",
     )
 
     def reject_repeated_filter(*_args, **_kwargs):
@@ -392,6 +408,7 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "후속 검색",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [failed_result],
             "next_plan_seq": 2,
         },
@@ -409,6 +426,7 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="특별관계자 명단 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
     query = QdrantQuery(
         mode="vector",
@@ -420,7 +438,7 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
     monkeypatch.setattr(
         tools,
         "query_executor",
-        lambda *_: raw_result
+        lambda *_, **__: raw_result
     )
 
     update = retrieve_search.invoke({
@@ -428,6 +446,7 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [],
             "next_plan_seq": 4,
         },
@@ -453,6 +472,7 @@ def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="중복 결과 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
     point = _r_table_point()
     monkeypatch.setattr(
@@ -467,7 +487,7 @@ def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
     monkeypatch.setattr(
         tools,
         "query_executor",
-        lambda *_: QueryResponse(points=[point]),
+        lambda *_, **__: QueryResponse(points=[point]),
     )
 
     update = retrieve_search.invoke({
@@ -475,6 +495,7 @@ def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [],
             "retrieved_qdrant_point_ids": [str(point.id)],
             "next_plan_seq": 4,
@@ -493,6 +514,7 @@ def test_retrieve_search_preserves_timeout_as_result(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="timeout 기록 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
     monkeypatch.setattr(
         tools,
@@ -504,7 +526,7 @@ def test_retrieve_search_preserves_timeout_as_result(monkeypatch):
         ),
     )
 
-    def raise_timeout(_query):
+    def raise_timeout(_query, **_kwargs):
         try:
             raise TimeoutError("timed out")
         except TimeoutError as error:
@@ -517,6 +539,7 @@ def test_retrieve_search_preserves_timeout_as_result(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [],
             "next_plan_seq": 4,
         },
@@ -536,6 +559,7 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="특별관계자 명단 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
     query = QdrantQuery(
         mode="vector",
@@ -547,7 +571,7 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
     monkeypatch.setattr(
         tools,
         "query_executor",
-        lambda *_: QueryResponse(points=[point]),
+        lambda *_, **__: QueryResponse(points=[point]),
     )
     monkeypatch.setattr(tools, "point_requires_compaction", lambda _: True)
 
@@ -565,6 +589,7 @@ def test_retrieve_search_applies_point_compactor_selection(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [],
             "next_plan_seq": 5,
         },
@@ -587,6 +612,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="초기 근거 검색",
         dependencies=[],
+        scope_id="scope_1",
     )
     second_plan = Plan(
         plan_id="plan_2",
@@ -594,6 +620,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         query="삼성전자 특별관계자",
         purpose="검색 범위 확대",
         dependencies=[],
+        scope_id="scope_1",
     )
     points = [
         _r_table_point(f"00000000-0000-0000-0000-{index:012d}")
@@ -615,7 +642,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         ),
     )
 
-    def execute(query):
+    def execute(query, **_kwargs):
         executed_limits.append(query.limit)
         return raw_results.pop(0)
 
@@ -627,6 +654,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [],
             "next_plan_seq": 1,
         },
@@ -639,6 +667,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [first_result],
             "retrieved_qdrant_point_ids": first_update[
                 "retrieved_qdrant_point_ids"
@@ -669,6 +698,7 @@ def test_retrieve_search_rejects_non_progressive_qdrant_limit():
         query="삼성전자 특별관계자",
         purpose="근거 검색",
         dependencies=[],
+        scope_id="scope_1",
     )
 
     try:
@@ -678,6 +708,7 @@ def test_retrieve_search_rejects_non_progressive_qdrant_limit():
             "state": {
                 "question_id": "question-1",
                 "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+                "scope_candidates": [_global_scope()],
                 "retrieval_results": [],
                 "next_plan_seq": 1,
             },
@@ -720,6 +751,7 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
         query="확인된 Evidence의 실제 내용",
         purpose="답변 근거 확인",
         dependencies=["retrieval:plan_1"],
+        scope_id="scope_1",
     )
     captured = {}
 
@@ -738,7 +770,7 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
     monkeypatch.setattr(
         tools,
         "query_executor",
-        lambda *_: ([], None),
+        lambda *_, **__: ([], None),
     )
 
     retrieve_search.invoke({
@@ -746,6 +778,7 @@ def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):
         "state": {
             "question_id": "question-1",
             "question_text": "해당 Evidence의 실제 내용을 알려줘",
+            "scope_candidates": [_global_scope()],
             "retrieval_results": [used_dependency, unused_result, failed_result],
             "next_plan_seq": 2,
         },
@@ -763,6 +796,7 @@ def test_retrieve_search_rejects_missing_dependency():
         query="확인된 Evidence의 실제 내용",
         purpose="답변 근거 확인",
         dependencies=["retrieval:missing"],
+        scope_id="scope_1",
     )
 
     try:
@@ -771,6 +805,7 @@ def test_retrieve_search_rejects_missing_dependency():
             "state": {
                 "question_id": "question-1",
                 "question_text": "해당 Evidence의 실제 내용을 알려줘",
+                "scope_candidates": [_global_scope()],
                 "retrieval_results": [],
                 "next_plan_seq": 2,
             },

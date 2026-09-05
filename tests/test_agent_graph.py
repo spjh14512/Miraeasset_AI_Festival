@@ -22,6 +22,7 @@ def _plan_draft() -> PlanDraft:
         query="삼성전자 2025년 시설 투자",
         purpose="관련 Evidence를 검색합니다.",
         dependencies=[],
+        scope_id="scope_1",
     )
 
 
@@ -186,11 +187,10 @@ def test_question_analyzer_returns_analysis_without_plans():
         llm=llm,
     )
 
-    assert update == {
-        "question_analysis": expected_analysis,
-        "next_plan_seq": 1,
-        "retrieval_status": "CONTINUE",
-    }
+    assert update["next_plan_seq"] == 1
+    assert update["retrieval_status"] == "CONTINUE"
+    assert update["question_analysis"].normalized_question == expected_analysis.normalized_question
+    assert update["question_analysis"].sub_questions[0].subquestion_id == "subquestion_1"
     assert llm.schema["title"] == "QuestionAnalyzerOutput"
     assert llm.method == "json_schema"
     assert json.loads(llm.structured.messages[-1].content) == {
@@ -221,11 +221,12 @@ def test_question_analyzer_rejects_initial_plan_payload():
                 query="삼성전자 시설 투자",
                 purpose="관련 Evidence 검색",
                 dependencies=["retrieval:missing"],
+                scope_id="scope_1",
             )],
         )
 
 
-def test_retriever_human_message_contains_full_question_analysis():
+def test_retriever_human_message_contains_sub_questions():
     analysis = QuestionAnalysis(
         decision="retrieve",
         normalized_question="삼성전자 시설 투자를 알려줘",
@@ -239,6 +240,10 @@ def test_retriever_human_message_contains_full_question_analysis():
         "question_analysis": analysis,
         "retrieval_results": [],
     })
-    payload = json.loads(message.content.split("\n\n", 1)[1])
+    payload = json.loads(message.content)
 
-    assert payload["question_analysis"] == analysis.model_dump(mode="json")
+    assert payload["sub_questions"] == [
+        subquestion.model_dump(mode="json")
+        for subquestion in analysis.sub_questions
+    ]
+    assert payload["scope_candidates"] == []

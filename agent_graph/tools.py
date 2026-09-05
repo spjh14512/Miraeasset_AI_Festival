@@ -47,7 +47,8 @@ def retrieve_search(
     """전달받은 단일 plan을 즉시 실행하고 retrieval 결과를 state에 추가합니다.
 
     args:
-        plan(PlanDraft): 즉시 실행할 source, query, purpose, dependencies
+        plan(PlanDraft): 즉시 실행할 source, query, purpose, dependencies와
+            application이 미리 생성한 scope_id
         limit(int): Qdrant에서 조회할 누적 상위 point 수. 최초 검색은 5, 추가 검색은 5 단위로 늘립니다. Neo4j 검색에는 적용하지 않습니다.
 
     return:

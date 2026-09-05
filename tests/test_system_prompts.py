@@ -32,9 +32,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     prompt = sp.RETRIEVER_SYSTEM_PROMPT
 
     assert "user_question" in prompt
-    assert "question_analysis" in prompt
     assert "sub_questions" in prompt
-    assert "synthesis_requirement" in prompt
     assert "정보 요구 checklist" in prompt
     assert "retrieve_search(plan, limit)" in prompt
     assert "QueryPlan" not in prompt
@@ -56,7 +54,13 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "delete_plan" not in prompt
     assert "rcept_date" in prompt
     assert "disclosure_id, 공시명, rcept_date" in prompt
-    assert "result_id를 dependencies에 넣은 Qdrant Plan" in prompt
+    assert "scope_candidates" in prompt
+    assert "scope_id" in prompt
+    assert "Scope는 검색 범위이고 RetrievalResult는 검색 근거" in prompt
+    for level in ("GLOBAL", "COMPANY", "DISCLOSURE", "SECTION"):
+        assert level in prompt
+    assert "retrieval 시작 전에 이미 생성" in prompt
+    assert "Event가 아니라 METRIC" in prompt
     assert "selected_result_ids에는 SUCCESS 상태의 RetrievalResult만 포함" in prompt
     assert "INVALID_INPUT 결과는 선택할 수 없습니다" in prompt
     assert "calculate_table_statistic(variable_name, operation, column, targets, row_selector)" in prompt
@@ -105,12 +109,29 @@ def test_builder_prompts_use_current_names():
     assert "`limit`을 출력하지 않았는가" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "`previous_results`" in sp.CYPHER_BUILDER_SYSTEM_PROMPT
     assert "`previous_results`" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
+    assert "`scope`" in sp.CYPHER_BUILDER_SYSTEM_PROMPT
+    assert "`scope`" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "dependency_results" not in sp.CYPHER_BUILDER_SYSTEM_PROMPT
     assert "dependency_results" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "point_kinds" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "실패 결과를 자동으로 추가하지 않습니다" in sp.RETRIEVER_SYSTEM_PROMPT
     assert "filter 조합은 절대 다시 사용하지 마세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "filter 조건의 제거 또는 완화를 먼저 시도하세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
+
+
+def test_narrow_scope_prompt_matches_internal_agent_contract():
+    prompt = sp.NARROW_SCOPE_SYSTEM_PROMPT
+
+    assert "knowledge_hints" in prompt
+    assert "SEARCH 또는 FINISH" in prompt
+    assert "GLOBAL > COMPANY > DISCLOSURE > SECTION" in prompt
+    assert "is_latest_version = true" in prompt
+    assert "최소 1개월" in prompt
+    assert "IS_SUPPORTED_BY" in prompt
+    assert "Neo4j 결과에 없던 이름이나 ID를 만들지 마세요" in prompt
+    assert "knowledge_hints[].knowledge_type" in prompt
+    assert "Metric 질문" in prompt or "METRIC 질문" in prompt
+    assert "Disclosure → Event" in prompt
 
 
 def test_qdrant_builder_uses_flat_payload_filter_paths():
@@ -156,6 +177,8 @@ def test_retrieval_prompts_enforce_latest_disclosure_version():
     assert "`is_latest_version = true`" in retriever
     assert "d.is_latest_version = $is_latest_version" in cypher
     assert "application이 이 조건을 검증" in cypher
+    assert "relationship type, 양쪽 node label과 방향을 schema로 검증" in cypher
+    assert "(d:Disclosure)-[:REPORTS]->(e:Event)" in cypher
     assert "application이 `is_latest_version = true` filter를 자동 적용" in query
     assert "`is_latest_version`을 직접 filter로 생성" in query
     assert "automatic_filters" in schema

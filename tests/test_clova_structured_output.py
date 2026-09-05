@@ -8,6 +8,7 @@ from agent_graph.llm import (
     build_clova_json_schema,
 )
 from agent_graph.state import QuestionAnalyzerOutput
+from agent_graph.utils import NarrowScopeAction
 
 
 class _FakeLlm:
@@ -49,3 +50,20 @@ def test_structured_output_uses_json_schema_method():
     assert bind_structured_output(llm, QuestionAnalyzerOutput) is llm
     assert llm.method == "json_schema"
     assert llm.schema["title"] == "QuestionAnalyzerOutput"
+
+
+def test_narrow_scope_action_uses_clova_compatible_schema():
+    schema = build_clova_json_schema(NarrowScopeAction)
+
+    assert set(schema["properties"]) == {
+        "action",
+        "cypher",
+        "parameters_json",
+        "level",
+        "corp_names",
+        "corp_codes",
+        "disclosure_ids",
+        "section_ids",
+        "reason",
+    }
+    assert schema["properties"]["section_ids"]["items"]["type"] == "string"

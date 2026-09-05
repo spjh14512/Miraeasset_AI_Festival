@@ -37,6 +37,7 @@ def _plan(source: str = "qdrant") -> Plan:
         query="삼성전자 관련 정보",
         purpose="질문에 필요한 근거 확인",
         dependencies=[],
+        scope_id="scope_1",
     )
 
 
@@ -149,6 +150,39 @@ def test_cypher_builder_retries_missing_latest_disclosure_filter():
     assert query.parameters["is_latest_version"] is True
     assert len(llm.calls) == 2
     assert "Disclosure 조회에는 최신 공시 조건" in llm.calls[1][-1].content
+
+
+def test_cypher_builder_retries_invalid_relationship_direction():
+    llm = _SequenceLlm([
+        {
+            "cypher": (
+                "MATCH (c:Company)<-[:REPORTS]-(e:Event) "
+                "RETURN e.content AS result LIMIT 10"
+            ),
+            "parameters_json": "{}",
+        },
+        {
+            "cypher": (
+                "MATCH (c:Company)-[:PUBLISHES]->(d:Disclosure) "
+                "MATCH (d)-[:REPORTS]->(e:Event) "
+                "WHERE d.is_latest_version = $is_latest_version "
+                "RETURN e.content AS result LIMIT $limit"
+            ),
+            "parameters_json": '{"is_latest_version":true,"limit":10}',
+        },
+    ])
+
+    query = tools.cypher_builder(
+        _plan("neo4j"),
+        user_question="삼성전자의 합병 사건을 알려줘",
+        dependencies=[],
+        neo4j_schema="schema",
+        llm=llm,
+    )
+
+    assert "(d)-[:REPORTS]->(e:Event)" in query.cypher
+    assert len(llm.calls) == 2
+    assert "REPORTS" in llm.calls[1][-1].content
 
 
 def test_query_builder_retries_invalid_structured_output(monkeypatch):

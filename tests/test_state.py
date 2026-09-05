@@ -12,6 +12,7 @@ def _plan_draft(source: str) -> PlanDraft:
         query="삼성전자 매출액",
         purpose="질문에 답하기 위한 근거 확보",
         dependencies=[],
+        scope_id="scope_1",
     )
 
 

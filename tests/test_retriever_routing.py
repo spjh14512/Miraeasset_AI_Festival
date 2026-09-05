@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent_graph import graph as graph_module
-from agent_graph.state import QuestionAnalysis, RetrievalResult
+from agent_graph.state import QuestionAnalysis, RetrievalResult, Scope
 
 
 class _FakeRetrieverLlm:
@@ -61,6 +61,16 @@ def _retrieval_state():
             decision_reason="기업 속성 조회가 필요합니다."
         ),
         "retrieval_status": "CONTINUE",
+        "scope_candidates": [Scope(
+            scope_id="scope_1",
+            subquestion_id="subquestion_1",
+            level="GLOBAL",
+            corp_names=[],
+            corp_codes=[],
+            disclosure_ids=[],
+            section_ids=[],
+            reason="검색 범위를 더 좁힐 수 없습니다.",
+        )],
         "retrieval_results": [
             RetrievalResult(
                 result_id="retrieval:plan_1",
@@ -116,6 +126,7 @@ def test_retriever_retries_unknown_plan_dependency():
                     "query": "확인된 공시의 판매전략",
                     "purpose": "판매전략 근거 확인",
                     "dependencies": ["d20240306000686"],
+                    "scope_id": "scope_1",
                 },
                 "limit": 5,
             },
@@ -127,6 +138,29 @@ def test_retriever_retries_unknown_plan_dependency():
     assert update["retrieval_status"] == "COMPLETE"
     assert llm.invoke_count == 2
     assert "Plan dependency RetrievalResult" in llm.calls[1][-1].content
+
+
+def test_retriever_retries_retrieve_search_without_scope_id():
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "retrieve_search",
+            "args": {
+                "plan": {
+                    "source": "qdrant",
+                    "query": "삼성전자 판매전략",
+                    "purpose": "판매전략 근거 확인",
+                    "dependencies": [],
+                },
+                "limit": 5,
+            },
+        }
+    ]])
+
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
+
+    assert update["retrieval_status"] == "COMPLETE"
+    assert llm.invoke_count == 2
+    assert "scope_id" in llm.calls[1][-1].content
 
 
 def test_retriever_retries_unknown_finish_result_id():

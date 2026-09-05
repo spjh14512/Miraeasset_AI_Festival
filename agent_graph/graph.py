@@ -20,6 +20,8 @@ from .state import (
     AnswerGeneratorOutput,
     QuestionAnalyzerOutput,
     QuestionAnalysis,
+    Scope,
+    ScopeDraft,
 )
 from .tools import (
     calculate_table_statistic,
@@ -28,10 +30,12 @@ from .tools import (
     retrieve_search,
 )
 from .utils import (
+    assign_subquestion_ids,
     build_retriever_human_message,
     build_answer_generator_human_message,
     resolve_answer_draft,
     execute_tool_call,
+    run_narrow_scope_agent,
     validate_retriever_tool_call,
 )
 
@@ -116,11 +120,45 @@ def question_analyzer(
             )))
 
     print("질문 분석 결과:\n", analyzer_output, "\n" + "\n\n")
+    question_analysis = assign_subquestion_ids(analyzer_output.question_analysis)
     return {
-        "question_analysis": analyzer_output.question_analysis,
+        "question_analysis": question_analysis,
         "next_plan_seq": state.get("next_plan_seq", 1),
         "retrieval_status": "CONTINUE"
     }
+
+
+def scope_resolver(state: AgentState) -> dict:
+    """모든 SubQuestion의 Scope를 순차 생성하고 실패하면 GLOBAL로 대체합니다."""
+
+    analysis_value = state.get("question_analysis")
+    if analysis_value is None:
+        raise ValueError("question_analysis가 없습니다.")
+    analysis = QuestionAnalysis.model_validate(analysis_value)
+    scopes = []
+    for subquestion in analysis.sub_questions:
+        subquestion_id = subquestion.subquestion_id
+        if subquestion_id is None:
+            raise ValueError("SubQuestion에 subquestion_id가 없습니다.")
+        try:
+            scope = run_narrow_scope_agent(subquestion_id, state)
+        except Exception as error:
+            print(
+                f"[scope_resolver] {subquestion_id} narrow_scope 실패, "
+                f"GLOBAL Scope로 대체합니다: {type(error).__name__}: {error}"
+            )
+            scope = Scope.from_scope_draft(
+                ScopeDraft(
+                    level="GLOBAL",
+                    reason=(
+                        "narrow_scope 재시도 후에도 범위를 확인하지 못해 "
+                        f"GLOBAL Scope로 대체했습니다: {type(error).__name__}: {error}"
+                    ),
+                ),
+                subquestion_id=subquestion_id,
+            )
+        scopes.append(scope)
+    return {"scope_candidates": scopes}
 
 
 def retriever(
@@ -275,6 +313,7 @@ def route_after_retrieval(state: AgentState) -> str:
 # Node
 
 graph_builder.add_node("question_analyzer", question_analyzer)
+graph_builder.add_node("scope_resolver", scope_resolver)
 graph_builder.add_node("retriever", retriever)
 graph_builder.add_node("answer_generator", answer_generator)
 graph_builder.add_node("answer_directly", answer_directly)
@@ -288,11 +327,12 @@ graph_builder.add_conditional_edges(
     "question_analyzer",
     route_after_analysis,
     {
-        "retrieve": "retriever",
+        "retrieve": "scope_resolver",
         "direct": "answer_directly",
         "clarify": "request_clarification",
     }
 )
+graph_builder.add_edge("scope_resolver", "retriever")
 graph_builder.add_conditional_edges(
     "retriever",
     route_after_retrieval,

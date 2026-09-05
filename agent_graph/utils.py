@@ -10,6 +10,7 @@ from typing import Any, Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     ValidationError,
     field_validator,
@@ -24,6 +25,7 @@ import os
 
 from neo4j import GraphDatabase
 from qdrant_client import QdrantClient, models
+import yaml
 
 from . import system_prompts as sp
 from .compactor import compact_qdrant_point, point_requires_compaction
@@ -48,6 +50,9 @@ from .state import (
     Plan,
     QuestionAnalysis,
     RetrievalResult,
+    Scope,
+    ScopeDraft,
+    SubQuestion,
 )
 
 
@@ -83,6 +88,22 @@ qdrant_collection_name = os.getenv("QDRANT_COLLECTION_NAME") or "dart_evidence"
 qdrant_dense_vector_name = "evidence_dense"
 qdrant_sparse_vector_name = "evidence_sparse"
 HYBRID_PREFETCH_MULTIPLIER = 5
+QDRANT_KNOWLEDGE_COLLECTION_NAME = (
+    os.getenv("QDRANT_KNOWLEDGE_COLLECTION_NAME") or "knowledge_base"
+)
+QDRANT_KNOWLEDGE_DENSE_VECTOR_NAME = "knowledge_dense"
+QDRANT_KNOWLEDGE_SPARSE_VECTOR_NAME = "knowledge_sparse"
+SCOPE_KNOWLEDGE_LIMIT = 5
+SCOPE_MAX_NEO4J_SEARCHES = 4
+SCOPE_QUERY_RESULT_LIMIT = 50
+SCOPE_KNOWLEDGE_HINT_FIELDS = (
+    "knowledge_type",
+    "name",
+    "aliases",
+    "description",
+    "datasets",
+    "categories",
+)
 
 class CypherQuery(BaseModel):
     """실행 가능한 read-only Cypher와 parameter를 분리한 요청입니다."""
@@ -120,6 +141,78 @@ class CypherQueryToolArgs(BaseModel):
         return CypherQuery(
             cypher=self.cypher,
             parameters=json.loads(self.parameters_json),
+        )
+
+
+class NarrowScopeAction(BaseModel):
+    """narrow_scope mini-agent가 한 단계에서 수행할 검색 또는 종료 행동입니다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["SEARCH", "FINISH"]
+    cypher: str
+    parameters_json: str
+    level: Literal["GLOBAL", "COMPANY", "DISCLOSURE", "SECTION"]
+    corp_names: list[str]
+    corp_codes: list[str]
+    disclosure_ids: list[str]
+    section_ids: list[str]
+    reason: str = Field(..., description="현재 SEARCH 또는 FINISH 판단의 간단한 이유")
+
+    @field_validator("parameters_json")
+    @classmethod
+    def validate_parameters_json(cls, value: str) -> str:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError("parameters_json은 유효한 JSON이어야 합니다.") from error
+        if not isinstance(parsed, dict):
+            raise ValueError("parameters_json은 JSON object여야 합니다.")
+        return value
+
+    @model_validator(mode="after")
+    def validate_action_payload(self) -> "NarrowScopeAction":
+        self.reason = self.reason.strip()
+        if not self.reason:
+            self.reason = (
+                "Scope 후보를 확인하기 위한 Neo4j 검색입니다."
+                if self.action == "SEARCH"
+                else f"Neo4j 검색 결과를 바탕으로 {self.level} Scope를 선택했습니다."
+            )
+        if self.action == "SEARCH":
+            if not self.cypher.strip():
+                raise ValueError("SEARCH action에는 Cypher가 필요합니다.")
+            self.level = "GLOBAL"
+            self.corp_names = []
+            self.corp_codes = []
+            self.disclosure_ids = []
+            self.section_ids = []
+        elif self.cypher.strip():
+            raise ValueError("FINISH action에서는 Cypher를 비워야 합니다.")
+        return self
+
+    def to_cypher_query(self) -> CypherQuery:
+        """SEARCH action을 실행 가능한 CypherQuery로 변환합니다."""
+
+        if self.action != "SEARCH":
+            raise ValueError("SEARCH action만 CypherQuery로 변환할 수 있습니다.")
+        return CypherQuery(
+            cypher=self.cypher.strip(),
+            parameters=json.loads(self.parameters_json),
+        )
+
+    def to_scope_draft(self) -> ScopeDraft:
+        """FINISH action을 계층 제약이 검증되는 ScopeDraft로 변환합니다."""
+
+        if self.action != "FINISH":
+            raise ValueError("FINISH action만 ScopeDraft로 변환할 수 있습니다.")
+        return ScopeDraft(
+            level=self.level,
+            corp_names=self.corp_names,
+            corp_codes=self.corp_codes,
+            disclosure_ids=self.disclosure_ids,
+            section_ids=self.section_ids,
+            reason=self.reason,
         )
 
 
@@ -319,6 +412,20 @@ def _load_neo4j_schema() -> str:
 
 
 @lru_cache(maxsize=1)
+def _load_neo4j_relationship_contract() -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Neo4j schema에서 relationship별 허용 source와 target label을 읽습니다."""
+
+    schema = yaml.safe_load(_load_neo4j_schema())
+    return {
+        relation["type"]: (
+            tuple(relation["endpoints"]["source"]),
+            tuple(relation["endpoints"]["target"]),
+        )
+        for relation in schema["relations"].values()
+    }
+
+
+@lru_cache(maxsize=1)
 def _load_qdrant_query_schema() -> str:
     """Qdrant query schema 문서를 한 번 읽어 캐시합니다."""
 
@@ -337,6 +444,569 @@ def _get_query_llm() -> Any:
     """공용 LLM에 Qdrant query structured output을 한 번 binding합니다."""
 
     return bind_structured_output(get_llm(), QdrantQueryToolArgs)
+
+
+@lru_cache(maxsize=1)
+def _get_narrow_scope_llm() -> Any:
+    """공용 LLM에 narrow_scope 단계 action schema를 한 번 binding합니다."""
+
+    return bind_structured_output(get_llm(), NarrowScopeAction)
+
+
+def assign_subquestion_ids(analysis: QuestionAnalysis) -> QuestionAnalysis:
+    """Question Analyzer 결과의 SubQuestion에 순서 기반 ID를 할당합니다."""
+
+    return analysis.model_copy(update={
+        "sub_questions": [
+            subquestion.model_copy(update={
+                "subquestion_id": f"subquestion_{index}",
+            })
+            for index, subquestion in enumerate(
+                analysis.sub_questions,
+                start=1,
+            )
+        ]
+    })
+
+
+def _find_subquestion(state: AgentState, subquestion_id: str) -> SubQuestion:
+    """state에서 application이 할당한 ID와 일치하는 SubQuestion을 찾습니다."""
+
+    analysis_value = state.get("question_analysis")
+    if analysis_value is None:
+        raise ValueError("question_analysis가 없습니다.")
+    analysis = QuestionAnalysis.model_validate(analysis_value)
+    for subquestion in analysis.sub_questions:
+        if subquestion.subquestion_id == subquestion_id:
+            return subquestion
+    raise ValueError(f"SubQuestion을 찾지 못했습니다: {subquestion_id}")
+
+
+def _scope_knowledge_query_text(subquestion: SubQuestion) -> str:
+    """SubQuestion의 분석 필드를 Knowledge Base 검색문으로 합칩니다."""
+
+    values = [
+        subquestion.question,
+        *subquestion.intents,
+        *subquestion.requested_facts,
+    ]
+    for event in subquestion.events:
+        if event.event_type:
+            values.append(event.event_type)
+        values.extend(event.candidate_event_types)
+    return " ".join(dict.fromkeys(value.strip() for value in values if value.strip()))
+
+
+def _has_scope_knowledge_hint_value(value: Any) -> bool:
+    """Knowledge Base hint에서 비어 있지 않은 값만 판별합니다."""
+
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def search_scope_knowledge(
+    subquestion: SubQuestion,
+    *,
+    limit: int = SCOPE_KNOWLEDGE_LIMIT,
+) -> list[dict[str, Any]]:
+    """Knowledge Base collection을 hybrid search하고 payload 목록을 반환합니다."""
+
+    query_text = _scope_knowledge_query_text(subquestion)
+    embedding = text_to_hybrid_vector(query_text)
+    try:
+        response = qdrant_client.query_points(
+            collection_name=QDRANT_KNOWLEDGE_COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=list(embedding.dense),
+                    using=QDRANT_KNOWLEDGE_DENSE_VECTOR_NAME,
+                    limit=limit * HYBRID_PREFETCH_MULTIPLIER,
+                ),
+                models.Prefetch(
+                    query=models.SparseVector(
+                        indices=list(embedding.sparse.indices),
+                        values=list(embedding.sparse.values),
+                    ),
+                    using=QDRANT_KNOWLEDGE_SPARSE_VECTOR_NAME,
+                    limit=limit * HYBRID_PREFETCH_MULTIPLIER,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+    except Exception as error:
+        raise RuntimeError("Knowledge Base 검색 중 오류가 발생했습니다.") from error
+
+    hints = []
+    for point in extract_qdrant_points(response):
+        payload = dict(getattr(point, "payload", None) or {})
+        hint = {
+            field_name: value
+            for field_name in SCOPE_KNOWLEDGE_HINT_FIELDS
+            if _has_scope_knowledge_hint_value(
+                value := payload.get(field_name)
+            )
+        }
+        score = getattr(point, "score", None)
+        if isinstance(score, (int, float)) and not isinstance(score, bool):
+            hint["score"] = float(score)
+        hints.append(hint)
+    return hints
+
+
+def _cypher_node_labels_by_alias(cypher: str) -> dict[str, set[str]]:
+    """Cypher에 선언된 node alias별 label 집합을 수집합니다."""
+
+    labels_by_alias: dict[str, set[str]] = {}
+    for match in re.finditer(
+        r"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*"
+        r"((?:\s*:\s*[A-Za-z_][A-Za-z0-9_]*)+)",
+        cypher,
+    ):
+        labels_by_alias.setdefault(match.group(1), set()).update(
+            re.findall(r":\s*([A-Za-z_][A-Za-z0-9_]*)", match.group(2))
+        )
+    return labels_by_alias
+
+
+def _cypher_node_pattern_labels(
+    pattern: str,
+    labels_by_alias: dict[str, set[str]],
+) -> set[str]:
+    """하나의 node pattern에서 직접 또는 alias로 확인되는 label을 반환합니다."""
+
+    label_match = re.match(
+        r"\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*)?"
+        r"((?:\s*:\s*[A-Za-z_][A-Za-z0-9_]*)+)",
+        pattern,
+    )
+    labels = (
+        set(re.findall(r":\s*([A-Za-z_][A-Za-z0-9_]*)", label_match.group(1)))
+        if label_match
+        else set()
+    )
+    alias_match = re.match(r"\(\s*([A-Za-z_][A-Za-z0-9_]*)", pattern)
+    if alias_match:
+        labels.update(labels_by_alias.get(alias_match.group(1), set()))
+    return labels
+
+
+def _matches_relationship_endpoint(
+    actual_labels: set[str],
+    allowed_endpoints: tuple[str, ...],
+) -> bool:
+    """복합 label을 포함한 실제 node label이 schema endpoint와 호환되는지 확인합니다."""
+
+    if not actual_labels:
+        return False
+    return any(
+        actual_labels.issubset(expected_labels)
+        or expected_labels.issubset(actual_labels)
+        for endpoint in allowed_endpoints
+        if (expected_labels := set(endpoint.split(":")))
+    )
+
+
+def _validate_cypher_relationships(query: CypherQuery) -> None:
+    """Cypher relationship type, endpoint label과 방향을 Neo4j schema로 검증합니다."""
+
+    if re.search(r"\)\s*(?:-->|<--|--)\s*\(", query.cypher):
+        raise ValueError("Cypher relationship에는 schema의 relationship type을 명시해야 합니다.")
+
+    contract = _load_neo4j_relationship_contract()
+    labels_by_alias = _cypher_node_labels_by_alias(query.cypher)
+    node_pattern = r"\([^()\r\n]*\)"
+    relationship_pattern = re.compile(
+        rf"(?=(?P<left>{node_pattern})\s*"
+        r"(?P<left_connector><-|-)\s*"
+        r"\[(?P<body>[^\]]*)\]\s*"
+        r"(?P<right_connector>->|-)\s*"
+        rf"(?P<right>{node_pattern}))"
+    )
+
+    for match in relationship_pattern.finditer(query.cypher):
+        left_connector = match.group("left_connector")
+        right_connector = match.group("right_connector")
+        if left_connector not in {"-", "<-"}:
+            continue
+        type_match = re.match(
+            r"\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*)?:\s*"
+            r"([A-Za-z_][A-Za-z0-9_]*)",
+            match.group("body"),
+        )
+        if type_match is None:
+            raise ValueError("Cypher relationship에는 relationship type이 필요합니다.")
+        relationship_type = type_match.group(1)
+        endpoints = contract.get(relationship_type)
+        if endpoints is None:
+            raise ValueError(
+                f"Neo4j schema에 없는 relationship type입니다: {relationship_type}"
+            )
+        if left_connector == "-" and right_connector == "->":
+            source_pattern = match.group("left")
+            target_pattern = match.group("right")
+        elif left_connector == "<-" and right_connector == "-":
+            source_pattern = match.group("right")
+            target_pattern = match.group("left")
+        else:
+            raise ValueError(
+                f"Cypher relationship 방향을 하나로 명시해야 합니다: {relationship_type}"
+            )
+
+        source_labels = _cypher_node_pattern_labels(source_pattern, labels_by_alias)
+        target_labels = _cypher_node_pattern_labels(target_pattern, labels_by_alias)
+        allowed_sources, allowed_targets = endpoints
+        if not (
+            _matches_relationship_endpoint(source_labels, allowed_sources)
+            and _matches_relationship_endpoint(target_labels, allowed_targets)
+        ):
+            actual_source = ":".join(sorted(source_labels)) or "unknown"
+            actual_target = ":".join(sorted(target_labels)) or "unknown"
+            raise ValueError(
+                "Cypher relationship endpoint 또는 방향이 Neo4j schema와 일치하지 "
+                f"않습니다: {relationship_type}은 "
+                f"{'/'.join(allowed_sources)} -> {'/'.join(allowed_targets)}, "
+                f"현재 query는 {actual_source} -> {actual_target}"
+            )
+
+
+def _validate_scope_cypher(query: CypherQuery) -> None:
+    """narrow_scope가 생성한 Cypher의 read-only·결과 제한 조건을 검증합니다."""
+
+    forbidden = re.search(
+        r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|CALL|LOAD\s+CSV|FOREACH)\b",
+        query.cypher,
+        flags=re.IGNORECASE,
+    )
+    if forbidden:
+        raise ValueError(f"Scope Cypher에 금지된 구문이 있습니다: {forbidden.group(1)}")
+    if not re.search(r"\bRETURN\b", query.cypher, flags=re.IGNORECASE):
+        raise ValueError("Scope Cypher에는 RETURN이 필요합니다.")
+    limit_clause = re.search(
+        r"\bLIMIT\s+(\d+|\$[A-Za-z_][A-Za-z0-9_]*)\b",
+        query.cypher,
+        flags=re.IGNORECASE,
+    )
+    if limit_clause is None:
+        raise ValueError("Scope Cypher에는 LIMIT이 필요합니다.")
+    if ";" in query.cypher.rstrip().rstrip(";"):
+        raise ValueError("Scope Cypher는 하나의 statement만 허용합니다.")
+
+    for literal in re.findall(r"\bLIMIT\s+(\d+)\b", query.cypher, re.IGNORECASE):
+        if int(literal) > SCOPE_QUERY_RESULT_LIMIT:
+            raise ValueError(f"Scope Cypher LIMIT은 {SCOPE_QUERY_RESULT_LIMIT} 이하여야 합니다.")
+    for parameter_name in re.findall(
+        r"\bLIMIT\s+\$([A-Za-z_][A-Za-z0-9_]*)",
+        query.cypher,
+        re.IGNORECASE,
+    ):
+        limit = query.parameters.get(parameter_name)
+        if not isinstance(limit, int) or isinstance(limit, bool):
+            raise ValueError("Scope Cypher LIMIT parameter는 정수여야 합니다.")
+        if not 1 <= limit <= SCOPE_QUERY_RESULT_LIMIT:
+            raise ValueError(f"Scope Cypher LIMIT은 {SCOPE_QUERY_RESULT_LIMIT} 이하여야 합니다.")
+    _validate_latest_disclosure_filter(query)
+    _validate_cypher_relationships(query)
+
+
+def _normalize_scope_cypher(query: CypherQuery) -> CypherQuery:
+    """Scope 검색 Cypher에 최신 공시 조건과 기본 LIMIT을 보완합니다."""
+
+    cypher = query.cypher.strip().rstrip(";").rstrip()
+    parameters = dict(query.parameters)
+    disclosure_pattern = re.compile(
+        r"\(\s*(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*Disclosure\b"
+        r"(?P<body>[^)]*)\)",
+        flags=re.IGNORECASE,
+    )
+    declarations = list(disclosure_pattern.finditer(cypher))
+    processed_aliases: set[str] = set()
+
+    for match in reversed(declarations):
+        alias = match.group("alias")
+        if alias in processed_aliases:
+            continue
+        processed_aliases.add(alias)
+        latest_reference = re.search(
+            rf"\b{re.escape(alias)}\s*\.\s*is_latest_version\b",
+            cypher,
+            flags=re.IGNORECASE,
+        )
+        node_latest_property = re.search(
+            r"\bis_latest_version\s*:",
+            match.group("body"),
+            flags=re.IGNORECASE,
+        )
+        if latest_reference or node_latest_property:
+            continue
+
+        body = match.group("body")
+        closing_brace = body.rfind("}")
+        if "{" in body and closing_brace >= 0:
+            opening_brace = body.find("{")
+            separator = ", " if body[opening_brace + 1:closing_brace].strip() else ""
+            body = (
+                body[:closing_brace]
+                + separator
+                + "is_latest_version: true"
+                + body[closing_brace:]
+            )
+        else:
+            body += " {is_latest_version: true}"
+        start, end = match.span("body")
+        cypher = cypher[:start] + body + cypher[end:]
+
+    if not re.search(r"\bLIMIT\s+(\d+|\$[A-Za-z_][A-Za-z0-9_]*)\b", cypher, re.IGNORECASE):
+        cypher += f" LIMIT {SCOPE_QUERY_RESULT_LIMIT}"
+
+    return CypherQuery(cypher=cypher, parameters=parameters)
+
+
+def _execute_scope_cypher(
+    query: CypherQuery,
+    *,
+    search_index: int,
+) -> list[dict[str, Any]]:
+    """내부 Scope Cypher를 실행하고 LLM이 읽을 수 있는 item 목록으로 변환합니다."""
+
+    try:
+        with neo4j_driver.session() as session:
+            records = list(session.run(query.cypher, query.parameters))
+    except Exception as error:
+        raise RuntimeError("Scope 후보 Neo4j 조회 중 오류가 발생했습니다.") from error
+    return parse_neo4j_response(
+        records,
+        plan_id=f"narrow_scope_{search_index}",
+        query=query.cypher,
+        parameters=query.parameters,
+    ).items
+
+
+def _collect_named_strings(value: Any, field_name: str) -> set[str]:
+    """중첩된 Neo4j 결과에서 특정 field 이름의 문자열 값을 수집합니다."""
+
+    values: set[str] = set()
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if key == field_name:
+                if isinstance(nested, str) and nested.strip():
+                    values.add(nested.strip())
+                elif isinstance(nested, list):
+                    values.update(
+                        item.strip()
+                        for item in nested
+                        if isinstance(item, str) and item.strip()
+                    )
+            values.update(_collect_named_strings(nested, field_name))
+    elif isinstance(value, list):
+        for nested in value:
+            values.update(_collect_named_strings(nested, field_name))
+    return values
+
+
+def _collect_disclosure_section_pairs(value: Any) -> set[tuple[str, str]]:
+    """같은 Neo4j record에 함께 반환된 disclosure-section 관계를 수집합니다."""
+
+    pairs: set[tuple[str, str]] = set()
+    if isinstance(value, dict):
+        disclosure_id = value.get("disclosure_id")
+        section_id = value.get("section_id")
+        if (
+            isinstance(disclosure_id, str)
+            and disclosure_id.strip()
+            and isinstance(section_id, str)
+            and section_id.strip()
+        ):
+            pairs.add((disclosure_id.strip(), section_id.strip()))
+        for nested in value.values():
+            pairs.update(_collect_disclosure_section_pairs(nested))
+    elif isinstance(value, list):
+        for nested in value:
+            pairs.update(_collect_disclosure_section_pairs(nested))
+    return pairs
+
+
+def _validate_scope_selection(
+    scope: ScopeDraft,
+    search_results: list[dict[str, Any]],
+) -> None:
+    """LLM이 선택한 모든 Scope 값이 실제 Neo4j 결과에 있었는지 검증합니다."""
+
+    observed = {
+        "corp_names": _collect_named_strings(search_results, "corp_name"),
+        "corp_codes": _collect_named_strings(search_results, "corp_code"),
+        "disclosure_ids": _collect_named_strings(search_results, "disclosure_id"),
+        "section_ids": _collect_named_strings(search_results, "section_id"),
+    }
+    for field_name, selected_values in (
+        ("corp_names", scope.corp_names),
+        ("corp_codes", scope.corp_codes),
+        ("disclosure_ids", scope.disclosure_ids),
+        ("section_ids", scope.section_ids),
+    ):
+        unknown = sorted(set(selected_values) - observed[field_name])
+        if unknown:
+            raise ValueError(
+                f"Neo4j 검색 결과에서 확인되지 않은 {field_name}입니다: {unknown}"
+            )
+    if scope.level == "SECTION":
+        observed_pairs = _collect_disclosure_section_pairs(search_results)
+        unlinked_sections = [
+            section_id
+            for section_id in scope.section_ids
+            if not any(
+                disclosure_id in scope.disclosure_ids
+                and observed_section_id == section_id
+                for disclosure_id, observed_section_id in observed_pairs
+            )
+        ]
+        if unlinked_sections:
+            raise ValueError(
+                "선택한 disclosure와의 상위 관계가 확인되지 않은 section_ids입니다: "
+                f"{unlinked_sections}"
+            )
+
+
+def _narrow_scope_human_message(
+    subquestion: SubQuestion,
+    hints: list[dict[str, Any]],
+) -> HumanMessage:
+    """SubQuestion과 내부 Knowledge Base hint를 mini-agent 입력으로 직렬화합니다."""
+
+    return HumanMessage(content=json.dumps(
+        {
+            "subquestion": subquestion.model_dump(mode="json"),
+            "knowledge_hints": hints,
+            "max_neo4j_searches": SCOPE_MAX_NEO4J_SEARCHES,
+        },
+        ensure_ascii=False,
+        indent=2,
+    ))
+
+
+def _print_narrow_scope_human_message(message: HumanMessage) -> None:
+    """narrow_scope가 LLM에 새로 전달하는 HumanMessage만 출력합니다."""
+
+    print(f"[narrow_scope human message]:\n{message.content}\n")
+
+
+def run_narrow_scope_agent(
+    subquestion_id: str,
+    state: AgentState,
+    *,
+    llm: Any | None = None,
+) -> Scope:
+    """Knowledge hint와 반복 Neo4j 검색으로 계층형 Scope 후보를 생성합니다."""
+
+    normalized_id = subquestion_id.strip()
+    if not normalized_id:
+        raise ValueError("subquestion_id는 비어 있을 수 없습니다.")
+    subquestion = _find_subquestion(state, normalized_id)
+    hints = search_scope_knowledge(subquestion)
+
+    narrow_scope_llm = (
+        _get_narrow_scope_llm()
+        if llm is None
+        else bind_structured_output(llm, NarrowScopeAction)
+    )
+    human_message = _narrow_scope_human_message(subquestion, hints)
+    messages = [
+        SystemMessage(content=sp.NARROW_SCOPE_SYSTEM_PROMPT.format(
+            neo4j_schema=_load_neo4j_schema(),
+        )),
+        human_message,
+    ]
+    _print_narrow_scope_human_message(human_message)
+    accumulated_results: list[dict[str, Any]] = []
+    search_count = 0
+
+    while True:
+        for attempt in range(MAX_LLM_RETRIES + 1):
+            try:
+                response = invoke_with_rate_limit_retry(narrow_scope_llm, messages)
+                action = (
+                    response
+                    if isinstance(response, NarrowScopeAction)
+                    else NarrowScopeAction.model_validate(response)
+                )
+                if action.action == "SEARCH":
+                    if search_count >= SCOPE_MAX_NEO4J_SEARCHES:
+                        raise ValueError(
+                            "Neo4j 검색 횟수를 모두 사용했습니다. 현재 결과로 FINISH하세요."
+                        )
+                    query = _normalize_scope_cypher(action.to_cypher_query())
+                    _validate_scope_cypher(query)
+                else:
+                    if search_count == 0:
+                        raise ValueError("FINISH 전에 Neo4j 검색을 한 번 이상 수행해야 합니다.")
+                    scope_draft = action.to_scope_draft()
+                    _validate_scope_selection(scope_draft, accumulated_results)
+                break
+            except (ValidationError, ValueError, TypeError) as error:
+                if attempt == MAX_LLM_RETRIES:
+                    raise
+                retry_message = HumanMessage(content=build_output_retry_message(
+                    "NarrowScopeAction",
+                    error,
+                ))
+                messages.append(retry_message)
+                _print_narrow_scope_human_message(retry_message)
+
+        if action.action == "FINISH":
+            scope = Scope.from_scope_draft(
+                scope_draft,
+                subquestion_id=normalized_id,
+            )
+            return scope
+
+        search_count += 1
+        try:
+            items = _execute_scope_cypher(query, search_index=search_count)
+            accumulated_results.extend(items)
+            search_payload = {
+                "search_index": search_count,
+                "status": "SUCCESS" if items else "NO_RESULTS",
+                "cypher": query.cypher,
+                "parameters": query.parameters,
+                "result_count": len(items),
+                "results": items,
+            }
+        except RuntimeError as error:
+            search_payload = {
+                "search_index": search_count,
+                "status": "ERROR",
+                "cypher": query.cypher,
+                "parameters": query.parameters,
+                "error": str(error),
+            }
+        result_message = HumanMessage(content=(
+            "[Neo4j 검색 결과]\n"
+            + json.dumps(search_payload, ensure_ascii=False, indent=2, default=str)
+            + "\n\n위 결과를 검토하여 다음 SEARCH 또는 FINISH action을 반환하세요."
+        ))
+        messages.append(result_message)
+        _print_narrow_scope_human_message(result_message)
+
+
+def _resolve_plan_scope(plan: Plan, state: AgentState) -> Scope:
+    """Plan.scope_id를 state의 계층형 Scope 객체로 해석합니다."""
+
+    scopes = [
+        scope if isinstance(scope, Scope) else Scope.model_validate(scope)
+        for scope in state.get("scope_candidates", [])
+    ]
+    scopes_by_id = {scope.scope_id: scope for scope in scopes}
+    scope = scopes_by_id.get(plan.scope_id)
+    if scope is None:
+        raise ValueError(f"Plan Scope를 찾지 못했습니다: {plan.scope_id}")
+    return scope
 
 
 def _resolve_plan_dependencies(
@@ -373,6 +1043,7 @@ def _build_query_builder_human_message(
     plan: Plan,
     user_question: str,
     dependencies: list[RetrievalResult],
+    scope: Scope | None = None,
 ) -> HumanMessage:
     """Builder가 사용할 질문, Plan, 이전 결과를 JSON message로 만듭니다.
 
@@ -391,8 +1062,9 @@ def _build_query_builder_human_message(
                 "user_question": user_question,
                 "plan": plan.model_dump(
                     mode="json",
-                    exclude={"dependencies"},
+                    exclude={"dependencies", "scope_id"},
                 ),
+                "scope": scope.model_dump(mode="json") if scope else None,
                 "previous_results": [
                     result.model_dump(mode="json")
                     for result in dependencies
@@ -412,11 +1084,13 @@ def _execute_retrieval_plan(
 ) -> tuple[RetrievalResult, list[str], list[str]]:
     """Plan의 source에 맞는 검색을 실행하고 정규화된 결과를 반환합니다."""
 
+    scope = _resolve_plan_scope(plan, state)
     if plan.source == "neo4j":
         neo4j_cypher = cypher_builder(
             plan,
             user_question=state["question_text"],
             dependencies=dependencies,
+            scope=scope,
         )
         print("-- Neo4j에서 다음 Cypher를 실행합니다.: --", neo4j_cypher, "\n\n")
         try:
@@ -443,11 +1117,12 @@ def _execute_retrieval_plan(
         plan,
         user_question=state["question_text"],
         dependencies=dependencies,
+        scope=scope,
     )
     qdrant_query.limit = limit
     print("-- Qdrant에서 Query retrieval을 실행합니다. --\n\n")
     try:
-        raw_result = query_executor(qdrant_query)
+        raw_result = query_executor(qdrant_query, scope=scope)
     except RuntimeError as error:
         error.retrieval_query = qdrant_query.model_dump_json(
             exclude={"query_vector"}
@@ -550,6 +1225,7 @@ def cypher_builder(
     *,
     user_question: str,
     dependencies: list[RetrievalResult],
+    scope: Scope | None = None,
     neo4j_schema: str | None = None,
     llm: Any | None = None,
 ) -> CypherQuery:
@@ -565,6 +1241,7 @@ def cypher_builder(
         plan,
         user_question,
         dependencies,
+        scope,
     )
     print("[Cypher Builder human message]:\n" + human_message.content + "\n\n")
     messages = [
@@ -585,6 +1262,8 @@ def cypher_builder(
             )
             query = tool_args.to_cypher_query()
             _validate_latest_disclosure_filter(query)
+            _validate_cypher_relationships(query)
+            _validate_cypher_scope_filter(query, scope)
             return query
         except (ValidationError, ValueError, TypeError) as error:
             if attempt == MAX_LLM_RETRIES:
@@ -639,6 +1318,60 @@ def _validate_latest_disclosure_filter(query: CypherQuery) -> None:
             "Disclosure 조회에는 최신 공시 조건이 필요합니다: "
             f"{alias}.is_latest_version = true"
         )
+
+
+def _validate_cypher_scope_filter(
+    query: CypherQuery,
+    scope: Scope | None,
+) -> None:
+    """Scope가 있으면 Cypher가 가장 구체적인 ID 목록으로 제한되는지 검증합니다."""
+
+    if scope is None:
+        return
+    if scope.level == "GLOBAL":
+        return
+    if scope.level == "COMPANY":
+        label = "Company"
+        property_names = ("corp_name", "corp_code")
+        expected_by_property = {
+            "corp_name": scope.corp_names,
+            "corp_code": scope.corp_codes,
+        }
+    elif scope.level == "DISCLOSURE":
+        label = "Disclosure"
+        property_names = ("id",)
+        expected_by_property = {"id": scope.disclosure_ids}
+    else:
+        label = "Section"
+        property_names = ("id",)
+        expected_by_property = {"id": scope.section_ids}
+    aliases = re.findall(
+        rf"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*{label}\b",
+        query.cypher,
+        flags=re.IGNORECASE,
+    )
+    for alias in aliases:
+        for property_name in property_names:
+            expected_values = expected_by_property[property_name]
+            if not expected_values:
+                continue
+            patterns = (
+                rf"\b{re.escape(alias)}\s*\.\s*{property_name}\s+IN\s+"
+                rf"\$([A-Za-z_][A-Za-z0-9_]*)",
+                rf"\b{re.escape(alias)}\s*\.\s*{property_name}\s*=\s*"
+                rf"\$([A-Za-z_][A-Za-z0-9_]*)",
+                rf"\(\s*{re.escape(alias)}\s*:\s*{label}\b[^)]*"
+                rf"\b{property_name}\s*:\s*\$([A-Za-z_][A-Za-z0-9_]*)",
+            )
+            for pattern in patterns:
+                for match in re.finditer(pattern, query.cypher, re.IGNORECASE):
+                    parameter = query.parameters.get(match.group(1))
+                    if parameter == expected_values or parameter in expected_values:
+                        return
+    raise ValueError(
+        f"Scope가 지정된 Cypher는 {label}을 선택된 Scope 값으로 제한해야 합니다: "
+        f"{scope.scope_id}"
+    )
 
 def _qdrant_filter_signature(filters: Any) -> tuple[str, ...]:
     """Qdrant filter 순서와 null field를 무시하는 비교용 signature를 만듭니다.
@@ -701,6 +1434,7 @@ def query_builder(
     *,
     user_question: str,
     dependencies: list[RetrievalResult],
+    scope: Scope | None = None,
     qdrant_schema: str | None = None,
     llm: Any | None = None,
 ) -> QdrantQuery:
@@ -720,6 +1454,7 @@ def query_builder(
         plan,
         user_question,
         dependencies,
+        scope,
     )
     print(
         "[query builder human message]:\n",
@@ -790,14 +1525,32 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
     )
     
 
-def query_executor(qdrant_query: QdrantQuery) -> Any:
-    """Qdrant query를 실행하고 가공하지 않은 client 응답을 반환합니다."""
+def query_executor(
+    qdrant_query: QdrantQuery,
+    *,
+    scope: Scope | None = None,
+) -> Any:
+    """Qdrant query를 실행하며 선택된 Scope를 application filter로 적용합니다."""
 
 
     must = [models.FieldCondition(
         key="is_latest_version",
         match=models.MatchValue(value=True),
     )]
+    if scope is not None and scope.level != "GLOBAL":
+        if scope.level == "COMPANY":
+            scope_key = "corp_name"
+            scope_ids = scope.corp_names
+        elif scope.level == "DISCLOSURE":
+            scope_key = "disclosure_id"
+            scope_ids = scope.disclosure_ids
+        else:
+            scope_key = "section_id"
+            scope_ids = scope.section_ids
+        must.append(models.FieldCondition(
+            key=scope_key,
+            match=models.MatchAny(any=scope_ids),
+        ))
     for condition in qdrant_query.filters:
         if condition.match is not None:
             must.append(models.FieldCondition(
@@ -902,29 +1655,35 @@ def _validate_finish_selection(
 def build_retriever_human_message(state: AgentState) -> HumanMessage:
     """현재 retrieval state를 Retriever용 HumanMessage로 직렬화합니다."""
 
-    question_analysis = state.get("question_analysis")
+    question_analysis_value = state.get("question_analysis")
+    question_analysis = (
+        QuestionAnalysis.model_validate(question_analysis_value)
+        if question_analysis_value is not None
+        else None
+    )
     payload = {
         "user_question": state["question_text"],
-        "question_analysis": (
-            QuestionAnalysis.model_validate(question_analysis).model_dump(mode="json")
+        "sub_questions": (
+            [SubQuestion.model_validate(sub_question).model_dump(mode="json") for sub_question in question_analysis.sub_questions]
             if question_analysis is not None
             else None
         ),
+        "scope_candidates": [
+            (
+                scope if isinstance(scope, Scope) else Scope.model_validate(scope)
+            ).model_dump(mode="json")
+            for scope in state.get("scope_candidates", [])
+        ],
         "retrieval_results": [
             result.model_dump(mode="json")
             for result in state.get("retrieval_results", [])
         ]
     }
-    return HumanMessage(
-        content=(
-            "현재 상태는 retrieval입니다.\n\n"
-            +json.dumps(
-                payload,
-                ensure_ascii=False,
-                indent=2
-            )
-        )
-    )
+    return HumanMessage(content=json.dumps(
+        payload,
+        ensure_ascii=False,
+        indent=2,
+    ))
 
 def _extract_citations(value: Any) -> list[Citation]:
     """중첩된 retrieval item에서 명시적으로 완성된 Citation을 찾습니다.
@@ -1415,6 +2174,7 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
             state.get("next_plan_seq", 1),
         )
         _resolve_plan_dependencies(executable_plan, state)
+        _resolve_plan_scope(executable_plan, state)
         return
     if name == "calculate_table_statistic":
         validated = calculate_table_statistic.tool_call_schema.model_validate(args)
