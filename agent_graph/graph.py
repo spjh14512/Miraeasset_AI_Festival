@@ -20,6 +20,7 @@ from .llm import (
 )
 from .state import (
     AgentState,
+    AiAnswer,
     AnswerGeneratorOutput,
     QuestionAnalyzerOutput,
     QuestionAnalysis,
@@ -62,6 +63,19 @@ def _build_question_analyzer_llm() -> Any:
     )
 
 
+# retriever가 LLM에 제시하는 tool 목록의 유일한 정의입니다. 이 목록과
+# retriever() 노드 내부 tool 목록이 어긋나면, 캐시된 LLM 경로(운영)와
+# llm 인자를 넘기는 경로(테스트)의 동작이 갈라져 테스트가 놓치는 운영
+# 결함이 생깁니다.
+RETRIEVER_TOOLS = [
+    retrieve_search,
+    retrieve_correction_history,
+    calculate_table_statistic,
+    combine_numeric_results,
+    finish,
+]
+
+
 @lru_cache(maxsize=1)
 def _build_retriever_llm() -> Any:
     """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
@@ -69,9 +83,7 @@ def _build_retriever_llm() -> Any:
     return get_llm(
         RETRIEVER_MAX_TOKENS,
         output_token_parameter="max_tokens",
-    ).bind_tools(
-        [retrieve_search, calculate_table_statistic, combine_numeric_results, finish],
-    )
+    ).bind_tools(RETRIEVER_TOOLS)
 
 
 @lru_cache(maxsize=1)
@@ -184,18 +196,10 @@ def retriever(
 ) -> dict:
     print("retriever 노드 호출")
 
-    tools = [
-        retrieve_search,
-        retrieve_correction_history,
-        calculate_table_statistic,
-        combine_numeric_results,
-        finish,
-    ]
-
     retriever_llm = (
         _build_retriever_llm()
         if llm is None
-        else llm.bind_tools(tools)
+        else llm.bind_tools(RETRIEVER_TOOLS)
     )
 
     retriever_human_message = build_retriever_human_message(state)
@@ -294,13 +298,56 @@ def answer_validator(
 
 
 
-def answer_directly(state: AgentState) -> dict:
-    print("answer_directly 노드 호출")
-    return {"answer": "임시 답변", "citations": ["임시 인용 정보"]}
+@lru_cache(maxsize=1)
+def _build_direct_answer_llm() -> Any:
+    """공용 LLM에 direct 응답용 설정을 한 번 적용합니다."""
+
+    return get_llm()
+
+
+def answer_directly(
+    state: AgentState,
+    *,
+    llm: Any | None = None,
+) -> dict:
+    """검색이 필요 없는 인사·기능 안내 질문에 짧게 답합니다."""
+
+    print("-- answer_directly 노드 호출 --")
+
+    question = state["question_text"].strip()
+    if not question:
+        raise ValueError("question_text는 비어 있을 수 없습니다.")
+
+    direct_answer_llm = _build_direct_answer_llm() if llm is None else llm
+    messages = [
+        SystemMessage(content=sp.DIRECT_ANSWER_SYSTEM_PROMPT),
+        HumanMessage(content=question),
+    ]
+    response = invoke_with_rate_limit_retry(direct_answer_llm, messages)
+
+    # 검색을 수행하지 않았으므로 인용할 근거가 없습니다.
+    return {"ai_answer": AiAnswer(answer=str(response.content), citation=[])}
 
 def request_clarification(state: AgentState) -> dict:
-    print("request_clarification 노드 호출")
-    return {"answer": " 임시 답변", "citations": ["임시 인용 정보"]}
+    """Question Analyzer가 만든 되묻기 질문을 그대로 사용자에게 전달합니다."""
+
+    print("-- request_clarification 노드 호출 --")
+
+    analysis = state.get("question_analysis")
+    if analysis is None:
+        raise ValueError("question_analysis가 생성되지 않았습니다.")
+    if not isinstance(analysis, QuestionAnalysis):
+        analysis = QuestionAnalysis.model_validate(analysis)
+    if analysis.decision != "clarify":
+        raise ValueError(
+            "clarify 결정이 아닌 질문은 request_clarification으로 보낼 수 없습니다"
+            f"(decision={analysis.decision})."
+        )
+    if not analysis.clarification_question:
+        raise ValueError("clarify 결정에 clarification_question이 없습니다.")
+
+    # 검색을 수행하지 않았으므로 인용할 근거가 없습니다.
+    return {"ai_answer": AiAnswer(answer=analysis.clarification_question, citation=[])}
 
 
 # Conditional Routing Function

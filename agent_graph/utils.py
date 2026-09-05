@@ -72,7 +72,7 @@ UNIVERSE_TABLE_PATH = (
 )
 # 시가총액을 사용한 답변에는 기준일 고지를 반드시 덧붙입니다.
 MARKET_CAP_FIELD = "market_cap"
-MARKET_CAP_AS_OF_NOTE = "(시가총액은 2026년 7월 24일 기준)"
+MARKET_CAP_AS_OF_NOTE = "(시가총액은 2026년 7월 24일 기준, 코퍼스 70개사 대상)"
 UNIVERSE_TABLE_COLUMNS = (
     "법인명",
     "거래소통용종목명",

@@ -85,6 +85,23 @@ def _retrieval_state():
     }
 
 
+def test_retriever_tools_constant_includes_correction_history():
+    """_build_retriever_llm()(운영 경로)과 retriever()의 llm 인자 경로(테스트
+
+    경로)가 서로 다른 tool 목록을 쓰면, 테스트는 통과하는데 운영에서만
+    tool이 빠지는 결함이 생긴다. 두 경로가 이 상수 하나를 공유하는지
+    확인한다.
+    """
+
+    assert {tool.name for tool in graph_module.RETRIEVER_TOOLS} == {
+        "retrieve_search",
+        "retrieve_correction_history",
+        "calculate_table_statistic",
+        "combine_numeric_results",
+        "finish",
+    }
+
+
 def test_route_after_retrieval_returns_registered_retriever_key():
     assert graph_module.route_after_retrieval({
         "retrieval_status": "CONTINUE"

@@ -214,7 +214,8 @@ def test_appends_market_cap_as_of_note_when_market_cap_is_used():
     )
 
     assert answer.answer == (
-        "삼성전자의 시가총액이 가장 큽니다. (시가총액은 2026년 7월 24일 기준)"
+        "삼성전자의 시가총액이 가장 큽니다."
+        " (시가총액은 2026년 7월 24일 기준, 코퍼스 70개사 대상)"
     )
 
 
