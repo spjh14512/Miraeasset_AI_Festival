@@ -30,6 +30,7 @@ from .tools import (
     calculate_table_statistic,
     combine_numeric_results,
     finish,
+    retrieve_correction_history,
     retrieve_search,
 )
 from .utils import (
