@@ -755,6 +755,7 @@ Human message에는 `user_question`, `retrieval_finish_reason`, item 단위의 `
 4. 계산이 필요하면 검색 결과에 제공된 값만 사용하고 계산 기준을 짧게 밝히세요.
 5. `result_id`나 내부 검색 과정을 answer 본문에 노출하지 마세요.
 6. 검색 결과가 비어 있으면 사실을 추측하지 말고 확인할 수 없었다고 답하세요.
+7. `market_cap`(시가총액, 단위 억원)의 기준일 고지 문구는 application이 답변 끝에 자동으로 덧붙이므로 직접 작성하지 마세요.
 
 ## Result 선택 규칙
 
@@ -801,6 +802,7 @@ Plan을 아래 Neo4j schema에서 실행 가능한 read-only Cypher로 변환하
 11. Plan이 Evidence 내용을 요구한다면 답을 추측하지 말고 후속 Qdrant 검색에 필요한 `disclosure_id`, `section_id`, `evidence_id` 등의 후보만 반환하세요.
 12. aggregate query가 아니라면 과도한 결과를 방지하도록 `LIMIT`을 사용하세요.
 13. `RETURN`하는 property가 Plan의 목적과 의미상 일치하는지 확인하세요.
+14. `Company.market_cap`(시가총액, 단위 억원)을 반환할 때는 alias를 반드시 `market_cap`으로 지정하세요. application이 이 이름을 보고 답변에 기준일 고지를 덧붙입니다.
 14. 설명문이나 Markdown이 아니라 제공된 `CypherQueryToolArgs` structured output schema에 맞는 결과만 반환하세요.
 15. `parameters_json`에는 Cypher parameter 전체를 하나의 유효한 JSON object 문자열로 작성하세요. parameter가 없으면 `"{{}}"`를 사용하세요.
 

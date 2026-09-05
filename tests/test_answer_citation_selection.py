@@ -193,6 +193,48 @@ def test_deduplicates_used_result_ids_and_citations():
     assert len(answer.citation) == 1
 
 
+def test_appends_market_cap_as_of_note_when_market_cap_is_used():
+    state = _state([{
+        "type": "record",
+        "fields": {
+            "company": {
+                "type": "node",
+                "labels": ["Company"],
+                "properties": {"corp_name": "삼성전자", "market_cap": 14586465},
+            },
+        },
+    }])
+
+    answer = resolve_answer_draft(
+        state,
+        AnswerGeneratorOutput(
+            answer="삼성전자의 시가총액이 가장 큽니다.",
+            used_result_ids=["answer_result_1"],
+        ),
+    )
+
+    assert answer.answer == (
+        "삼성전자의 시가총액이 가장 큽니다. (시가총액은 2026년 7월 24일 기준)"
+    )
+
+
+def test_does_not_append_market_cap_note_without_market_cap():
+    state = _state([{
+        "type": "record",
+        "fields": {"corp_name": "삼성전자", "stock_code": "005930"},
+    }])
+
+    answer = resolve_answer_draft(
+        state,
+        AnswerGeneratorOutput(
+            answer="종목 코드는 005930입니다.",
+            used_result_ids=["answer_result_1"],
+        ),
+    )
+
+    assert answer.answer == "종목 코드는 005930입니다."
+
+
 def test_company_properties_without_dart_ids_return_empty_citations():
     state = _state([{
         "type": "record",

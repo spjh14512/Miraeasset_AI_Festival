@@ -1,3 +1,4 @@
+import csv
 import json
 import re
 import statistics
@@ -68,6 +69,17 @@ DOCUMENT_MANIFEST_PATH = DATA_ROOT / "manifest.jsonl"
 # data/는 git에 포함되지 않으므로 저장소에 추적되는 DOCS/ 사본을 읽습니다.
 UNIVERSE_TABLE_PATH = (
     Path(__file__).resolve().parents[1] / "DOCS" / "universe.tsv"
+)
+# 시가총액을 사용한 답변에는 기준일 고지를 반드시 덧붙입니다.
+MARKET_CAP_FIELD = "market_cap"
+MARKET_CAP_AS_OF_NOTE = "(시가총액은 2026년 7월 24일 기준)"
+UNIVERSE_TABLE_COLUMNS = (
+    "법인명",
+    "거래소통용종목명",
+    "영문법인명",
+    "종목코드",
+    "업종",
+    "섹터",
 )
 CITATION_CONTEXT_QUERY = """
 UNWIND $citations AS citation
@@ -437,9 +449,16 @@ def _load_qdrant_query_schema() -> str:
 
 @lru_cache(maxsize=1)
 def load_universe_table() -> str:
-    """기업 마스터 TSV를 한 번 읽어 캐시합니다."""
+    """기업 마스터 TSV에서 entity 식별에 필요한 열만 남겨 캐시합니다."""
 
-    return UNIVERSE_TABLE_PATH.read_text(encoding="utf-8")
+    source = UNIVERSE_TABLE_PATH.read_text(encoding="utf-8").splitlines()
+    rows = csv.DictReader(source, delimiter="\t")
+    lines = ["\t".join(UNIVERSE_TABLE_COLUMNS)]
+    lines.extend(
+        "\t".join(row[column] for column in UNIVERSE_TABLE_COLUMNS)
+        for row in rows
+    )
+    return "\n".join(lines)
 
 
 @lru_cache(maxsize=1)
@@ -2051,6 +2070,18 @@ def build_answer_result_map(
     return answer_result_map
 
 
+def _uses_market_cap(value: Any) -> bool:
+    """result item 안에 market_cap 값이 포함되어 있는지 재귀적으로 확인합니다."""
+
+    if isinstance(value, dict):
+        if MARKET_CAP_FIELD in value:
+            return True
+        return any(_uses_market_cap(child) for child in value.values())
+    if isinstance(value, list):
+        return any(_uses_market_cap(child) for child in value)
+    return False
+
+
 def resolve_answer_draft(
     state: AgentState,
     draft: AnswerGeneratorOutput,
@@ -2079,10 +2110,13 @@ def resolve_answer_draft(
     selected_citations: list[Citation] = []
     seen_result_ids: set[str] = set()
     seen_citations: set[tuple[str, str | None, str | None]] = set()
+    uses_market_cap = False
     for result_id in draft.used_result_ids:
         if result_id in seen_result_ids:
             continue
         seen_result_ids.add(result_id)
+        if _uses_market_cap(answer_result_map[result_id]["item"]):
+            uses_market_cap = True
         for citation in _extract_citations(answer_result_map[result_id]["item"]):
             key = (
                 citation.disclosure_id,
@@ -2094,8 +2128,12 @@ def resolve_answer_draft(
             seen_citations.add(key)
             selected_citations.append(citation)
 
+    answer = draft.answer
+    if uses_market_cap and MARKET_CAP_AS_OF_NOTE not in answer:
+        answer = f"{answer.rstrip()} {MARKET_CAP_AS_OF_NOTE}"
+
     return AiAnswer(
-        answer=draft.answer,
+        answer=answer,
         citation=selected_citations
     )
 

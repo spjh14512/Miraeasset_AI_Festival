@@ -39,7 +39,7 @@ entities:
         description: 상장일
       market_cap:
         type: integer?
-        description: 시가총액
+        description: "시가총액 (단위 억원, 2026-07-24 기준)"
 
   Disclosure:
     labels:
