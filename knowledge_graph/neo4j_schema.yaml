@@ -1,4 +1,4 @@
-schema_version: "1.3.0"
+schema_version: "1.4.0"
 
 metadata:
   description: Neo4j 적재 코드가 사용하는 목표 스키마
@@ -250,6 +250,9 @@ relations:
       reason:
         type: string?
         description: 정정 사유
+      def:
+        type: string?
+        description: 정정공시 앞부분(CORRECTION 블록)에서 추출한 정정내용 원문
 
   REPORTS:
     type: REPORTS

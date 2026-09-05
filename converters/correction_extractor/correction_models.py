@@ -70,6 +70,7 @@ class CorrectionMetadata:
     reason: str | None
     target_rcept_no: str | None
     source_ref: SourceRef
+    raw_text: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,6 +81,7 @@ class CorrectionMetadata:
             "reason": self.reason,
             "target_rcept_no": self.target_rcept_no,
             "source_ref": self.source_ref.to_dict(),
+            "raw_text": self.raw_text,
         }
 
 

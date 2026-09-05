@@ -15,6 +15,7 @@ def _correction_record(**overrides: Any) -> dict[str, Any]:
         "target_document_name": "주요사항보고서",
         "reason": "기재 내용 정정",
         "target_rcept_no": "20240101000001",
+        "raw_text": "정정신고(보고) 원문 발췌",
     }
     correction.update(overrides.pop("correction", {}))
     record = {
@@ -55,6 +56,7 @@ def test_relation_rows_use_existing_correction_v1_contract(tmp_path: Path):
             "original_submission_date": "2024-01-01",
             "target_document_name": "주요사항보고서",
             "reason": "기재 내용 정정",
+            "def": "정정신고(보고) 원문 발췌",
         }
     ]
 
@@ -330,6 +332,7 @@ def _relation_rows() -> list[dict[str, Any]]:
             "original_submission_date": "2024-01-01",
             "target_document_name": "주요사항보고서",
             "reason": "기재 내용 정정",
+            "def": "정정신고(보고) 원문 발췌",
         }
     ]
 
@@ -348,6 +351,7 @@ def test_neo4j_loader_replaces_relationship_and_updates_latest_flags():
     assert driver.verified is True
     merge_query = next(query for query, _ in session.calls if "MERGE (source)" in query)
     assert "MERGE (source)-[relation:CORRECTS]->(target)" in merge_query
+    assert "relation.def = row.def" in merge_query
     assert any("DELETE existing" in query for query, _ in session.calls)
     assert any(
         "SET disclosure.is_latest_version = false" in query

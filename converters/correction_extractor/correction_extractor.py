@@ -203,7 +203,7 @@ def _xml_metadata(
     if reason is None:
         reason = _reason_from_tables(correction)
 
-    full_text = _element_text(correction)
+    full_text = _clean_text(" ".join(correction.itertext()))
     correction_date = _normalize_date(full_text)
     original_submission_date = _normalize_date(original_date_text)
 
@@ -234,6 +234,7 @@ def _xml_metadata(
             reason=reason,
             target_rcept_no=None,
             source_ref=source_ref,
+            raw_text=full_text or None,
         ),
         tuple(issues),
     )
@@ -467,6 +468,17 @@ class _CorrectionHTMLParser(HTMLParser):
             self._current_row[self._current_cell] += data
 
 
+def _d8_tables_raw_text(tables: Iterable[_HTMLTable]) -> str | None:
+    parts = [
+        _clean_text(cell)
+        for table in tables
+        for row in table.rows
+        for cell in row
+        if _clean_text(cell)
+    ]
+    return _clean_text(" ".join(parts)) or None
+
+
 def _html_label_value(
     tables: Iterable[_HTMLTable],
     label: str,
@@ -522,6 +534,11 @@ def _extract_html_source(
         _html_label_value(correction_tables, "정정관련 공시서류제출일")
     )
     reason = _html_label_value(correction_tables, "정정사유")
+    raw_text = (
+        title_text or None
+        if parser.found_container
+        else _d8_tables_raw_text(correction_tables)
+    )
 
     for code, value, label in (
         ("MISSING_TITLE", title, "correction title"),
@@ -588,6 +605,7 @@ def _extract_html_source(
             reason=reason,
             target_rcept_no=None,
             source_ref=root_ref,
+            raw_text=raw_text,
         ),
         correction_blocks=tuple(blocks),
         excluded_source_refs=excluded_refs,

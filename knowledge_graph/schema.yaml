@@ -1,0 +1,113 @@
+schema_version: "0.1.0"
+
+entities:
+  Disclosure:
+    label: Disclosure # 공시 문서를 나타내는 엔티티
+    properties:
+      - id            # 공시 문서의 rcept_no을 그대로 사용한다. ( string / ex: "d20230512000974" )
+      - doc_group     # 공시 문서의 종류 ( string / domain: [ "exchange", "holding", "major", "periodic" ] )
+      - source_path   # 공시 문서의 원문 파일 경로 ( string / ex: "raw/periodic/효성중공업/20230512000974_quarter_2023_03" )
+      - n_sections    # 공시 문서 내부의 섹션 수. 별도의 update 쿼리로 관리할 수 있어야 함. ( integer / ex: 16 )
+
+  Section:
+    label: Section    # 공시 문서 내부의 구획을 나타내는 엔티티
+    properties:
+      - id            # 문서에 등장하는 순서대로 섹션 번호가 부여된다. ( string / ex: "d20230512000974:src0:s16" )
+      - title         # 섹션의 제목 ( string / ex: "8. 기타 재무에 관한 사항" )
+      - section_path  # 상위 섹션을 포함한 경로 ( list[string] / ex: ["III. 재무에 관한 사항", "8. 기타 재무에 관한 사항"] )
+      - element_path  # 공시 원문 내에서 섹션의 위치를 나타내는 경로 ( string / ex: "/DOCUMENT[1]/BODY[1]/SECTION-1[4]/SECTION-2[4]" )
+      - order_in_doc  # 공시 문서 내에서 섹션이 등장하는 순서 ( integer / ex: 0 )
+      - n_evidence    # 섹션 내에서 추출된 Evidence 수. 별도의 update 쿼리로 관리할 수 있어야 함. ( integer / ex: 3 )
+
+  Evidence:
+    label: Evidence       # 공시 원문에서 추출한 최소한의 근거 단위를 나타내는 엔티티. 하위 엔티티로 Text와 Table을 가진다.
+    properties:
+      - id                # ( string / ex: "d20230512000974:src0:s16:e1" )
+      - order_in_section  # 섹션 내에서 Evidence가 등장하는 순서 ( integer / ex: 0 )
+      - heading_path      # Evidence의 소제목 문맥 ( list[string] / ex: ["II. 사업의 내용", "3. 주요 제품 및 서비스"] )
+
+  Text:
+    label: "Evidence:Text"  # 추출한 Evidence 중 유형이 Text인 경우를 나타내는 엔티티
+    properties:
+      - text                # 공시 원문에서 추출한 텍스트 원문 ( string / ex: "당사는 2023년 3월 31일 현재 연결재무제표 기준으로 유동자산이 비유동자산보다 많습니다." )
+
+  Table:
+    label: "Evidence:Table"  # 추출한 Evidence 중 유형이 Table인 경우를 나타내는 엔티티
+    properties:
+      - table_type          # 표의 유형 ( string / domain: [ "KV-table", "R-table" ] )
+      - title               # 표의 제목 ( string / ex: "주요 제품 현황" )
+      - captions            # 표의 캡션 ( string / ex: "주요 제품별 매출은 다음과 같습니다." )
+      - notes               # 표의 주석 ( list[string] / ex: ["※ 연결 기준"] )
+      - units               # 표의 단위 ( list[string] / ex: ["(단위: 백만원)","(주식 수 단위: 주)"] )
+      - headers             # [R-table 전용] 표의 헤더(=컬럼명) 목록. ">"로 flatten된 헤더 이름을 사용한다. ( list[string] / ex: ["항목", "직전보고서 > 금액", "이번보고서 > 금액"] )
+      - n_rows              # [R-table 전용] 표의 행 수. ( integer / ex: 3 )
+      - keys                # [KV-table 전용] 표의 key 목록. ">"로 flatten된 헤더 이름을 사용한다. ( list[string] / ex: ["항목", "직전보고서 > 금액", "이번보고서 > 금액"] )
+      - n_entries           # [KV-table 전용] 표의 key-value 쌍 개수. ( integer / ex: 5 )
+
+  Event:
+    label: Event
+    properties:
+      - id
+      - event_type          #
+      - period_start         # 계약·사업 기간 시작
+      - period_end           #계약·사업 기간 종료
+      - event_date
+      - amount
+      - currency
+      - status
+      - is_correction
+
+  Contract:
+    label: "Event:Contract" # 계약
+
+  Dividend:
+    label: "Event:Dividend" # 배당
+
+  Bond:
+    label: "Event:Bond" # 채권
+
+  MergerAcquisition:
+    label: "Event:MergerAcquisition" # 인수합병
+
+  CapitalContribution:
+    label: "Event:CapitalContribution" # 출자
+
+  RealEstate:
+    label: "Event:RealEstate" # 부동산
+
+  Derivative:
+    label: "Event:Derivative" # 파생상품
+
+  Debt:
+    label: "Event:Debt" # 채무
+
+  Transaction:
+    label: "Event:Transaction" # 거래
+
+  Investment:
+    label: "Event:Investment" # 투자
+
+  BusinessOperation:
+    label: "Event:BusinessOperation" # 영업
+
+  Audit:
+    label: "Event:Audit" # 감사
+
+relations:
+  HAS_SECTION:
+    label: HAS_SECTION    # Disclosure 또는 상위 Section이 하위 Section을 포함하는 관계
+    source_labels:
+      - Disclosure
+      - Section
+    target_labels:
+      - Section
+    properties: {}
+
+  HAS_EVIDENCE:
+    label: HAS_EVIDENCE    # Section이 해당 구획에서 추출된 Evidence를 포함하는 관계
+    source_labels:
+      - Section
+    target_labels:
+      - Text
+      - Table
+    properties: {}
