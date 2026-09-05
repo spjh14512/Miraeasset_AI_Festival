@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import system_prompts as sp
 from .llm import (
+    COMPACTOR_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
     bind_structured_output,
     build_output_retry_message,
@@ -19,7 +20,8 @@ from .llm import (
 from .state import Plan
 
 
-DEFAULT_CONTENT_CHARACTER_LIMIT = 200
+DEFAULT_CONTENT_CHARACTER_LIMIT = 4_000
+DEFAULT_ITEM_COUNT_LIMIT = 30
 COMPACTABLE_POINT_KINDS = {"KV_TABLE", "R_TABLE"}
 
 
@@ -46,7 +48,10 @@ class CompactorOutput(BaseModel):
 
 @lru_cache(maxsize=1)
 def _get_compactor_llm() -> Any:
-    return bind_structured_output(get_llm(), CompactorOutput)
+    return bind_structured_output(
+        get_llm(COMPACTOR_MAX_COMPLETION_TOKENS),
+        CompactorOutput,
+    )
 
 
 def _point_value(point: Any, key: str) -> Any:
@@ -87,11 +92,16 @@ def point_requires_compaction(
     point: Any,
     *,
     content_character_limit: int = DEFAULT_CONTENT_CHARACTER_LIMIT,
+    item_count_limit: int = DEFAULT_ITEM_COUNT_LIMIT,
 ) -> bool:
-    """Point 내용이 기준 길이를 초과하는지 판단합니다.
+    """Point의 직렬화 길이나 item 수가 기준을 초과하는지 판단합니다.
 
     입력 예시:
-        point_requires_compaction(kv_point, content_character_limit=6000)
+        point_requires_compaction(
+            kv_point,
+            content_character_limit=4000,
+            item_count_limit=30,
+        )
 
     출력 예시:
         True
@@ -99,9 +109,13 @@ def point_requires_compaction(
 
     if content_character_limit <= 0:
         raise ValueError("content_character_limit는 양수여야 합니다.")
+    if item_count_limit <= 0:
+        raise ValueError("item_count_limit는 양수여야 합니다.")
     items = _canonical_items(_point_payload(point))
     if items is None:
         return False
+    if len(items) > item_count_limit:
+        return True
     serialized = json.dumps(
         items,
         ensure_ascii=False,
@@ -239,6 +253,7 @@ def compact_qdrant_point(
 __all__ = [
     "CompactorOutput",
     "DEFAULT_CONTENT_CHARACTER_LIMIT",
+    "DEFAULT_ITEM_COUNT_LIMIT",
     "compact_qdrant_point",
     "point_requires_compaction",
 ]

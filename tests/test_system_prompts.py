@@ -120,18 +120,16 @@ def test_builder_prompts_use_current_names():
 
 
 def test_narrow_scope_prompt_matches_internal_agent_contract():
-    prompt = sp.NARROW_SCOPE_SYSTEM_PROMPT
+    disclosure_prompt = sp.NARROW_SCOPE_DISCLOSURE_SELECTION_SYSTEM_PROMPT
+    section_prompt = sp.NARROW_SCOPE_SECTION_SELECTION_SYSTEM_PROMPT
 
-    assert "knowledge_hints" in prompt
-    assert "SEARCH 또는 FINISH" in prompt
-    assert "GLOBAL > COMPANY > DISCLOSURE > SECTION" in prompt
-    assert "is_latest_version = true" in prompt
-    assert "최소 1개월" in prompt
-    assert "IS_SUPPORTED_BY" in prompt
-    assert "Neo4j 결과에 없던 이름이나 ID를 만들지 마세요" in prompt
-    assert "knowledge_hints[].knowledge_type" in prompt
-    assert "Metric 질문" in prompt or "METRIC 질문" in prompt
-    assert "Disclosure → Event" in prompt
+    assert "knowledge_hints" in disclosure_prompt
+    assert "disclosure_candidates" in disclosure_prompt
+    assert "REPORTING_PERIOD" in disclosure_prompt
+    assert "rcept_date" in disclosure_prompt
+    assert "knowledge_hints" in section_prompt
+    assert "section_candidates" in section_prompt
+    assert "DISCLOSURE Scope" in section_prompt
 
 
 def test_qdrant_builder_uses_flat_payload_filter_paths():

@@ -9,7 +9,10 @@ from pydantic import ValidationError
 
 from . import system_prompts as sp
 from .llm import (
+    ANSWER_GENERATOR_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
+    QUESTION_ANALYZER_MAX_COMPLETION_TOKENS,
+    RETRIEVER_MAX_TOKENS,
     bind_structured_output,
     build_output_retry_message,
     get_llm,
@@ -51,14 +54,20 @@ MAX_TOOL_CALL_RETRIES = MAX_LLM_RETRIES
 def _build_question_analyzer_llm() -> Any:
     """공용 LLM에 Question Analyzer structured output을 한 번 binding합니다."""
 
-    return bind_structured_output(get_llm(), QuestionAnalyzerOutput)
+    return bind_structured_output(
+        get_llm(QUESTION_ANALYZER_MAX_COMPLETION_TOKENS),
+        QuestionAnalyzerOutput,
+    )
 
 
 @lru_cache(maxsize=1)
 def _build_retriever_llm() -> Any:
     """공용 LLM에 retrieval query 생성 tool을 한 번 binding한다."""
 
-    return get_llm().bind_tools(
+    return get_llm(
+        RETRIEVER_MAX_TOKENS,
+        output_token_parameter="max_tokens",
+    ).bind_tools(
         [retrieve_search, calculate_table_statistic, combine_numeric_results, finish],
     )
 
@@ -67,7 +76,10 @@ def _build_retriever_llm() -> Any:
 def _build_answer_generator_llm() -> Any:
     """공용 LLM에 answer generator structured output을 한 번 binding한다."""
 
-    return bind_structured_output(get_llm(), AnswerGeneratorOutput)
+    return bind_structured_output(
+        get_llm(ANSWER_GENERATOR_MAX_COMPLETION_TOKENS),
+        AnswerGeneratorOutput,
+    )
 
 
 # Actual Node

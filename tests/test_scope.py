@@ -17,7 +17,12 @@ from agent_graph.state import (
     ScopeDraft,
     SubQuestion,
 )
-from agent_graph.utils import CypherQuery, NarrowScopeAction, QdrantQuery
+from agent_graph.utils import (
+    CypherQuery,
+    DisclosureSelection,
+    QdrantQuery,
+    SectionSelection,
+)
 from vector_db.text2vector import HybridEmbedding, SparseEmbedding
 
 
@@ -84,7 +89,7 @@ def _hybrid() -> HybridEmbedding:
 
 
 class _StructuredSequence:
-    def __init__(self, actions: list[NarrowScopeAction]):
+    def __init__(self, actions: list[Any]):
         self.actions = list(actions)
         self.calls = []
 
@@ -94,7 +99,7 @@ class _StructuredSequence:
 
 
 class _Llm:
-    def __init__(self, actions: list[NarrowScopeAction]):
+    def __init__(self, actions: list[Any]):
         self.structured = _StructuredSequence(actions)
         self.schema = None
         self.method = None
@@ -216,36 +221,16 @@ def test_scope_knowledge_search_keeps_llm_fields_and_omits_empty_values(monkeypa
     ]
 
 
-def test_narrow_scope_mini_agent_searches_then_finishes(monkeypatch, capsys):
-    search = NarrowScopeAction(
-        action="SEARCH",
-        cypher=(
-            "MATCH (c:Company)-[:PUBLISHES]->(d:Disclosure) "
-            "MATCH (d)-[:HAS_SECTION*1..]->(s:Section) "
-            "WHERE d.is_latest_version = $latest "
-            "RETURN c.corp_name AS corp_name, c.corp_code AS corp_code, "
-            "d.id AS disclosure_id, s.id AS section_id LIMIT $limit"
-        ),
-        parameters_json='{"latest":true,"limit":20}',
-        level="GLOBAL",
-        corp_names=[],
-        corp_codes=[],
-        disclosure_ids=[],
-        section_ids=[],
-        reason="후보 공시와 섹션을 검색합니다.",
+def test_narrow_scope_selects_disclosure_then_section(monkeypatch, capsys):
+    disclosure_selection = DisclosureSelection(
+        selected_disclosure_ids=["d1"],
+        reason="합병 관련 공시를 선택했습니다.",
     )
-    finish = NarrowScopeAction(
-        action="FINISH",
-        cypher="",
-        parameters_json="{}",
-        level="SECTION",
-        corp_names=["삼성전자"],
-        corp_codes=["00126380"],
-        disclosure_ids=["d1"],
-        section_ids=["s1"],
-        reason="합병 관련 최신 공시의 근거 섹션을 확인했습니다.",
+    section_selection = SectionSelection(
+        selected_section_ids=["s1"],
+        reason="합병 관련 Section을 선택했습니다.",
     )
-    llm = _Llm([search, finish])
+    llm = _Llm([disclosure_selection, section_selection])
     monkeypatch.setattr(
         utils,
         "search_scope_knowledge",
@@ -261,14 +246,29 @@ def test_narrow_scope_mini_agent_searches_then_finishes(monkeypatch, capsys):
     monkeypatch.setattr(
         utils,
         "_execute_scope_cypher",
-        lambda _query, search_index: [{
+        lambda _query, stage: [{
             "type": "record",
-            "fields": {
-                "corp_name": "삼성전자",
-                "corp_code": "00126380",
-                "disclosure_id": "d1",
-                "section_id": "s1",
-            },
+            "fields": (
+                {
+                    "corp_name": "삼성전자",
+                    "corp_code": "00126380",
+                    "disclosure_id": "d1",
+                    "report_name": "주요사항보고서(회사합병결정)",
+                    "doc_group": "major",
+                    "rcept_date": "2025-01-02",
+                }
+                if stage == "disclosures"
+                else {
+                    "corp_name": "삼성전자",
+                    "corp_code": "00126380",
+                    "disclosure_id": "d1",
+                    "report_name": "주요사항보고서(회사합병결정)",
+                    "section_id": "s1",
+                    "section_title": "합병 상대방",
+                    "section_path": ["합병에 관한 사항", "합병 상대방"],
+                    "order_in_doc": 1,
+                }
+            ),
         }],
     )
 
@@ -284,9 +284,11 @@ def test_narrow_scope_mini_agent_searches_then_finishes(monkeypatch, capsys):
     assert llm.method == "json_schema"
     output = capsys.readouterr().out
     assert output.count("[narrow_scope human message]:") == 2
-    assert '"aliases": [' in output
+    assert output.count('"aliases": [') == 2
     assert '"description": "둘 이상의 기업이 하나로 결합하는 사건"' in output
     assert '"categories": [' in output
+    assert '"stage": "DISCLOSURE_SELECTION"' in output
+    assert '"stage": "SECTION_SELECTION"' in output
     assert "[narrow_scope] Knowledge Base 검색어:" not in output
     assert "[narrow_scope] LLM action:" not in output
     assert "[narrow_scope] Neo4j 검색" not in output

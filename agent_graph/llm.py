@@ -1,9 +1,10 @@
 import os
+import re
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from langchain_core.utils.function_calling import convert_to_openai_tool
@@ -15,8 +16,17 @@ load_dotenv()
 
 MAX_LLM_RETRIES = 2
 MAX_RATE_LIMIT_RETRIES = 2
+RATE_LIMIT_RESET_BUFFER_SECONDS = 0.5
 UNSUPPORTED_FUNCTION_ERROR_CODE = "40009"
 DEFAULT_CLOVA_MODEL = "HCX-007"
+QUESTION_ANALYZER_MAX_COMPLETION_TOKENS = 1024
+NARROW_SCOPE_MAX_COMPLETION_TOKENS = 1024
+RETRIEVER_MAX_TOKENS = 1024
+CYPHER_BUILDER_MAX_COMPLETION_TOKENS = 768
+QDRANT_QUERY_BUILDER_MAX_COMPLETION_TOKENS = 512
+COMPACTOR_MAX_COMPLETION_TOKENS = 512
+ANSWER_GENERATOR_MAX_COMPLETION_TOKENS = 2048
+DEFAULT_MAX_COMPLETION_TOKENS = 512
 _SUPPORTED_JSON_SCHEMA_KEYS = {
     "type",
     "description",
@@ -116,6 +126,34 @@ def _retry_after_seconds(error: BaseException) -> float | None:
         )
 
 
+def _token_rate_limit_info(
+    error: BaseException,
+) -> tuple[int | None, float | None]:
+    """CLOVA 응답 header에서 남은 token과 TPM reset 대기 시간을 읽습니다."""
+
+    response = getattr(error, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return None, None
+
+    remaining_value = headers.get("x-ratelimit-remaining-tokens")
+    reset_value = headers.get("x-ratelimit-reset-tokens")
+
+    try:
+        remaining_tokens = (
+            int(remaining_value) if remaining_value is not None else None
+        )
+    except (TypeError, ValueError):
+        remaining_tokens = None
+
+    if reset_value is None:
+        return remaining_tokens, None
+    match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)s\s*", str(reset_value))
+    if match is None:
+        return remaining_tokens, None
+    return remaining_tokens, float(match.group(1))
+
+
 def _is_unsupported_function_error(error: BadRequestError) -> bool:
     """CLOVA의 일시적인 Unsupported function 오류인지 확인합니다."""
 
@@ -153,11 +191,21 @@ def invoke_with_rate_limit_retry(
         except RateLimitError as error:
             if attempt == max_retries:
                 raise
-            retry_after = _retry_after_seconds(error)
-            delay = retry_after if retry_after is not None else 2 ** attempt
+            remaining_tokens, reset_seconds = _token_rate_limit_info(error)
+            if reset_seconds is not None:
+                delay = reset_seconds + RATE_LIMIT_RESET_BUFFER_SECONDS
+            else:
+                retry_after = _retry_after_seconds(error)
+                delay = retry_after if retry_after is not None else 2 ** attempt
+            remaining_text = (
+                f", 남은 token: {remaining_tokens}"
+                if remaining_tokens is not None
+                else ""
+            )
             print(
                 "LLM rate limit으로 재시도합니다: "
                 f"{delay:g}초 후 ({attempt + 1}/{max_retries})"
+                f"{remaining_text}"
             )
             time.sleep(delay)
         except BadRequestError as error:
@@ -191,9 +239,19 @@ def invoke_with_rate_limit_retry(
             time.sleep(delay)
 
 
-@lru_cache(maxsize=1)
-def get_llm() -> Any:
-    """환경 설정으로 공용 ChatClovaX를 한 번 생성한다."""
+@lru_cache(maxsize=None)
+def get_llm(
+    max_output_tokens: int = DEFAULT_MAX_COMPLETION_TOKENS,
+    *,
+    output_token_parameter: Literal[
+        "max_completion_tokens",
+        "max_tokens",
+    ] = "max_completion_tokens",
+) -> Any:
+    """출력 토큰 상한과 API parameter 조합별 ChatClovaX를 재사용합니다."""
+
+    if max_output_tokens <= 0:
+        raise ValueError("max_output_tokens는 양수여야 합니다.")
 
     api_key = os.getenv("CLOVASTUDIO_API_KEY")
     if not api_key:
@@ -202,10 +260,11 @@ def get_llm() -> Any:
     # Import가 무거우므로 실제 LLM 호출이 필요한 시점까지 지연한다.
     from langchain_naver import ChatClovaX
 
+    token_options = {output_token_parameter: max_output_tokens}
     return ChatClovaX(
         model=os.getenv("CLOVAX_MODEL_NAME") or DEFAULT_CLOVA_MODEL,
         api_key=api_key,
-        max_completion_tokens=4096,
+        **token_options,
         reasoning_effort="none",
         temperature=0.0,
         top_p=0.8,
@@ -216,9 +275,18 @@ def get_llm() -> Any:
 
 
 __all__ = [
+    "ANSWER_GENERATOR_MAX_COMPLETION_TOKENS",
+    "COMPACTOR_MAX_COMPLETION_TOKENS",
+    "CYPHER_BUILDER_MAX_COMPLETION_TOKENS",
     "DEFAULT_CLOVA_MODEL",
+    "DEFAULT_MAX_COMPLETION_TOKENS",
     "MAX_LLM_RETRIES",
     "MAX_RATE_LIMIT_RETRIES",
+    "NARROW_SCOPE_MAX_COMPLETION_TOKENS",
+    "QDRANT_QUERY_BUILDER_MAX_COMPLETION_TOKENS",
+    "QUESTION_ANALYZER_MAX_COMPLETION_TOKENS",
+    "RATE_LIMIT_RESET_BUFFER_SECONDS",
+    "RETRIEVER_MAX_TOKENS",
     "UNSUPPORTED_FUNCTION_ERROR_CODE",
     "bind_structured_output",
     "build_clova_json_schema",

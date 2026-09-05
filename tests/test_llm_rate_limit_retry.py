@@ -8,8 +8,20 @@ from agent_graph import llm as llm_module
 
 
 class _RateLimitError(Exception):
-    def __init__(self, retry_after: str | None = None):
-        headers = {} if retry_after is None else {"retry-after": retry_after}
+    def __init__(
+        self,
+        retry_after: str | None = None,
+        *,
+        remaining_tokens: str | None = None,
+        reset_tokens: str | None = None,
+    ):
+        headers = {}
+        if retry_after is not None:
+            headers["retry-after"] = retry_after
+        if remaining_tokens is not None:
+            headers["x-ratelimit-remaining-tokens"] = remaining_tokens
+        if reset_tokens is not None:
+            headers["x-ratelimit-reset-tokens"] = reset_tokens
         self.response = SimpleNamespace(headers=headers)
         super().__init__("rate limited")
 
@@ -73,6 +85,41 @@ def test_prefers_retry_after_header(monkeypatch):
 
     assert result == "success"
     assert sleeps == [3.5]
+
+
+def test_prefers_clova_token_reset_header(monkeypatch, capsys):
+    monkeypatch.setattr(llm_module, "RateLimitError", _RateLimitError)
+    sleeps = []
+    monkeypatch.setattr(llm_module.time, "sleep", sleeps.append)
+    runnable = _SequenceRunnable([
+        _RateLimitError(
+            "60",
+            remaining_tokens="0",
+            reset_tokens="23s",
+        ),
+        "success",
+    ])
+
+    result = llm_module.invoke_with_rate_limit_retry(runnable, "input")
+
+    assert result == "success"
+    assert sleeps == [23 + llm_module.RATE_LIMIT_RESET_BUFFER_SECONDS]
+    assert "남은 token: 0" in capsys.readouterr().out
+
+
+def test_falls_back_when_clova_token_reset_header_is_invalid(monkeypatch):
+    monkeypatch.setattr(llm_module, "RateLimitError", _RateLimitError)
+    sleeps = []
+    monkeypatch.setattr(llm_module.time, "sleep", sleeps.append)
+    runnable = _SequenceRunnable([
+        _RateLimitError("4", reset_tokens="invalid"),
+        "success",
+    ])
+
+    result = llm_module.invoke_with_rate_limit_retry(runnable, "input")
+
+    assert result == "success"
+    assert sleeps == [4]
 
 
 def test_reraises_rate_limit_error_after_retries_are_exhausted(monkeypatch):

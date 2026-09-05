@@ -30,7 +30,10 @@ import yaml
 from . import system_prompts as sp
 from .compactor import compact_qdrant_point, point_requires_compaction
 from .llm import (
+    CYPHER_BUILDER_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
+    NARROW_SCOPE_MAX_COMPLETION_TOKENS,
+    QDRANT_QUERY_BUILDER_MAX_COMPLETION_TOKENS,
     bind_structured_output,
     build_output_retry_message,
     get_llm,
@@ -94,8 +97,9 @@ QDRANT_KNOWLEDGE_COLLECTION_NAME = (
 QDRANT_KNOWLEDGE_DENSE_VECTOR_NAME = "knowledge_dense"
 QDRANT_KNOWLEDGE_SPARSE_VECTOR_NAME = "knowledge_sparse"
 SCOPE_KNOWLEDGE_LIMIT = 5
-SCOPE_MAX_NEO4J_SEARCHES = 4
-SCOPE_QUERY_RESULT_LIMIT = 50
+SCOPE_DISCLOSURE_RESULT_LIMIT = 50
+SCOPE_SECTION_RESULT_LIMIT = 500
+SCOPE_DOC_GROUPS = ("periodic", "major", "exchange", "holding")
 SCOPE_KNOWLEDGE_HINT_FIELDS = (
     "knowledge_type",
     "name",
@@ -144,76 +148,48 @@ class CypherQueryToolArgs(BaseModel):
         )
 
 
-class NarrowScopeAction(BaseModel):
-    """narrow_scope mini-agent가 한 단계에서 수행할 검색 또는 종료 행동입니다."""
+class DisclosureSelection(BaseModel):
+    """실제 공시 후보 중 SubQuestion과 관련된 공시 ID를 선택합니다."""
 
     model_config = ConfigDict(extra="forbid")
 
-    action: Literal["SEARCH", "FINISH"]
-    cypher: str
-    parameters_json: str
-    level: Literal["GLOBAL", "COMPANY", "DISCLOSURE", "SECTION"]
-    corp_names: list[str]
-    corp_codes: list[str]
-    disclosure_ids: list[str]
-    section_ids: list[str]
-    reason: str = Field(..., description="현재 SEARCH 또는 FINISH 판단의 간단한 이유")
+    selected_disclosure_ids: list[str]
+    reason: str = Field(description="공시 후보를 선택하거나 제외한 간단한 이유")
 
-    @field_validator("parameters_json")
+    @field_validator("selected_disclosure_ids")
     @classmethod
-    def validate_parameters_json(cls, value: str) -> str:
-        try:
-            parsed = json.loads(value)
-        except json.JSONDecodeError as error:
-            raise ValueError("parameters_json은 유효한 JSON이어야 합니다.") from error
-        if not isinstance(parsed, dict):
-            raise ValueError("parameters_json은 JSON object여야 합니다.")
-        return value
+    def normalize_ids(cls, value: list[str]) -> list[str]:
+        normalized = [item.strip() for item in value]
+        if any(not item for item in normalized):
+            raise ValueError("selected_disclosure_ids에는 빈 값을 사용할 수 없습니다.")
+        return list(dict.fromkeys(normalized))
 
     @model_validator(mode="after")
-    def validate_action_payload(self) -> "NarrowScopeAction":
-        self.reason = self.reason.strip()
-        if not self.reason:
-            self.reason = (
-                "Scope 후보를 확인하기 위한 Neo4j 검색입니다."
-                if self.action == "SEARCH"
-                else f"Neo4j 검색 결과를 바탕으로 {self.level} Scope를 선택했습니다."
-            )
-        if self.action == "SEARCH":
-            if not self.cypher.strip():
-                raise ValueError("SEARCH action에는 Cypher가 필요합니다.")
-            self.level = "GLOBAL"
-            self.corp_names = []
-            self.corp_codes = []
-            self.disclosure_ids = []
-            self.section_ids = []
-        elif self.cypher.strip():
-            raise ValueError("FINISH action에서는 Cypher를 비워야 합니다.")
+    def normalize_reason(self) -> "DisclosureSelection":
+        self.reason = self.reason.strip() or "관련 공시 후보를 선택했습니다."
         return self
 
-    def to_cypher_query(self) -> CypherQuery:
-        """SEARCH action을 실행 가능한 CypherQuery로 변환합니다."""
 
-        if self.action != "SEARCH":
-            raise ValueError("SEARCH action만 CypherQuery로 변환할 수 있습니다.")
-        return CypherQuery(
-            cypher=self.cypher.strip(),
-            parameters=json.loads(self.parameters_json),
-        )
+class SectionSelection(BaseModel):
+    """선택된 공시의 실제 Section 후보 중 관련 Section ID를 선택합니다."""
 
-    def to_scope_draft(self) -> ScopeDraft:
-        """FINISH action을 계층 제약이 검증되는 ScopeDraft로 변환합니다."""
+    model_config = ConfigDict(extra="forbid")
 
-        if self.action != "FINISH":
-            raise ValueError("FINISH action만 ScopeDraft로 변환할 수 있습니다.")
-        return ScopeDraft(
-            level=self.level,
-            corp_names=self.corp_names,
-            corp_codes=self.corp_codes,
-            disclosure_ids=self.disclosure_ids,
-            section_ids=self.section_ids,
-            reason=self.reason,
-        )
+    selected_section_ids: list[str]
+    reason: str = Field(description="Section 후보를 선택하거나 제외한 간단한 이유")
+
+    @field_validator("selected_section_ids")
+    @classmethod
+    def normalize_ids(cls, value: list[str]) -> list[str]:
+        normalized = [item.strip() for item in value]
+        if any(not item for item in normalized):
+            raise ValueError("selected_section_ids에는 빈 값을 사용할 수 없습니다.")
+        return list(dict.fromkeys(normalized))
+
+    @model_validator(mode="after")
+    def normalize_reason(self) -> "SectionSelection":
+        self.reason = self.reason.strip() or "관련 Section 후보를 선택했습니다."
+        return self
 
 
 QdrantFilterField = Literal[
@@ -436,21 +412,40 @@ def _load_qdrant_query_schema() -> str:
 def _get_cypher_llm() -> Any:
     """공용 LLM에 Cypher structured output을 한 번 binding합니다."""
 
-    return bind_structured_output(get_llm(), CypherQueryToolArgs)
+    return bind_structured_output(
+        get_llm(CYPHER_BUILDER_MAX_COMPLETION_TOKENS),
+        CypherQueryToolArgs,
+    )
 
 
 @lru_cache(maxsize=1)
 def _get_query_llm() -> Any:
     """공용 LLM에 Qdrant query structured output을 한 번 binding합니다."""
 
-    return bind_structured_output(get_llm(), QdrantQueryToolArgs)
+    return bind_structured_output(
+        get_llm(QDRANT_QUERY_BUILDER_MAX_COMPLETION_TOKENS),
+        QdrantQueryToolArgs,
+    )
 
 
 @lru_cache(maxsize=1)
-def _get_narrow_scope_llm() -> Any:
-    """공용 LLM에 narrow_scope 단계 action schema를 한 번 binding합니다."""
+def _get_disclosure_selection_llm() -> Any:
+    """공용 LLM에 공시 후보 선택 schema를 binding합니다."""
 
-    return bind_structured_output(get_llm(), NarrowScopeAction)
+    return bind_structured_output(
+        get_llm(NARROW_SCOPE_MAX_COMPLETION_TOKENS),
+        DisclosureSelection,
+    )
+
+
+@lru_cache(maxsize=1)
+def _get_section_selection_llm() -> Any:
+    """공용 LLM에 Section 후보 선택 schema를 binding합니다."""
+
+    return bind_structured_output(
+        get_llm(NARROW_SCOPE_MAX_COMPLETION_TOKENS),
+        SectionSelection,
+    )
 
 
 def assign_subquestion_ids(analysis: QuestionAnalysis) -> QuestionAnalysis:
@@ -677,104 +672,12 @@ def _validate_cypher_relationships(query: CypherQuery) -> None:
             )
 
 
-def _validate_scope_cypher(query: CypherQuery) -> None:
-    """narrow_scope가 생성한 Cypher의 read-only·결과 제한 조건을 검증합니다."""
-
-    forbidden = re.search(
-        r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|CALL|LOAD\s+CSV|FOREACH)\b",
-        query.cypher,
-        flags=re.IGNORECASE,
-    )
-    if forbidden:
-        raise ValueError(f"Scope Cypher에 금지된 구문이 있습니다: {forbidden.group(1)}")
-    if not re.search(r"\bRETURN\b", query.cypher, flags=re.IGNORECASE):
-        raise ValueError("Scope Cypher에는 RETURN이 필요합니다.")
-    limit_clause = re.search(
-        r"\bLIMIT\s+(\d+|\$[A-Za-z_][A-Za-z0-9_]*)\b",
-        query.cypher,
-        flags=re.IGNORECASE,
-    )
-    if limit_clause is None:
-        raise ValueError("Scope Cypher에는 LIMIT이 필요합니다.")
-    if ";" in query.cypher.rstrip().rstrip(";"):
-        raise ValueError("Scope Cypher는 하나의 statement만 허용합니다.")
-
-    for literal in re.findall(r"\bLIMIT\s+(\d+)\b", query.cypher, re.IGNORECASE):
-        if int(literal) > SCOPE_QUERY_RESULT_LIMIT:
-            raise ValueError(f"Scope Cypher LIMIT은 {SCOPE_QUERY_RESULT_LIMIT} 이하여야 합니다.")
-    for parameter_name in re.findall(
-        r"\bLIMIT\s+\$([A-Za-z_][A-Za-z0-9_]*)",
-        query.cypher,
-        re.IGNORECASE,
-    ):
-        limit = query.parameters.get(parameter_name)
-        if not isinstance(limit, int) or isinstance(limit, bool):
-            raise ValueError("Scope Cypher LIMIT parameter는 정수여야 합니다.")
-        if not 1 <= limit <= SCOPE_QUERY_RESULT_LIMIT:
-            raise ValueError(f"Scope Cypher LIMIT은 {SCOPE_QUERY_RESULT_LIMIT} 이하여야 합니다.")
-    _validate_latest_disclosure_filter(query)
-    _validate_cypher_relationships(query)
-
-
-def _normalize_scope_cypher(query: CypherQuery) -> CypherQuery:
-    """Scope 검색 Cypher에 최신 공시 조건과 기본 LIMIT을 보완합니다."""
-
-    cypher = query.cypher.strip().rstrip(";").rstrip()
-    parameters = dict(query.parameters)
-    disclosure_pattern = re.compile(
-        r"\(\s*(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*Disclosure\b"
-        r"(?P<body>[^)]*)\)",
-        flags=re.IGNORECASE,
-    )
-    declarations = list(disclosure_pattern.finditer(cypher))
-    processed_aliases: set[str] = set()
-
-    for match in reversed(declarations):
-        alias = match.group("alias")
-        if alias in processed_aliases:
-            continue
-        processed_aliases.add(alias)
-        latest_reference = re.search(
-            rf"\b{re.escape(alias)}\s*\.\s*is_latest_version\b",
-            cypher,
-            flags=re.IGNORECASE,
-        )
-        node_latest_property = re.search(
-            r"\bis_latest_version\s*:",
-            match.group("body"),
-            flags=re.IGNORECASE,
-        )
-        if latest_reference or node_latest_property:
-            continue
-
-        body = match.group("body")
-        closing_brace = body.rfind("}")
-        if "{" in body and closing_brace >= 0:
-            opening_brace = body.find("{")
-            separator = ", " if body[opening_brace + 1:closing_brace].strip() else ""
-            body = (
-                body[:closing_brace]
-                + separator
-                + "is_latest_version: true"
-                + body[closing_brace:]
-            )
-        else:
-            body += " {is_latest_version: true}"
-        start, end = match.span("body")
-        cypher = cypher[:start] + body + cypher[end:]
-
-    if not re.search(r"\bLIMIT\s+(\d+|\$[A-Za-z_][A-Za-z0-9_]*)\b", cypher, re.IGNORECASE):
-        cypher += f" LIMIT {SCOPE_QUERY_RESULT_LIMIT}"
-
-    return CypherQuery(cypher=cypher, parameters=parameters)
-
-
 def _execute_scope_cypher(
     query: CypherQuery,
     *,
-    search_index: int,
+    stage: str,
 ) -> list[dict[str, Any]]:
-    """내부 Scope Cypher를 실행하고 LLM이 읽을 수 있는 item 목록으로 변환합니다."""
+    """고정된 Scope Cypher를 실행하고 후보 item 목록으로 변환합니다."""
 
     try:
         with neo4j_driver.session() as session:
@@ -783,7 +686,7 @@ def _execute_scope_cypher(
         raise RuntimeError("Scope 후보 Neo4j 조회 중 오류가 발생했습니다.") from error
     return parse_neo4j_response(
         records,
-        plan_id=f"narrow_scope_{search_index}",
+        plan_id=f"narrow_scope_{stage}",
         query=query.cypher,
         parameters=query.parameters,
     ).items
@@ -874,20 +777,122 @@ def _validate_scope_selection(
             )
 
 
+def _scope_issuer_names(subquestion: SubQuestion) -> list[str]:
+    """SubQuestion에서 공시 발행회사로 해석된 기업명을 추출합니다."""
+
+    names = [
+        (entity.canonical_name or entity.mention).strip()
+        for entity in subquestion.entities
+        if "ISSUER" in entity.roles
+        and entity.match_status != "NOT_FOUND"
+        and (entity.canonical_name or entity.mention).strip()
+    ]
+    return list(dict.fromkeys(names))
+
+
+def _scope_doc_groups(hints: list[dict[str, Any]]) -> list[str]:
+    """가장 높은 순위의 유효한 Knowledge hint에서 doc_group을 선택합니다."""
+
+    allowed = set(SCOPE_DOC_GROUPS)
+    for hint in hints:
+        datasets = hint.get("datasets")
+        if not isinstance(datasets, list):
+            continue
+        groups = [
+            value.strip()
+            for value in datasets
+            if isinstance(value, str) and value.strip() in allowed
+        ]
+        if groups:
+            return list(dict.fromkeys(groups))
+    return list(SCOPE_DOC_GROUPS)
+
+
+def _scope_candidate_records(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Neo4j record parser 결과에서 LLM에게 필요한 fields만 추출합니다."""
+
+    return [
+        dict(fields)
+        for item in items
+        if isinstance(item, dict)
+        and isinstance((fields := item.get("fields")), dict)
+    ]
+
+
+def _disclosure_scope_query(
+    corp_names: list[str],
+    doc_groups: list[str],
+) -> CypherQuery:
+    """기업과 doc_group으로 최신 Disclosure 후보 목록을 조회합니다."""
+
+    return CypherQuery(
+        cypher=(
+            "MATCH (c:Company)-[:PUBLISHES]->(d:Disclosure) "
+            "WHERE c.corp_name IN $corp_names "
+            "AND d.doc_group IN $doc_groups "
+            "AND d.is_latest_version = true "
+            "RETURN c.corp_name AS corp_name, c.corp_code AS corp_code, "
+            "d.id AS disclosure_id, d.report_name AS report_name, "
+            "d.doc_group AS doc_group, d.rcept_date AS rcept_date "
+            "ORDER BY d.rcept_date DESC LIMIT $limit"
+        ),
+        parameters={
+            "corp_names": corp_names,
+            "doc_groups": doc_groups,
+            "limit": SCOPE_DISCLOSURE_RESULT_LIMIT,
+        },
+    )
+
+
+def _section_scope_query(disclosure_ids: list[str]) -> CypherQuery:
+    """선택된 Disclosure 아래의 전체 Section 후보 목록을 조회합니다."""
+
+    return CypherQuery(
+        cypher=(
+            "MATCH (c:Company)-[:PUBLISHES]->(d:Disclosure) "
+            "MATCH (d)-[:HAS_SECTION*1..]->(s:Section) "
+            "WHERE d.id IN $disclosure_ids "
+            "AND d.is_latest_version = true "
+            "RETURN c.corp_name AS corp_name, c.corp_code AS corp_code, "
+            "d.id AS disclosure_id, d.report_name AS report_name, "
+            "s.id AS section_id, s.title AS section_title, "
+            "s.section_path AS section_path, s.order_in_doc AS order_in_doc "
+            "ORDER BY d.rcept_date DESC, s.order_in_doc LIMIT $limit"
+        ),
+        parameters={
+            "disclosure_ids": disclosure_ids,
+            "limit": SCOPE_SECTION_RESULT_LIMIT,
+        },
+    )
+
+
 def _narrow_scope_human_message(
+    *,
+    stage: str,
     subquestion: SubQuestion,
     hints: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+    doc_groups: list[str] | None = None,
+    selected_disclosure_ids: list[str] | None = None,
 ) -> HumanMessage:
-    """SubQuestion과 내부 Knowledge Base hint를 mini-agent 입력으로 직렬화합니다."""
+    """각 선택 단계에 SubQuestion, hint와 실제 Neo4j 후보를 명시합니다."""
 
+    payload: dict[str, Any] = {
+        "stage": stage,
+        "subquestion": subquestion.model_dump(mode="json"),
+        "knowledge_hints": hints,
+    }
+    if doc_groups is not None:
+        payload["searched_doc_groups"] = doc_groups
+        payload["disclosure_candidates"] = candidates
+    else:
+        payload["selected_disclosure_ids"] = selected_disclosure_ids or []
+        payload["section_candidates"] = candidates
     return HumanMessage(content=json.dumps(
-        {
-            "subquestion": subquestion.model_dump(mode="json"),
-            "knowledge_hints": hints,
-            "max_neo4j_searches": SCOPE_MAX_NEO4J_SEARCHES,
-        },
+        payload,
         ensure_ascii=False,
         indent=2,
+        default=str,
     ))
 
 
@@ -897,13 +902,53 @@ def _print_narrow_scope_human_message(message: HumanMessage) -> None:
     print(f"[narrow_scope human message]:\n{message.content}\n")
 
 
+def _invoke_scope_selection(
+    runnable: Any,
+    *,
+    output_model: type[BaseModel],
+    system_prompt: str,
+    human_message: HumanMessage,
+    selected_field: str,
+    available_ids: set[str],
+) -> BaseModel:
+    """후보 선택 출력을 검증하고 오류가 있으면 같은 단계에서 재호출합니다."""
+
+    messages = [SystemMessage(content=system_prompt), human_message]
+    _print_narrow_scope_human_message(human_message)
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            response = invoke_with_rate_limit_retry(runnable, messages)
+            selection = (
+                response
+                if isinstance(response, output_model)
+                else output_model.model_validate(response)
+            )
+            selected_ids = getattr(selection, selected_field)
+            unknown_ids = sorted(set(selected_ids) - available_ids)
+            if unknown_ids:
+                raise ValueError(
+                    f"Neo4j 후보 목록에 없는 {selected_field}입니다: {unknown_ids}"
+                )
+            return selection
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            retry_message = HumanMessage(content=build_output_retry_message(
+                output_model.__name__,
+                error,
+            ))
+            messages.append(retry_message)
+            _print_narrow_scope_human_message(retry_message)
+    raise RuntimeError("Scope 후보 선택 결과를 생성하지 못했습니다.")
+
+
 def run_narrow_scope_agent(
     subquestion_id: str,
     state: AgentState,
     *,
     llm: Any | None = None,
 ) -> Scope:
-    """Knowledge hint와 반복 Neo4j 검색으로 계층형 Scope 후보를 생성합니다."""
+    """공시 목록과 Section 목록을 순서대로 좁혀 Scope를 생성합니다."""
 
     normalized_id = subquestion_id.strip()
     if not normalized_id:
@@ -911,88 +956,139 @@ def run_narrow_scope_agent(
     subquestion = _find_subquestion(state, normalized_id)
     hints = search_scope_knowledge(subquestion)
 
-    narrow_scope_llm = (
-        _get_narrow_scope_llm()
-        if llm is None
-        else bind_structured_output(llm, NarrowScopeAction)
+    corp_names = _scope_issuer_names(subquestion)
+    if not corp_names:
+        return Scope.from_scope_draft(
+            ScopeDraft(
+                level="GLOBAL",
+                reason="공시 발행회사로 확인할 ISSUER entity가 없습니다.",
+            ),
+            subquestion_id=normalized_id,
+        )
+
+    doc_groups = _scope_doc_groups(hints)
+    disclosure_items = _execute_scope_cypher(
+        _disclosure_scope_query(corp_names, doc_groups),
+        stage="disclosures",
     )
-    human_message = _narrow_scope_human_message(subquestion, hints)
-    messages = [
-        SystemMessage(content=sp.NARROW_SCOPE_SYSTEM_PROMPT.format(
-            neo4j_schema=_load_neo4j_schema(),
-        )),
-        human_message,
+    disclosure_candidates = _scope_candidate_records(disclosure_items)
+    available_disclosure_ids = _collect_named_strings(
+        disclosure_candidates,
+        "disclosure_id",
+    )
+    if not available_disclosure_ids:
+        return Scope.from_scope_draft(
+            ScopeDraft(
+                level="GLOBAL",
+                reason="해당 기업과 doc_group에 일치하는 최신 공시를 찾지 못했습니다.",
+            ),
+            subquestion_id=normalized_id,
+        )
+
+    disclosure_llm = (
+        _get_disclosure_selection_llm()
+        if llm is None
+        else bind_structured_output(llm, DisclosureSelection)
+    )
+    disclosure_selection = _invoke_scope_selection(
+        disclosure_llm,
+        output_model=DisclosureSelection,
+        system_prompt=sp.NARROW_SCOPE_DISCLOSURE_SELECTION_SYSTEM_PROMPT,
+        human_message=_narrow_scope_human_message(
+            stage="DISCLOSURE_SELECTION",
+            subquestion=subquestion,
+            hints=hints,
+            candidates=disclosure_candidates,
+            doc_groups=doc_groups,
+        ),
+        selected_field="selected_disclosure_ids",
+        available_ids=available_disclosure_ids,
+    )
+    selected_disclosure_ids = disclosure_selection.selected_disclosure_ids
+    selected_disclosure_candidates = [
+        candidate
+        for candidate in disclosure_candidates
+        if candidate.get("disclosure_id") in selected_disclosure_ids
     ]
-    _print_narrow_scope_human_message(human_message)
-    accumulated_results: list[dict[str, Any]] = []
-    search_count = 0
+    company_candidates = selected_disclosure_candidates or disclosure_candidates
+    corp_names_found = sorted(_collect_named_strings(company_candidates, "corp_name"))
+    corp_codes_found = sorted(_collect_named_strings(company_candidates, "corp_code"))
+    if not selected_disclosure_ids:
+        level = "COMPANY" if corp_names_found else "GLOBAL"
+        return Scope.from_scope_draft(
+            ScopeDraft(
+                level=level,
+                corp_names=corp_names_found if level == "COMPANY" else [],
+                corp_codes=corp_codes_found if level == "COMPANY" else [],
+                reason=disclosure_selection.reason,
+            ),
+            subquestion_id=normalized_id,
+        )
 
-    while True:
-        for attempt in range(MAX_LLM_RETRIES + 1):
-            try:
-                response = invoke_with_rate_limit_retry(narrow_scope_llm, messages)
-                action = (
-                    response
-                    if isinstance(response, NarrowScopeAction)
-                    else NarrowScopeAction.model_validate(response)
-                )
-                if action.action == "SEARCH":
-                    if search_count >= SCOPE_MAX_NEO4J_SEARCHES:
-                        raise ValueError(
-                            "Neo4j 검색 횟수를 모두 사용했습니다. 현재 결과로 FINISH하세요."
-                        )
-                    query = _normalize_scope_cypher(action.to_cypher_query())
-                    _validate_scope_cypher(query)
-                else:
-                    if search_count == 0:
-                        raise ValueError("FINISH 전에 Neo4j 검색을 한 번 이상 수행해야 합니다.")
-                    scope_draft = action.to_scope_draft()
-                    _validate_scope_selection(scope_draft, accumulated_results)
-                break
-            except (ValidationError, ValueError, TypeError) as error:
-                if attempt == MAX_LLM_RETRIES:
-                    raise
-                retry_message = HumanMessage(content=build_output_retry_message(
-                    "NarrowScopeAction",
-                    error,
-                ))
-                messages.append(retry_message)
-                _print_narrow_scope_human_message(retry_message)
+    section_items = _execute_scope_cypher(
+        _section_scope_query(selected_disclosure_ids),
+        stage="sections",
+    )
+    section_candidates = _scope_candidate_records(section_items)
+    available_section_ids = _collect_named_strings(section_candidates, "section_id")
+    if not available_section_ids:
+        scope_draft = ScopeDraft(
+            level="DISCLOSURE",
+            corp_names=corp_names_found,
+            corp_codes=corp_codes_found,
+            disclosure_ids=selected_disclosure_ids,
+            reason="관련 공시는 확인했지만 하위 Section을 찾지 못했습니다.",
+        )
+        _validate_scope_selection(scope_draft, disclosure_items)
+        return Scope.from_scope_draft(scope_draft, subquestion_id=normalized_id)
 
-        if action.action == "FINISH":
-            scope = Scope.from_scope_draft(
-                scope_draft,
-                subquestion_id=normalized_id,
-            )
-            return scope
+    section_llm = (
+        _get_section_selection_llm()
+        if llm is None
+        else bind_structured_output(llm, SectionSelection)
+    )
+    section_selection = _invoke_scope_selection(
+        section_llm,
+        output_model=SectionSelection,
+        system_prompt=sp.NARROW_SCOPE_SECTION_SELECTION_SYSTEM_PROMPT,
+        human_message=_narrow_scope_human_message(
+            stage="SECTION_SELECTION",
+            subquestion=subquestion,
+            hints=hints,
+            candidates=section_candidates,
+            selected_disclosure_ids=selected_disclosure_ids,
+        ),
+        selected_field="selected_section_ids",
+        available_ids=available_section_ids,
+    )
+    selected_section_ids = section_selection.selected_section_ids
+    if not selected_section_ids:
+        scope_draft = ScopeDraft(
+            level="DISCLOSURE",
+            corp_names=corp_names_found,
+            corp_codes=corp_codes_found,
+            disclosure_ids=selected_disclosure_ids,
+            reason=section_selection.reason,
+        )
+        _validate_scope_selection(scope_draft, disclosure_items)
+        return Scope.from_scope_draft(scope_draft, subquestion_id=normalized_id)
 
-        search_count += 1
-        try:
-            items = _execute_scope_cypher(query, search_index=search_count)
-            accumulated_results.extend(items)
-            search_payload = {
-                "search_index": search_count,
-                "status": "SUCCESS" if items else "NO_RESULTS",
-                "cypher": query.cypher,
-                "parameters": query.parameters,
-                "result_count": len(items),
-                "results": items,
-            }
-        except RuntimeError as error:
-            search_payload = {
-                "search_index": search_count,
-                "status": "ERROR",
-                "cypher": query.cypher,
-                "parameters": query.parameters,
-                "error": str(error),
-            }
-        result_message = HumanMessage(content=(
-            "[Neo4j 검색 결과]\n"
-            + json.dumps(search_payload, ensure_ascii=False, indent=2, default=str)
-            + "\n\n위 결과를 검토하여 다음 SEARCH 또는 FINISH action을 반환하세요."
-        ))
-        messages.append(result_message)
-        _print_narrow_scope_human_message(result_message)
+    disclosure_section_pairs = _collect_disclosure_section_pairs(section_candidates)
+    parent_disclosure_ids = sorted({
+        disclosure_id
+        for disclosure_id, section_id in disclosure_section_pairs
+        if section_id in selected_section_ids
+    })
+    scope_draft = ScopeDraft(
+        level="SECTION",
+        corp_names=corp_names_found,
+        corp_codes=corp_codes_found,
+        disclosure_ids=parent_disclosure_ids,
+        section_ids=selected_section_ids,
+        reason=section_selection.reason,
+    )
+    _validate_scope_selection(scope_draft, disclosure_items + section_items)
+    return Scope.from_scope_draft(scope_draft, subquestion_id=normalized_id)
 
 
 def _resolve_plan_scope(plan: Plan, state: AgentState) -> Scope:
