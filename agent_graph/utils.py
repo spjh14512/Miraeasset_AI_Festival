@@ -1669,20 +1669,19 @@ def correction_history_executor(
     )
     
 
-def query_executor(qdrant_query: QdrantQuery, exhaustive: bool = False) -> Any:
-    """Qdrant query를 실행하고 가공하지 않은 client 응답을 반환합니다.
+def query_executor(
+    qdrant_query: QdrantQuery,
+    exhaustive: bool = False,
+    *,
+    scope: Scope | None = None,
+) -> Any:
+    """Qdrant query를 실행하며 선택된 Scope를 application filter로 적용합니다.
 
     exhaustive=True이면 filter mode에서 scroll의 next_page_offset을 끝까지
     따라가며 조건에 맞는 point 전체를 모아 반환합니다. Retriever의 대화형
     검색(progressive limit)에는 사용하지 않으며, Tier 3 배치 추출처럼
     누락 없는 전수 조회가 필요한 경우에만 사용합니다.
     """
-def query_executor(
-    qdrant_query: QdrantQuery,
-    *,
-    scope: Scope | None = None,
-) -> Any:
-    """Qdrant query를 실행하며 선택된 Scope를 application filter로 적용합니다."""
 
 
     must = [models.FieldCondition(
@@ -1779,7 +1778,10 @@ def query_executor(
                 with_vectors=False
             )
     except Exception as error:
-        raise RuntimeError("Qdrant 쿼리 실행 중 오류 발생!") from error
+        raise RuntimeError(
+            "Qdrant 쿼리 실행 중 오류 발생! "
+            f"({type(error).__name__}: {error})"
+        ) from error
 
     return result
 
