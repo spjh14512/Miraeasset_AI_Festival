@@ -397,6 +397,35 @@ class AnswerGeneratorOutput(BaseModel):
     )
 
 
+class AnswerValidatorOutput(BaseModel):
+    """answer_generator 초안을 근거와 대조해 문제를 식별하는 검증 결과입니다.
+
+    문제가 없으면 세 필드 모두 비어 있습니다. 판정만 담당하며 답변을
+    직접 고치지 않습니다 — 수정은 application이 결정론적으로 수행합니다.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    unsupported_claims: list[str] = Field(
+        default_factory=list,
+        description=(
+            "제공된 근거로 뒷받침되지 않는, answer에 실제로 등장하는 문장 그대로. "
+            "수치·비교·순위 표현이 근거와 다른 경우도 포함합니다."
+        ),
+    )
+    missing_requested_facts: list[str] = Field(
+        default_factory=list,
+        description="sub_questions의 requested_facts 중 answer가 다루지 않은 항목",
+    )
+    incomplete_evidence_note: str | None = Field(
+        default=None,
+        description=(
+            "70개사 코퍼스 안에서 답변 도출에 필수적인데 검색 근거에 "
+            "포함되지 않은 데이터가 있으면 그 사유. 없으면 null."
+        ),
+    )
+
+
 RetrievalStatus = Literal["CONTINUE", "COMPLETE", "INSUFFICIENT"]
 
 class AgentState(TypedDict, total=False):

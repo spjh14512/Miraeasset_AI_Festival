@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from . import system_prompts as sp
 from .llm import (
-    ANSWER_GENERATOR_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
     QUESTION_ANALYZER_MAX_COMPLETION_TOKENS,
     RETRIEVER_MAX_TOKENS,
@@ -21,7 +20,6 @@ from .llm import (
 from .state import (
     AgentState,
     AiAnswer,
-    AnswerGeneratorOutput,
     QuestionAnalyzerOutput,
     QuestionAnalysis,
     Scope,
@@ -39,12 +37,12 @@ from .utils import (
     assign_subquestion_ids,
     build_fallback_clarification,
     build_retriever_human_message,
-    build_answer_generator_human_message,
+    generate_answer,
     load_universe_table,
-    resolve_answer_draft,
     resolve_question_analyzer_output,
     execute_tool_call,
     run_narrow_scope_agent,
+    validate_and_repair_answer,
     validate_retriever_tool_call,
 )
 
@@ -87,16 +85,6 @@ def _build_retriever_llm() -> Any:
         RETRIEVER_MAX_TOKENS,
         output_token_parameter="max_tokens",
     ).bind_tools(RETRIEVER_TOOLS)
-
-
-@lru_cache(maxsize=1)
-def _build_answer_generator_llm() -> Any:
-    """공용 LLM에 answer generator structured output을 한 번 binding한다."""
-
-    return bind_structured_output(
-        get_llm(ANSWER_GENERATOR_MAX_COMPLETION_TOKENS),
-        AnswerGeneratorOutput,
-    )
 
 
 # Actual Node
@@ -265,41 +253,7 @@ def answer_generator(
 ) -> dict:
     print("-- answer_genartor 노드 호출 --")
 
-    answer_generator_human_message = build_answer_generator_human_message(state)
-    print(f"[retriever human message]:\n{answer_generator_human_message.content.replace("\\n", "\n")}\n\n")
-
-    answer_generator_llm = (
-        _build_answer_generator_llm()
-        if llm is None
-        else bind_structured_output(llm, AnswerGeneratorOutput)
-    )
-
-    messages = [
-        SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
-        answer_generator_human_message,
-    ]
-    for attempt in range(MAX_LLM_RETRIES + 1):
-        try:
-            response = invoke_with_rate_limit_retry(
-                answer_generator_llm,
-                messages,
-            )
-            answer_generator_output = (
-                response
-                if isinstance(response, AnswerGeneratorOutput)
-                else AnswerGeneratorOutput.model_validate(response)
-            )
-            ai_answer = resolve_answer_draft(state, answer_generator_output)
-            break
-        except (ValidationError, ValueError, TypeError, AttributeError) as error:
-            if attempt == MAX_LLM_RETRIES:
-                raise
-            messages.append(HumanMessage(content=build_output_retry_message(
-                "AnswerGeneratorOutput",
-                error,
-            )))
-
-    return {"ai_answer": ai_answer}
+    return {"ai_answer": generate_answer(state, llm=llm)}
 
 
 def answer_validator(
@@ -307,15 +261,17 @@ def answer_validator(
         *,
         llm: Any | None = None
 ) -> dict:
-    """
-    answer_generator가 생성한 answer와 출처가 된 공시 원문을 직접 비교하여 답변의 신뢰도를 검증한다.
-    """
-    print ("-- answer_genartor 노드 호출 --")
+    """answer_generator의 초안을 근거·요구사항과 대조해 검증하고 필요하면 고친다."""
 
-    ai_answer = state.get("ai_answer").answer
-    citation = state.get("ai_answer").citation
+    print("-- answer_validator 노드 호출 --")
 
-    
+    ai_answer = state.get("ai_answer")
+    if ai_answer is None:
+        raise ValueError("ai_answer가 생성되지 않았습니다.")
+    if not isinstance(ai_answer, AiAnswer):
+        ai_answer = AiAnswer.model_validate(ai_answer)
+
+    return {"ai_answer": validate_and_repair_answer(state, ai_answer, llm=llm)}
 
 
 
@@ -406,6 +362,7 @@ graph_builder.add_node("question_analyzer", question_analyzer)
 graph_builder.add_node("scope_resolver", scope_resolver)
 graph_builder.add_node("retriever", retriever)
 graph_builder.add_node("answer_generator", answer_generator)
+graph_builder.add_node("answer_validator", answer_validator)
 graph_builder.add_node("answer_directly", answer_directly)
 graph_builder.add_node("request_clarification", request_clarification)
 
@@ -433,7 +390,8 @@ graph_builder.add_conditional_edges(
 )
 
 # 임시 END 노드 설정
-graph_builder.set_finish_point("answer_generator")
+graph_builder.add_edge("answer_generator", "answer_validator")
+graph_builder.set_finish_point("answer_validator")
 graph_builder.set_finish_point("answer_directly")
 graph_builder.set_finish_point("request_clarification")
 

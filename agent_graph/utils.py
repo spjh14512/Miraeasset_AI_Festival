@@ -31,6 +31,8 @@ import yaml
 from . import system_prompts as sp
 from .compactor import compact_qdrant_point, point_requires_compaction
 from .llm import (
+    ANSWER_GENERATOR_MAX_COMPLETION_TOKENS,
+    ANSWER_VALIDATOR_MAX_COMPLETION_TOKENS,
     CYPHER_BUILDER_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
     NARROW_SCOPE_MAX_COMPLETION_TOKENS,
@@ -50,6 +52,7 @@ from .state import (
     AgentState,
     AiAnswer,
     AnswerGeneratorOutput,
+    AnswerValidatorOutput,
     Citation,
     EntityMatchStatus,
     Plan,
@@ -2552,6 +2555,248 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
             "없다고 명시하고 used_result_ids는 빈 목록으로 반환하세요."
         )
     )
+
+
+@lru_cache(maxsize=1)
+def _build_answer_generator_llm() -> Any:
+    """공용 LLM에 answer generator structured output을 한 번 binding한다."""
+
+    return bind_structured_output(
+        get_llm(ANSWER_GENERATOR_MAX_COMPLETION_TOKENS),
+        AnswerGeneratorOutput,
+    )
+
+
+def generate_answer(
+    state: AgentState,
+    *,
+    extra_guidance: str | None = None,
+    llm: Any | None = None,
+) -> AiAnswer:
+    """근거를 바탕으로 답변 초안을 생성합니다.
+
+    answer_generator 노드와 answer_validator의 재작성 시도가 이 함수를
+    공유합니다. extra_guidance를 주면 이전 시도에서 발견된 문제(근거
+    없는 문장, 누락된 요구사항 등)를 알려 재작성을 유도합니다.
+    """
+
+    answer_generator_human_message = build_answer_generator_human_message(state)
+    print(f"[answer generator human message]:\n{answer_generator_human_message.content.replace(chr(92)+'n', chr(10))}\n\n")
+
+    answer_generator_llm = (
+        _build_answer_generator_llm()
+        if llm is None
+        else bind_structured_output(llm, AnswerGeneratorOutput)
+    )
+
+    messages = [
+        SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
+        answer_generator_human_message,
+    ]
+    if extra_guidance:
+        messages.append(HumanMessage(content=extra_guidance))
+
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            response = invoke_with_rate_limit_retry(
+                answer_generator_llm,
+                messages,
+            )
+            answer_generator_output = (
+                response
+                if isinstance(response, AnswerGeneratorOutput)
+                else AnswerGeneratorOutput.model_validate(response)
+            )
+            return resolve_answer_draft(state, answer_generator_output)
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "AnswerGeneratorOutput",
+                error,
+            )))
+
+
+def build_answer_validator_human_message(
+    state: AgentState,
+    ai_answer: AiAnswer,
+) -> HumanMessage:
+    """초안 답변과 근거, 요구사항을 Answer Validator 입력으로 변환합니다."""
+
+    answer_result_map = build_answer_result_map(state)
+    requested_facts: list[str] = []
+    analysis = state.get("question_analysis")
+    if analysis is not None:
+        if not isinstance(analysis, QuestionAnalysis):
+            analysis = QuestionAnalysis.model_validate(analysis)
+        for sub_question in analysis.sub_questions:
+            for fact in sub_question.requested_facts:
+                if fact not in requested_facts:
+                    requested_facts.append(fact)
+
+    payload = {
+        "user_question": state["question_text"],
+        "requested_facts": requested_facts,
+        "draft_answer": ai_answer.answer,
+        "retrieval_results": [
+            value["payload"]
+            for value in answer_result_map.values()
+        ],
+    }
+
+    json_dump = json.dumps(payload, ensure_ascii=False, indent=2)
+    return HumanMessage(
+        content=(
+            "아래 draft_answer를 retrieval_results와 대조하여 검증하고\n\n"
+            "AnswerValidatorOutput 형식으로 반환하세요.\n\n\n"
+            "[입력]\n\n"
+            f"{json_dump}\n\n\n"
+            "[출력]"
+        )
+    )
+
+
+@lru_cache(maxsize=1)
+def _build_answer_validator_llm() -> Any:
+    """공용 LLM에 answer validator structured output을 한 번 binding한다."""
+
+    return bind_structured_output(
+        get_llm(ANSWER_VALIDATOR_MAX_COMPLETION_TOKENS),
+        AnswerValidatorOutput,
+    )
+
+
+def find_answer_issues(
+    state: AgentState,
+    ai_answer: AiAnswer,
+    *,
+    llm: Any | None = None,
+) -> AnswerValidatorOutput:
+    """초안 답변을 근거·요구사항과 대조해 문제를 찾습니다.
+
+    판정만 하며 답변을 직접 고치지 않습니다. 구조적으로 잘못된
+    출력(JSON 스키마 오류)만 재시도하고, 판정 내용 자체의 재작성은
+    호출자(answer_validator)가 담당합니다.
+    """
+
+    human_message = build_answer_validator_human_message(state, ai_answer)
+    validator_llm = (
+        _build_answer_validator_llm()
+        if llm is None
+        else bind_structured_output(llm, AnswerValidatorOutput)
+    )
+    messages = [
+        SystemMessage(content=sp.ANSWER_VALIDATOR_SYSTEM_PROMPT),
+        human_message,
+    ]
+    for attempt in range(MAX_LLM_RETRIES + 1):
+        try:
+            response = invoke_with_rate_limit_retry(validator_llm, messages)
+            return (
+                response
+                if isinstance(response, AnswerValidatorOutput)
+                else AnswerValidatorOutput.model_validate(response)
+            )
+        except (ValidationError, ValueError, TypeError, AttributeError) as error:
+            if attempt == MAX_LLM_RETRIES:
+                raise
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "AnswerValidatorOutput",
+                error,
+            )))
+
+
+def build_answer_repair_guidance(issues: AnswerValidatorOutput) -> str:
+    """검증에서 찾은 문제를 answer_generator 재작성 지시문으로 변환합니다."""
+
+    lines = ["방금 만든 답변에 다음 문제가 있어 다시 작성해야 합니다."]
+    if issues.unsupported_claims:
+        lines.append(
+            "- 다음 문장(또는 수치·비교·순위 표현)은 제공된 근거로 뒷받침되지 "
+            "않습니다. 근거에 있는 내용으로 고치거나 제거하세요: "
+            + " / ".join(issues.unsupported_claims)
+        )
+    if issues.missing_requested_facts:
+        lines.append(
+            "- 다음 요구사항이 답변에서 다뤄지지 않았습니다. 근거에 있다면 "
+            "포함하고, 근거가 없다면 확인할 수 없다고 명시하세요: "
+            + " / ".join(issues.missing_requested_facts)
+        )
+    if issues.incomplete_evidence_note:
+        lines.append(f"- 근거 부족: {issues.incomplete_evidence_note}")
+    lines.append("이전 답변을 그대로 반복하지 말고 위 문제를 실제로 고치세요.")
+    return "\n".join(lines)
+
+
+def apply_answer_repairs(
+    ai_answer: AiAnswer,
+    issues: AnswerValidatorOutput,
+) -> AiAnswer:
+    """재작성 후에도 남은 문제를 모델 호출 없이 결정론적으로 반영합니다.
+
+    근거 없는 문장은 답변에서 제거하고, 누락된 요구사항과 근거 부족은
+    한계 고지 문장으로 덧붙입니다. 문제를 조용히 감추기보다 항상
+    사용자에게 드러냅니다.
+    """
+
+    answer = ai_answer.answer
+    for claim in issues.unsupported_claims:
+        answer = answer.replace(claim, "")
+    answer = re.sub(r"[ \t]{2,}", " ", answer).strip()
+
+    notes: list[str] = []
+    if issues.missing_requested_facts:
+        notes.append(
+            "다음 사항은 제공된 근거로 확인되지 않았습니다: "
+            + ", ".join(issues.missing_requested_facts)
+        )
+    if issues.incomplete_evidence_note:
+        notes.append(issues.incomplete_evidence_note)
+
+    if not answer:
+        answer = "제공된 근거만으로는 확인 가능한 답변을 생성할 수 없습니다."
+    if notes:
+        answer = answer + " (" + " ".join(notes) + ")"
+
+    return AiAnswer(answer=answer, citation=ai_answer.citation)
+
+
+def validate_and_repair_answer(
+    state: AgentState,
+    ai_answer: AiAnswer,
+    *,
+    llm: Any | None = None,
+) -> AiAnswer:
+    """answer_validator 노드의 핵심 로직입니다.
+
+    검증 -> (문제 있으면) 1회 재작성 -> 재검증 -> (그래도 문제면) 코드가
+    직접 결정론적으로 안전하게 마무리하는 순서로 진행합니다. 재작성은
+    MAX_LLM_RETRIES(구조적 오류 재시도용 예산)와 별개로 딱 1회만
+    허용합니다 — 매 답변마다 검증을 상시 수행하므로, 의미적 재작성까지
+    그 예산을 그대로 쓰면 평가 API의 300초 제한 안에서 호출 수가
+    과도하게 늘어날 수 있습니다.
+    """
+
+    issues = find_answer_issues(state, ai_answer, llm=llm)
+    if not (
+        issues.unsupported_claims
+        or issues.missing_requested_facts
+        or issues.incomplete_evidence_note
+    ):
+        return ai_answer
+
+    guidance = build_answer_repair_guidance(issues)
+    repaired_answer = generate_answer(state, extra_guidance=guidance, llm=llm)
+    repaired_issues = find_answer_issues(state, repaired_answer, llm=llm)
+    if not (
+        repaired_issues.unsupported_claims
+        or repaired_issues.missing_requested_facts
+        or repaired_issues.incomplete_evidence_note
+    ):
+        return repaired_answer
+
+    return apply_answer_repairs(repaired_answer, repaired_issues)
+
 
 # 하나의 형식으로 모든 tool call을 처리하기 위한 interface 함수
 def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
