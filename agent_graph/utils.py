@@ -51,8 +51,10 @@ from .state import (
     AiAnswer,
     AnswerGeneratorOutput,
     Citation,
+    EntityMatchStatus,
     Plan,
     QuestionAnalysis,
+    QuestionAnalyzerOutput,
     RetrievalResult,
     Scope,
     ScopeDraft,
@@ -448,17 +450,194 @@ def _load_qdrant_query_schema() -> str:
 
 
 @lru_cache(maxsize=1)
+def _load_universe_rows() -> tuple[dict[str, str], ...]:
+    """기업 마스터 TSV를 entity 대조에 쓸 구조화된 행 목록으로 캐시합니다."""
+
+    source = UNIVERSE_TABLE_PATH.read_text(encoding="utf-8").splitlines()
+    return tuple(csv.DictReader(source, delimiter="\t"))
+
+
+@lru_cache(maxsize=1)
 def load_universe_table() -> str:
     """기업 마스터 TSV에서 entity 식별에 필요한 열만 남겨 캐시합니다."""
 
-    source = UNIVERSE_TABLE_PATH.read_text(encoding="utf-8").splitlines()
-    rows = csv.DictReader(source, delimiter="\t")
     lines = ["\t".join(UNIVERSE_TABLE_COLUMNS)]
     lines.extend(
         "\t".join(row[column] for column in UNIVERSE_TABLE_COLUMNS)
-        for row in rows
+        for row in _load_universe_rows()
     )
     return "\n".join(lines)
+
+
+# 기업 mention을 판정할 때 정확히 일치하는지 확인하는 열입니다.
+COMPANY_MATCH_FIELDS = ("법인명", "거래소통용종목명", "영문법인명", "종목코드")
+
+
+def resolve_company_mention(
+    mention: str,
+    rows: tuple[dict[str, str], ...] | None = None,
+) -> tuple[EntityMatchStatus, str | None, list[str]]:
+    """기업 mention을 기업 Registry와 대조해 결정론적으로 판정합니다.
+
+    LLM의 판단에 기대지 않고 코드로 직접 대조합니다. 정확히 일치하는
+    후보를 먼저 찾고, 없으면 접두어(약칭) 일치 후보를 찾습니다.
+    부분/포함(substring) 일치는 쓰지 않습니다 — "전자"처럼 흔한 단어가
+    여러 기업명에 우연히 포함돼 있다는 이유만으로 AMBIGUOUS 처리되는
+    것을 막기 위함입니다.
+
+    반환값은 (match_status, canonical_name, candidates)입니다.
+    candidates는 AMBIGUOUS일 때만 채워지는 실제 후보 법인명 목록입니다.
+
+    입력 예시:
+        resolve_company_mention("현대")
+
+    출력 예시:
+        ("AMBIGUOUS", None, ["현대건설", "현대글로비스", ...])
+    """
+
+    mention = mention.strip()
+    if not mention:
+        return "NOT_FOUND", None, []
+    if rows is None:
+        rows = _load_universe_rows()
+
+    exact_matches = {
+        row["법인명"]
+        for row in rows
+        if any(row[field] == mention for field in COMPANY_MATCH_FIELDS)
+    }
+    if len(exact_matches) == 1:
+        return "MATCHED", next(iter(exact_matches)), []
+    if len(exact_matches) > 1:
+        return "AMBIGUOUS", None, sorted(exact_matches)
+
+    prefix_matches = {
+        row["법인명"]
+        for row in rows
+        if row["법인명"].startswith(mention)
+        or row["거래소통용종목명"].startswith(mention)
+    }
+    if len(prefix_matches) == 1:
+        return "MATCHED", next(iter(prefix_matches)), []
+    if len(prefix_matches) > 1:
+        return "AMBIGUOUS", None, sorted(prefix_matches)
+
+    return "NOT_FOUND", None, []
+
+
+def apply_deterministic_entity_resolution(
+    question_analysis: QuestionAnalysis,
+) -> QuestionAnalysis:
+    """모든 entity mention의 판정을 Registry 대조 결과로 덮어씁니다.
+
+    LLM 자신의 match_status 판단은 신뢰하지 않고 항상 재계산합니다.
+    LLM이 실제 기업 mention을 잘못 UNKNOWN으로 남기는 경우가 실제
+    HyperCLOVA X 응답에서 확인됐으므로("두산", "현대자동차"가 UNKNOWN으로
+    나온 사례), UNKNOWN이라는 LLM 판단 자체를 신뢰해 건너뛰면 그 오류를
+    그대로 통과시키게 된다. Registry에 없는 mention은 어차피 NOT_FOUND로
+    떨어지므로, 기업이 아닌 entity(사람, 사건명 등)를 재계산해도 안전하다.
+    """
+
+    rows = _load_universe_rows()
+    updated_sub_questions = []
+    for sub_question in question_analysis.sub_questions:
+        updated_entities = []
+        for entity in sub_question.entities:
+            match_status, canonical_name, _ = resolve_company_mention(
+                entity.mention, rows
+            )
+            updated_entities.append(entity.model_copy(update={
+                "match_status": match_status,
+                "canonical_name": canonical_name,
+            }))
+        updated_sub_questions.append(
+            sub_question.model_copy(update={"entities": updated_entities})
+        )
+    return question_analysis.model_copy(
+        update={"sub_questions": updated_sub_questions}
+    )
+
+
+def _find_ambiguous_issuer_conflict(
+    question_analysis: QuestionAnalysis,
+) -> tuple[str, list[str]] | None:
+    """decision과 모순되는 AMBIGUOUS ISSUER entity를 찾아 (mention, candidates)를 반환합니다.
+
+    질문의 핵심 대상(ISSUER)이 되묻지 않고서는 특정할 수 없는데도
+    decision이 clarify가 아니면, 이후 검색이 임의의 기업을 골라
+    조용히 틀린 답을 낼 위험이 있습니다.
+    """
+
+    if question_analysis.decision == "clarify":
+        return None
+    rows = _load_universe_rows()
+    for sub_question in question_analysis.sub_questions:
+        for entity in sub_question.entities:
+            if entity.match_status != "AMBIGUOUS" or "ISSUER" not in entity.roles:
+                continue
+            _, _, candidates = resolve_company_mention(entity.mention, rows)
+            return entity.mention, candidates
+    return None
+
+
+class AmbiguousEntityConflict(ValueError):
+    """decision과 모순되는 AMBIGUOUS ISSUER entity가 있을 때 발생합니다.
+
+    일반 ValueError로도 잡히므로 기존 구조적 오류 재시도 loop와
+    호환되면서, 호출자가 원하면 이 타입만 따로 구분해 재시도 소진 시
+    안전한 fallback을 만들 수 있습니다.
+    """
+
+    def __init__(self, mention: str, candidates: list[str]):
+        self.mention = mention
+        self.candidates = candidates
+        candidate_text = ", ".join(candidates)
+        super().__init__(
+            f"'{mention}'은(는) Registry에서 {candidate_text}로 특정할 수 없어 "
+            "decision을 clarify로 해야 합니다. clarification_question에 "
+            "위 후보 기업명을 제시하여 어느 기업인지 되물으세요."
+        )
+
+
+def resolve_question_analyzer_output(
+    analyzer_output: QuestionAnalyzerOutput,
+) -> QuestionAnalyzerOutput:
+    """entity 판정을 Registry로 보정하고, decision과의 모순을 검증합니다.
+
+    모순이 있으면 실제 후보 목록을 담은 AmbiguousEntityConflict를
+    발생시켜, 호출자의 LLM 재시도 loop가 그 목록으로 정확한 clarify
+    질문을 다시 생성하게 합니다.
+    """
+
+    corrected = apply_deterministic_entity_resolution(
+        analyzer_output.question_analysis
+    )
+    conflict = _find_ambiguous_issuer_conflict(corrected)
+    if conflict is not None:
+        mention, candidates = conflict
+        raise AmbiguousEntityConflict(mention, candidates)
+    return QuestionAnalyzerOutput(question_analysis=corrected)
+
+
+def build_fallback_clarification(mention: str, candidates: list[str]) -> QuestionAnalysis:
+    """LLM 재시도가 모두 실패했을 때 코드가 직접 만드는 안전한 clarify 응답입니다.
+
+    모델 호출 없이 실제 Registry 후보로 되묻기 질문을 구성하므로
+    결정론적이며, 재시도 소진 시 500 대신 이 응답을 반환할 수 있습니다.
+    """
+
+    candidate_text = ", ".join(candidates)
+    return QuestionAnalysis(
+        decision="clarify",
+        normalized_question=mention,
+        decision_reason=(
+            f"'{mention}'이(가) Registry의 여러 기업({candidate_text})과 "
+            "일치해 대상을 특정할 수 없습니다."
+        ),
+        clarification_question=(
+            f"'{mention}' 중 어느 기업을 말씀하시나요? 후보: {candidate_text}"
+        ),
+    )
 
 
 @lru_cache(maxsize=1)

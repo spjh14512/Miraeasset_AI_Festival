@@ -39,9 +39,9 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 ## Entity 원칙
 
 * `roles`는 ISSUER, TARGET, COUNTERPARTY, SUBSIDIARY, INVESTEE, SHAREHOLDER, OTHER 중에서 선택하세요.
-* 기업 mention은 아래 **기업 Registry**와 대조하여 정규화하세요.
-  * Registry의 한 기업으로 확정되면 `canonical_name`에 Registry의 `법인명` 값을 그대로 쓰고 `match_status="MATCHED"`로 두세요.
-  * "삼성"처럼 Registry의 여러 기업에 해당할 수 있으면 `canonical_name`을 생략하고 `match_status="AMBIGUOUS"`로 둔 뒤, 어느 기업인지 되묻는 `clarify` 결정을 검토하세요.
+* 기업 mention은 아래 **기업 Registry**와 대조하여 정규화하세요. 세상 지식으로 "이 그룹은 보통 이 계열사를 뜻한다"고 짐작하지 말고, 반드시 Registry 전체를 훑어 실제로 몇 개 행이 그 mention과 일치하거나 그 mention을 포함하는지 확인한 뒤 판단하세요.
+  * Registry에서 정확히 한 행으로만 확정되면 `canonical_name`에 그 행의 `법인명` 값을 그대로 쓰고 `match_status="MATCHED"`로 두세요.
+  * "삼성", "현대", "SK", "LG", "한화", "두산"처럼 그룹명·약칭이 Registry의 여러 행과 일치할 수 있으면 — 그 그룹 중 하나가 특히 유명하거나 시가총액이 크더라도 — 임의로 하나를 고르지 말고 `canonical_name`을 생략, `match_status="AMBIGUOUS"`로 두세요. 이 entity가 sub-question의 핵심 대상(주로 `roles`에 ISSUER)이고 질문의 다른 문맥으로도 하나로 좁혀지지 않는다면, `decision`을 반드시 `clarify`로 하고 `clarification_question`에 Registry에서 실제로 걸리는 후보 기업명을 나열해 물으세요. 이는 "정확한 Section·공시 위치를 모르는 것은 clarify 사유가 아니다"라는 routing 규칙과 별개입니다 — 그 규칙은 어느 기업인지는 확정됐지만 어느 문서·섹션인지 모르는 경우에만 적용되며, 어느 기업인지 자체가 불명확한 경우에는 적용되지 않습니다.
   * Registry에 없는 기업이면 `canonical_name`을 생략하고 `match_status="NOT_FOUND"`로 두세요.
 * 기업이 아닌 entity이거나 Registry로 판단할 수 없으면 `canonical_name`을 생략하고 `match_status="UNKNOWN"`으로 두세요. 확실하지 않은 이름을 억지로 정규화하지 마세요.
 * 질문의 같은 entity가 sub-question마다 필요하다면 각 sub-question에 명시하세요.

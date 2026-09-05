@@ -35,11 +35,14 @@ from .tools import (
     retrieve_search,
 )
 from .utils import (
+    AmbiguousEntityConflict,
     assign_subquestion_ids,
+    build_fallback_clarification,
     build_retriever_human_message,
     build_answer_generator_human_message,
     load_universe_table,
     resolve_answer_draft,
+    resolve_question_analyzer_output,
     execute_tool_call,
     run_narrow_scope_agent,
     validate_retriever_tool_call,
@@ -138,7 +141,25 @@ def question_analyzer(
                 if isinstance(response, QuestionAnalyzerOutput)
                 else QuestionAnalyzerOutput.model_validate(response)
             )
+            # LLM의 기업명 판정과 routing 결정을 신뢰하지 않고 Registry로
+            # 재검증합니다. 모순되면 AmbiguousEntityConflict가 발생해
+            # 아래에서 재시도하거나(소진 시) 결정론적 fallback으로 대체됩니다.
+            analyzer_output = resolve_question_analyzer_output(analyzer_output)
             break
+        except AmbiguousEntityConflict as error:
+            if attempt == MAX_LLM_RETRIES:
+                # 모델이 끝까지 스스로 고치지 못해도 500을 반환하지 않고,
+                # 실제 Registry 후보로 만든 안전한 clarify 응답을 냅니다.
+                analyzer_output = QuestionAnalyzerOutput(
+                    question_analysis=build_fallback_clarification(
+                        error.mention, error.candidates
+                    )
+                )
+                break
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "QuestionAnalyzerOutput",
+                error,
+            )))
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
