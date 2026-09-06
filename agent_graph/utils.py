@@ -232,6 +232,67 @@ def normalize_question_analysis_entities(
     return analysis.model_copy(update={"sub_questions": normalized_subquestions})
 
 
+def enforce_question_clarification_policy(
+    analysis: QuestionAnalysis,
+) -> QuestionAnalysis:
+    """검색에 필요한 기업·보고기간이 빠진 재무 수치 질문을 clarify로 교정합니다."""
+
+    if analysis.decision != "retrieve":
+        return analysis
+
+    missing_issuer = False
+    missing_period = False
+    universe_terms = (
+        "전체",
+        "모든",
+        "상장사",
+        "상장기업",
+        "기업 중",
+        "회사 중",
+        "70개사",
+        "코퍼스",
+    )
+    for subquestion in analysis.sub_questions:
+        if "AMOUNT" not in subquestion.intents or subquestion.events:
+            continue
+        is_explicit_universe_comparison = (
+            "COMPARISON" in subquestion.intents
+            and any(term in subquestion.question for term in universe_terms)
+        )
+        has_issuer = any(
+            "ISSUER" in entity.roles
+            for entity in subquestion.entities
+        )
+        has_reporting_period = any(
+            period.kind in {"REPORTING_PERIOD", "AS_OF"}
+            for period in subquestion.periods
+        )
+        if not has_issuer and not is_explicit_universe_comparison:
+            missing_issuer = True
+        if not has_reporting_period:
+            missing_period = True
+
+    if not missing_issuer and not missing_period:
+        return analysis
+    if missing_issuer and missing_period:
+        reason = "재무 수치를 조회하려면 대상 기업과 보고기간이 필요합니다."
+        question = (
+            "조회할 기업명과 보고기간을 알려주세요. "
+            "예: 삼성전자 2024년 연결 기준"
+        )
+    elif missing_issuer:
+        reason = "재무 수치를 조회하려면 대상 기업이 필요합니다."
+        question = "재무 수치를 조회할 기업명을 알려주세요."
+    else:
+        reason = "재무 수치를 조회하려면 보고기간이 필요합니다."
+        question = "재무 수치를 조회할 보고기간을 알려주세요. 예: 2024년"
+    return analysis.model_copy(update={
+        "decision": "clarify",
+        "decision_reason": reason,
+        "clarification_question": question,
+    })
+
+
 def subquestion_has_out_of_universe_issuer(subquestion: SubQuestion) -> bool:
     """지원 universe 밖의 ISSUER가 SubQuestion에 포함됐는지 확인합니다."""
 

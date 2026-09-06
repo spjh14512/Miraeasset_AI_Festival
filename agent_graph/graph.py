@@ -36,6 +36,7 @@ from .tools import (
 from .utils import (
     assign_subquestion_ids,
     build_retriever_human_message,
+    enforce_question_clarification_policy,
     generate_answer,
     execute_tool_call,
     load_issuer_universe_tsv,
@@ -148,6 +149,7 @@ def question_analyzer(
     question_analysis = normalize_question_analysis_entities(
         analyzer_output.question_analysis
     )
+    question_analysis = enforce_question_clarification_policy(question_analysis)
     question_analysis = assign_subquestion_ids(question_analysis)
     print("질문 분석 결과:\n", question_analysis, "\n" + "\n\n")
     return {

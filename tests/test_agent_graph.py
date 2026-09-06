@@ -17,6 +17,7 @@ from agent_graph.state import (
 )
 from agent_graph.utils import (
     build_retriever_human_message,
+    enforce_question_clarification_policy,
     load_issuer_universe,
     normalize_question_analysis_entities,
 )
@@ -225,6 +226,76 @@ def test_question_analyzer_returns_analysis_without_plans():
         "corp_code\tstock_code\tcorp_name"
     )
     assert len(payload["issuer_universe_tsv"].splitlines()) == 71
+
+
+def test_question_analyzer_clarifies_financial_amount_without_issuer_or_period():
+    output = QuestionAnalyzerOutput(question_analysis=QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="연결 기준 유동부채가 얼마인지 알려줘",
+        decision_reason="공시 조회가 필요합니다.",
+        sub_questions=[SubQuestion(
+            question="연결 기준 유동부채 금액",
+            entities=[],
+            events=[],
+            intents=["AMOUNT"],
+            periods=[],
+            requested_facts=["연결 기준 유동부채"],
+        )],
+    ))
+
+    update = question_analyzer(
+        {
+            "question_id": "question-1",
+            "question_text": "연결 기준 유동부채가 얼마인지 알려줘",
+        },
+        llm=_FakeLlm(output),
+    )
+
+    analysis = update["question_analysis"]
+    assert analysis.decision == "clarify"
+    assert "기업명과 보고기간" in analysis.clarification_question
+    assert analysis.sub_questions[0].subquestion_id == "subquestion_1"
+
+
+def test_clarification_policy_keeps_complete_financial_amount_retrieval():
+    analysis = QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="삼성전자의 2024년 연결 기준 유동부채",
+        decision_reason="공시 조회가 필요합니다.",
+        sub_questions=[SubQuestion(
+            question="삼성전자의 2024년 연결 기준 유동부채 금액",
+            entities=[{"mention": "삼성전자", "roles": ["ISSUER"]}],
+            events=[],
+            intents=["AMOUNT"],
+            periods=[{
+                "expression": "2024년",
+                "kind": "REPORTING_PERIOD",
+                "normalized_value": "2024",
+                "granularity": "YEAR",
+            }],
+            requested_facts=["연결 기준 유동부채"],
+        )],
+    )
+
+    assert enforce_question_clarification_policy(analysis).decision == "retrieve"
+
+
+def test_clarification_policy_does_not_require_period_for_event_amount():
+    analysis = QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="삼성전자의 계약 금액",
+        decision_reason="공시 조회가 필요합니다.",
+        sub_questions=[SubQuestion(
+            question="삼성전자의 계약 금액",
+            entities=[{"mention": "삼성전자", "roles": ["ISSUER"]}],
+            events=[{"event_type": "계약", "confidence": "HIGH"}],
+            intents=["AMOUNT"],
+            periods=[],
+            requested_facts=["계약 금액"],
+        )],
+    )
+
+    assert enforce_question_clarification_policy(analysis).decision == "retrieve"
 
 
 def test_entity_normalization_uses_registry_for_issuer():
