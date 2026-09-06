@@ -74,12 +74,10 @@ def _retrieval_state():
         "retrieval_results": [
             RetrievalResult(
                 result_id="retrieval:plan_1",
-                plan_id="plan_1",
                 source="neo4j",
                 query="MATCH ...",
                 items=[{"corp_eng_name": "SAMSUNG ELECTRONICS CO., LTD."}],
                 result_count=1,
-                metadata={"plan_purpose": "영문 기업명 확인"}
             )
         ],
     }

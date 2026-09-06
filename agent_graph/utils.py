@@ -77,7 +77,16 @@ UNIVERSE_TABLE_PATH = (
 )
 # 시가총액을 사용한 답변에는 기준일 고지를 반드시 덧붙입니다.
 MARKET_CAP_FIELD = "market_cap"
+MARKET_CAP_AS_OF_DATE = "2026-07-24"
 MARKET_CAP_AS_OF_NOTE = "(시가총액은 2026년 7월 24일 기준, 코퍼스 70개사 대상)"
+
+# 근거 자체에는 단위·의미가 적혀 있지 않지만 application이 보장하는 필드 정보입니다.
+TRUSTED_FIELD_SEMANTICS = {
+    MARKET_CAP_FIELD: (
+        f"Company 노드의 시가총액이며 단위는 억원, {MARKET_CAP_AS_OF_DATE} 기준입니다. "
+        "근거 payload에도 이미 단위와 기준일이 붙은 형태로 제공됩니다."
+    ),
+}
 UNIVERSE_TABLE_COLUMNS = (
     "법인명",
     "거래소통용종목명",
@@ -1370,11 +1379,42 @@ def _resolve_plan_dependencies(
     return [results_by_id[result_id] for result_id in plan.dependencies]
 
 
+MAX_AUTO_FAILURE_CONTEXT = 3
+
+
+def collect_recent_failures(
+    plan: Plan,
+    state: AgentState,
+    dependencies: list[RetrievalResult],
+) -> list[RetrievalResult]:
+    """같은 source에서 최근 실패한 결과를 자동으로 모읍니다.
+
+    query builder는 plan.dependencies에 담긴 결과만 볼 수 있어, Retriever가
+    실패 결과를 dependencies에 넣는 것을 잊으면 builder는 직전 실패를 모른 채
+    같은 오류 쿼리를 다시 만듭니다. 프롬프트로 "실패를 넣어라"라고 지시해도
+    LLM 재량이라 보장되지 않으므로, application이 직접 실어줍니다.
+
+    이미 dependencies에 있는 결과는 중복해서 넣지 않고, 최근
+    MAX_AUTO_FAILURE_CONTEXT건까지만 실어 prompt가 과도하게 커지지 않게 합니다.
+    """
+
+    seen = {result.result_id for result in dependencies}
+    failures = [
+        result
+        for result in state.get("retrieval_results", [])
+        if result.source == plan.source
+        and result.status != "SUCCESS"
+        and result.result_id not in seen
+    ]
+    return failures[-MAX_AUTO_FAILURE_CONTEXT:]
+
+
 def _build_query_builder_human_message(
     plan: Plan,
     user_question: str,
     dependencies: list[RetrievalResult],
     scope: Scope | None = None,
+    recent_failures: list[RetrievalResult] | None = None,
 ) -> HumanMessage:
     """Builder가 사용할 질문, Plan, 이전 결과를 JSON message로 만듭니다.
 
@@ -1400,6 +1440,12 @@ def _build_query_builder_human_message(
                     result.model_dump(mode="json")
                     for result in dependencies
                 ],
+                # Retriever가 dependencies에 넣지 않았더라도 같은 source의 최근
+                # 실패는 반드시 보여준다. 같은 오류 쿼리를 반복 생성하는 것을 막는다.
+                "recent_failures": [
+                    result.model_dump(mode="json", exclude={"items"})
+                    for result in (recent_failures or [])
+                ],
             },
             ensure_ascii=False,
             indent=2,
@@ -1416,12 +1462,14 @@ def _execute_retrieval_plan(
     """Plan의 source에 맞는 검색을 실행하고 정규화된 결과를 반환합니다."""
 
     scope = _resolve_plan_scope(plan, state)
+    recent_failures = collect_recent_failures(plan, state, dependencies)
     if plan.source == "neo4j":
         neo4j_cypher = cypher_builder(
             plan,
             user_question=state["question_text"],
             dependencies=dependencies,
             scope=scope,
+            recent_failures=recent_failures,
         )
         print("-- Neo4j에서 다음 Cypher를 실행합니다.: --", neo4j_cypher, "\n\n")
         try:
@@ -1449,6 +1497,7 @@ def _execute_retrieval_plan(
         user_question=state["question_text"],
         dependencies=dependencies,
         scope=scope,
+        recent_failures=recent_failures,
     )
     qdrant_query.limit = limit
     print("-- Qdrant에서 Query retrieval을 실행합니다. --\n\n")
@@ -1538,7 +1587,6 @@ def _build_failed_retrieval_result(
 
     return RetrievalResult(
         result_id=f"retrieval:{plan.plan_id}",
-        plan_id=plan.plan_id,
         source=plan.source,
         status=status,
         query=getattr(error, "retrieval_query", plan.query),
@@ -1557,6 +1605,7 @@ def cypher_builder(
     user_question: str,
     dependencies: list[RetrievalResult],
     scope: Scope | None = None,
+    recent_failures: list[RetrievalResult] | None = None,
     neo4j_schema: str | None = None,
     llm: Any | None = None,
 ) -> CypherQuery:
@@ -1573,6 +1622,7 @@ def cypher_builder(
         user_question,
         dependencies,
         scope,
+        recent_failures,
     )
     print("[Cypher Builder human message]:\n" + human_message.content + "\n\n")
     messages = [
@@ -1733,9 +1783,9 @@ def _qdrant_filter_signature(filters: Any) -> tuple[str, ...]:
 
 def _find_repeated_no_results_filters(
     query: QdrantQuery,
-    dependencies: list[RetrievalResult],
+    previous_results: list[RetrievalResult],
 ) -> list[str]:
-    """동일 filter 조합으로 NO_RESULTS였던 dependency ID를 반환합니다.
+    """동일 filter 조합으로 NO_RESULTS였던 결과 ID를 반환합니다.
 
     입력 예시:
         query.filters == [{"key": "evidence_id", "match": "evidence-1"}]
@@ -1745,8 +1795,12 @@ def _find_repeated_no_results_filters(
     """
 
     signature = _qdrant_filter_signature(query.filters)
+    # filter가 없는 vector 검색은 query_text가 바뀌면 다른 검색입니다.
+    # 빈 filter 조합만 같다는 이유로 후속 검색을 막지 않습니다.
+    if not signature:
+        return []
     conflicts = []
-    for result in dependencies:
+    for result in previous_results:
         if result.source != "qdrant" or result.status != "NO_RESULTS":
             continue
         try:
@@ -1766,6 +1820,7 @@ def query_builder(
     user_question: str,
     dependencies: list[RetrievalResult],
     scope: Scope | None = None,
+    recent_failures: list[RetrievalResult] | None = None,
     qdrant_schema: str | None = None,
     llm: Any | None = None,
 ) -> QdrantQuery:
@@ -1786,6 +1841,7 @@ def query_builder(
         user_question,
         dependencies,
         scope,
+        recent_failures,
     )
     print(
         "[query builder human message]:\n",
@@ -1810,7 +1866,17 @@ def query_builder(
                 else QdrantQueryToolArgs.model_validate(result)
             )
             query = tool_args.to_qdrant_query()
-            conflicts = _find_repeated_no_results_filters(query, dependencies)
+            previous_results = list(dependencies)
+            known_result_ids = {result.result_id for result in previous_results}
+            previous_results.extend(
+                result
+                for result in (recent_failures or [])
+                if result.result_id not in known_result_ids
+            )
+            conflicts = _find_repeated_no_results_filters(
+                query,
+                previous_results,
+            )
             if conflicts:
                 raise RepeatedNoResultsFilterError(
                     "NO_RESULTS가 발생한 filter 조합을 반복해서 생성했습니다: "
@@ -2171,6 +2237,26 @@ def _build_answer_context(item: dict[str, Any]) -> str:
     return " > ".join(context_parts)
 
 
+def _annotate_trusted_fields(content: Any) -> Any:
+    """근거에 없지만 application이 보장하는 단위·기준일을 값에 붙입니다.
+
+    Neo4j의 `market_cap`은 숫자만 저장돼 있어 단위를 알 수 없습니다.
+    그대로 넘기면 답변 생성 LLM이 단위를 지어내고, 검증 LLM은 답변의
+    "억원"을 근거 없는 표현으로 판정합니다. 값 자체를 자기설명적으로
+    바꿔 두 문제를 한 번에 없앱니다.
+    """
+
+    if not isinstance(content, dict):
+        return content
+    annotated = dict(content)
+    value = annotated.get(MARKET_CAP_FIELD)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        annotated[MARKET_CAP_FIELD] = (
+            f"{value:,}억원 ({MARKET_CAP_AS_OF_DATE} 기준)"
+        )
+    return annotated
+
+
 def _build_answer_result_payload(
     result_id: str,
     item: dict[str, Any],
@@ -2189,13 +2275,13 @@ def _build_answer_result_payload(
     elif item_type == "r_table":
         payload["content"] = {"records": item.get("records", [])}
     elif item_type == "record" and isinstance(item.get("fields"), dict):
-        payload["content"] = item["fields"]
+        payload["content"] = _annotate_trusted_fields(item["fields"])
     else:
-        payload["content"] = {
+        payload["content"] = _annotate_trusted_fields({
             key: value
             for key, value in item.items()
             if key not in {"type", "metadata", "score"}
-        }
+        })
 
     if item_type in {"kv_table", "r_table"}:
         table_info = dict(item.get("table_metadata") or {})
@@ -2621,7 +2707,13 @@ def build_answer_validator_human_message(
     state: AgentState,
     ai_answer: AiAnswer,
 ) -> HumanMessage:
-    """초안 답변과 근거, 요구사항을 Answer Validator 입력으로 변환합니다."""
+    """초안 답변과 근거, 요구사항을 Answer Validator 입력으로 변환합니다.
+
+    Answer Generator용 payload는 출처 식별자를 담지 않습니다. 그 LLM은
+    result_id만 고르면 application이 Citation을 대신 계산하기 때문입니다.
+    반면 Validator는 "출처가 실제로 붙었는지"를 판정해야 하므로 각 근거의
+    source_ids와 답변에 최종적으로 붙은 draft_citations를 함께 전달합니다.
+    """
 
     answer_result_map = build_answer_result_map(state)
     requested_facts: list[str] = []
@@ -2634,14 +2726,26 @@ def build_answer_validator_human_message(
                 if fact not in requested_facts:
                     requested_facts.append(fact)
 
+    retrieval_results = []
+    for value in answer_result_map.values():
+        entry = dict(value["payload"])
+        entry["source_ids"] = [
+            citation.model_dump(exclude_none=True)
+            for citation in _extract_citations(value["item"])
+        ]
+        retrieval_results.append(entry)
+
     payload = {
         "user_question": state["question_text"],
         "requested_facts": requested_facts,
         "draft_answer": ai_answer.answer,
-        "retrieval_results": [
-            value["payload"]
-            for value in answer_result_map.values()
+        "draft_citations": [
+            citation.model_dump(exclude_none=True)
+            for citation in ai_answer.citation
         ],
+        "trusted_application_notes": [MARKET_CAP_AS_OF_NOTE],
+        "trusted_field_semantics": TRUSTED_FIELD_SEMANTICS,
+        "retrieval_results": retrieval_results,
     }
 
     json_dump = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -2677,6 +2781,8 @@ def find_answer_issues(
     판정만 하며 답변을 직접 고치지 않습니다. 구조적으로 잘못된
     출력(JSON 스키마 오류)만 재시도하고, 판정 내용 자체의 재작성은
     호출자(answer_validator)가 담당합니다.
+
+    LLM의 판정은 normalize_validator_issues로 한 번 걸러서 반환합니다.
     """
 
     human_message = build_answer_validator_human_message(state, ai_answer)
@@ -2692,11 +2798,12 @@ def find_answer_issues(
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
             response = invoke_with_rate_limit_retry(validator_llm, messages)
-            return (
+            issues = (
                 response
                 if isinstance(response, AnswerValidatorOutput)
                 else AnswerValidatorOutput.model_validate(response)
             )
+            return normalize_validator_issues(state, ai_answer, issues)
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
@@ -2704,6 +2811,93 @@ def find_answer_issues(
                 "AnswerValidatorOutput",
                 error,
             )))
+
+
+_NULL_LIKE_NOTES = {"", "null", "none", "n/a", "없음", "해당 없음"}
+# 근거 부족을 뜻하는 표현. Validator가 "확인할 수 있습니다"처럼 정반대 의미의
+# 문장을 note로 돌려준 사례가 실제로 관찰돼, 한계 고지로 읽히는 문장만 채택합니다.
+_LIMITATION_MARKERS = (
+    "없", "않", "못", "부족", "불가", "확인되지", "확인할 수 없",
+    "제공되지", "포함되어 있지", "누락",
+)
+_SENTENCE_SPLIT_PATTERN = re.compile(r"[.!?\n]+")
+_FACT_TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣]+")
+
+
+def _fact_is_addressed(fact: str, answer: str) -> bool:
+    """요구사항이 답변에서 이미 다뤄졌는지 확인합니다.
+
+    "확인할 수 없다"고 정직하게 밝힌 것도 다룬 것으로 봅니다. 근거가
+    없는 항목까지 다시 쓰라고 요구하면 같은 답변만 반복 생성됩니다.
+
+    토큰이 답변 전체에 흩어져 있기만 해도 통과시키면, "2025년 매출액"과
+    "2024년 영업이익"을 각각 말한 답변이 "2025년 영업이익"을 다뤘다고
+    잘못 판정됩니다. 따라서 한 문장 안에서 모두 확인될 때만 인정합니다.
+    """
+
+    tokens = [
+        token
+        for token in _FACT_TOKEN_PATTERN.findall(fact)
+        if len(token) >= 2
+    ]
+    if not tokens:
+        return False
+    return any(
+        all(token in sentence for token in tokens)
+        for sentence in _SENTENCE_SPLIT_PATTERN.split(answer)
+    )
+
+
+def _is_limitation_note(note: str) -> bool:
+    """근거 부족을 실제로 설명하는 문장인지 확인합니다."""
+
+    return any(marker in note for marker in _LIMITATION_MARKERS)
+
+
+def normalize_validator_issues(
+    state: AgentState,
+    ai_answer: AiAnswer,
+    issues: AnswerValidatorOutput,
+) -> AnswerValidatorOutput:
+    """LLM 판정에서 실행할 수 없거나 의미가 깨진 항목만 걸러냅니다.
+
+    판정의 내용(수치가 맞는지, 근거가 있는지)은 절대 코드가 뒤집지
+    않습니다. 한때 "문장의 숫자가 모두 근거 어딘가에 있으면 오판으로 보고
+    제외"하는 필터를 뒀지만, 이는 A사 값을 B사에 붙인 답변, 조원을 억원으로
+    바꾼 답변, 9.42%를 42.9%로 뒤집은 답변까지 전부 통과시키는 훨씬 큰
+    구멍이었습니다. 그래서 다음 세 가지 형식적 문제만 정리합니다.
+
+    1. 답변에 실제로 존재하지 않는 문자열은 조치할 대상이 없으므로 제외합니다.
+    2. 요구사항이 한 문장 안에서 이미 다뤄졌으면 재작성 대상에서 제외합니다.
+    3. 모델이 문자열 "null"을 반환하거나 근거 부족과 무관한 문장을
+       note로 반환하는 경우가 있어 빈 값으로 정규화합니다.
+    """
+
+    kept_claims = [
+        claim
+        for claim in issues.unsupported_claims
+        if claim.strip() and claim.strip() in ai_answer.answer
+    ]
+    kept_facts = [
+        fact
+        for fact in issues.missing_requested_facts
+        if not _fact_is_addressed(fact, ai_answer.answer)
+    ]
+
+    note = issues.incomplete_evidence_note
+    if note is not None:
+        stripped_note = note.strip()
+        if (
+            stripped_note.casefold() in _NULL_LIKE_NOTES
+            or not _is_limitation_note(stripped_note)
+        ):
+            note = None
+
+    return AnswerValidatorOutput(
+        unsupported_claims=kept_claims,
+        missing_requested_facts=kept_facts,
+        incomplete_evidence_note=note,
+    )
 
 
 def build_answer_repair_guidance(issues: AnswerValidatorOutput) -> str:
@@ -2723,9 +2917,52 @@ def build_answer_repair_guidance(issues: AnswerValidatorOutput) -> str:
             + " / ".join(issues.missing_requested_facts)
         )
     if issues.incomplete_evidence_note:
-        lines.append(f"- 근거 부족: {issues.incomplete_evidence_note}")
+        lines.append(
+            "- 참고(고칠 대상 아님): 다음은 검색 근거 자체의 공백이므로 다시 "
+            "써도 해소되지 않습니다. 무리해서 채우지 말고 확인할 수 없다고 "
+            f"밝히세요: {issues.incomplete_evidence_note}"
+        )
     lines.append("이전 답변을 그대로 반복하지 말고 위 문제를 실제로 고치세요.")
     return "\n".join(lines)
+
+
+UNSUPPORTED_ANSWER_FALLBACK = (
+    "제공된 공시 근거만으로는 이 질문에 신뢰할 수 있는 답변을 드릴 수 없습니다."
+)
+
+
+def append_limitation_notes(
+    ai_answer: AiAnswer,
+    issues: AnswerValidatorOutput,
+) -> AiAnswer:
+    """근거 부족·요구사항 누락을 한계 고지 문장으로 덧붙입니다.
+
+    답변 본문은 건드리지 않습니다. 이미 같은 내용을 고지한 답변에는
+    중복해서 덧붙이지 않습니다.
+    """
+
+    notes: list[str] = []
+    if issues.missing_requested_facts:
+        missing = [
+            fact
+            for fact in issues.missing_requested_facts
+            if fact not in ai_answer.answer
+        ]
+        if missing:
+            notes.append(
+                "다음 사항은 제공된 근거로 확인되지 않았습니다: "
+                + ", ".join(missing)
+            )
+    note = issues.incomplete_evidence_note
+    if note and note not in ai_answer.answer:
+        notes.append(note)
+
+    if not notes:
+        return ai_answer
+    return AiAnswer(
+        answer=f"{ai_answer.answer.rstrip()} ({' '.join(notes)})",
+        citation=ai_answer.citation,
+    )
 
 
 def apply_answer_repairs(
@@ -2734,31 +2971,28 @@ def apply_answer_repairs(
 ) -> AiAnswer:
     """재작성 후에도 남은 문제를 모델 호출 없이 결정론적으로 반영합니다.
 
-    근거 없는 문장은 답변에서 제거하고, 누락된 요구사항과 근거 부족은
-    한계 고지 문장으로 덧붙입니다. 문제를 조용히 감추기보다 항상
-    사용자에게 드러냅니다.
+    근거 없는 서술이 남아 있으면 답변의 일부만 도려내지 않고 전체를 고정
+    문구로 교체합니다. 문자열을 부분 삭제하면 문장이 잘리거나, 같은
+    표현이 다른 위치에서 함께 지워지거나, markdown 목록·표가 깨진 채로
+    남을 수 있기 때문입니다. 이때 남은 근거가 없으므로 citation도 함께
+    비웁니다 — 근거 없는 답변에 공시 출처가 붙어 있으면 사용자가 잘못된
+    출처를 신뢰하게 됩니다.
+
+    근거 없는 서술이 없다면 답변은 그대로 두고 한계 고지만 덧붙입니다.
     """
 
-    answer = ai_answer.answer
-    for claim in issues.unsupported_claims:
-        answer = answer.replace(claim, "")
-    answer = re.sub(r"[ \t]{2,}", " ", answer).strip()
-
-    notes: list[str] = []
-    if issues.missing_requested_facts:
-        notes.append(
-            "다음 사항은 제공된 근거로 확인되지 않았습니다: "
-            + ", ".join(issues.missing_requested_facts)
+    if issues.unsupported_claims:
+        return append_limitation_notes(
+            AiAnswer(answer=UNSUPPORTED_ANSWER_FALLBACK, citation=[]),
+            issues,
         )
-    if issues.incomplete_evidence_note:
-        notes.append(issues.incomplete_evidence_note)
+    return append_limitation_notes(ai_answer, issues)
 
-    if not answer:
-        answer = "제공된 근거만으로는 확인 가능한 답변을 생성할 수 없습니다."
-    if notes:
-        answer = answer + " (" + " ".join(notes) + ")"
 
-    return AiAnswer(answer=answer, citation=ai_answer.citation)
+def _is_repairable_by_rewrite(issues: AnswerValidatorOutput) -> bool:
+    """같은 근거로 다시 써서 해소할 수 있는 문제가 있는지 판단합니다."""
+
+    return bool(issues.unsupported_claims or issues.missing_requested_facts)
 
 
 def validate_and_repair_answer(
@@ -2769,31 +3003,28 @@ def validate_and_repair_answer(
 ) -> AiAnswer:
     """answer_validator 노드의 핵심 로직입니다.
 
-    검증 -> (문제 있으면) 1회 재작성 -> 재검증 -> (그래도 문제면) 코드가
-    직접 결정론적으로 안전하게 마무리하는 순서로 진행합니다. 재작성은
-    MAX_LLM_RETRIES(구조적 오류 재시도용 예산)와 별개로 딱 1회만
+    검증 -> (재작성으로 고칠 수 있는 문제면) 1회 재작성 -> 재검증 ->
+    (그래도 남으면) 코드가 직접 결정론적으로 마무리하는 순서입니다.
+    재작성은 MAX_LLM_RETRIES(구조적 오류 재시도용 예산)와 별개로 딱 1회만
     허용합니다 — 매 답변마다 검증을 상시 수행하므로, 의미적 재작성까지
     그 예산을 그대로 쓰면 평가 API의 300초 제한 안에서 호출 수가
     과도하게 늘어날 수 있습니다.
+
+    incomplete_evidence_note는 재작성 조건에서 제외합니다. 이것은 답변의
+    잘못이 아니라 검색 결과 자체의 공백이라, 같은 근거로 다시 써도 절대
+    해소되지 않고 LLM 호출만 낭비하기 때문입니다. 이 경우에는 재작성
+    없이 한계 고지만 덧붙입니다.
     """
 
     issues = find_answer_issues(state, ai_answer, llm=llm)
-    if not (
-        issues.unsupported_claims
-        or issues.missing_requested_facts
-        or issues.incomplete_evidence_note
-    ):
-        return ai_answer
+    if not _is_repairable_by_rewrite(issues):
+        return append_limitation_notes(ai_answer, issues)
 
     guidance = build_answer_repair_guidance(issues)
     repaired_answer = generate_answer(state, extra_guidance=guidance, llm=llm)
     repaired_issues = find_answer_issues(state, repaired_answer, llm=llm)
-    if not (
-        repaired_issues.unsupported_claims
-        or repaired_issues.missing_requested_facts
-        or repaired_issues.incomplete_evidence_note
-    ):
-        return repaired_answer
+    if not _is_repairable_by_rewrite(repaired_issues):
+        return append_limitation_notes(repaired_answer, repaired_issues)
 
     return apply_answer_repairs(repaired_answer, repaired_issues)
 
@@ -3285,7 +3516,6 @@ def _apply_calculation_operation(
 def _build_calculation_invalid_result(
     *,
     result_id: str,
-    plan_id: str,
     query: str,
     reason: str,
     failure_stage: str,
@@ -3295,7 +3525,6 @@ def _build_calculation_invalid_result(
 
     return RetrievalResult(
         result_id=result_id,
-        plan_id=plan_id,
         source="derived",
         status="INVALID_INPUT",
         query=query,

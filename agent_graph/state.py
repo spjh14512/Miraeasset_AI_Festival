@@ -14,6 +14,7 @@ RetrievalResultStatus = Literal[
     "INVALID_QUERY",
     "INVALID_INPUT",
 ]
+AnswerValidationStatus = Literal["PASSED", "REPAIRED", "FALLBACK", "SKIPPED"]
 QuestionDecision = Literal["retrieve", "direct", "clarify"]
 EntityRole = Literal[
     "ISSUER",
@@ -322,9 +323,11 @@ class QuestionAnalyzerOutput(BaseModel):
 class RetrievalResult(BaseModel):
     """
     RetrievalResult는 하나의 retrieval 실행 결과를 나타낸다.
+
+    Plan 식별자는 담지 않는다. 결과를 참조할 때 쓰는 값은 result_id뿐이고,
+    어떤 Plan이 이 결과를 만들었는지는 downstream 판단에 필요하지 않다.
     """
     result_id: str
-    plan_id: str
     source: RetrievalResultSource
     status: RetrievalResultStatus | None = None
     query: str
@@ -450,6 +453,7 @@ class AgentState(TypedDict, total=False):
 
     # Output
     ai_answer: AiAnswer
+    answer_validation_status: NotRequired[AnswerValidationStatus]
 
     # Observability / recovery
     errors: NotRequired[list[str]]

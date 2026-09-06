@@ -159,7 +159,7 @@ def test_cypher_executor_returns_one_retrieval_result(monkeypatch):
 
     result = tools.cypher_executor(query, "plan_1")
 
-    assert result.plan_id == "plan_1"
+    assert result.result_id == "retrieval:plan_1"
     assert result.source == "neo4j"
     assert result.items[0]["fields"]["company_count"] == 3
     assert driver.opened_session.call == (query.cypher, {})
@@ -425,6 +425,89 @@ def test_query_builder_regenerates_repeated_no_results_filter(monkeypatch):
     assert "filter 조건의 제거 또는 완화" in llm.calls[1][-1].content
 
 
+def test_query_builder_uses_automatic_failure_context_for_repeat_check(
+    monkeypatch,
+):
+    failed_result = RetrievalResult(
+        result_id="retrieval:plan_1",
+        source="qdrant",
+        status="NO_RESULTS",
+        query=(
+            '{"mode":"vector","query_text":"삼성전자",'
+            '"filters":[{"key":"evidence_id","match":"evidence-1"}]}'
+        ),
+        items=[],
+        result_count=0,
+    )
+    repeated_query = QdrantQuery(
+        mode="vector",
+        query_text="삼성전자 재검색",
+        filters=[{"key": "evidence_id", "match": "evidence-1"}],
+    )
+    relaxed_query = QdrantQuery(
+        mode="vector",
+        query_text="삼성전자 재검색",
+        filters=[],
+    )
+    llm = _SequenceQueryBuilderLlm([repeated_query, relaxed_query])
+    monkeypatch.setattr(tools, "text_to_hybrid_vector", lambda _: _hybrid())
+
+    query = tools.query_builder(
+        Plan(
+            plan_id="plan_2",
+            source="qdrant",
+            query="삼성전자 재검색",
+            purpose="이전 실패를 반영한 재검색",
+            dependencies=[],
+            scope_id="scope_1",
+        ),
+        user_question="삼성전자 공시를 알려줘",
+        dependencies=[],
+        recent_failures=[failed_result],
+        qdrant_schema="schema",
+        llm=llm,
+    )
+
+    assert query.filters == []
+    assert len(llm.calls) == 2
+
+
+def test_query_builder_allows_new_unfiltered_semantic_query(monkeypatch):
+    failed_result = RetrievalResult(
+        result_id="retrieval:plan_1",
+        source="qdrant",
+        status="NO_RESULTS",
+        query='{"mode":"vector","query_text":"이전 검색","filters":[]}',
+        items=[],
+        result_count=0,
+    )
+    llm = _SequenceQueryBuilderLlm([QdrantQuery(
+        mode="vector",
+        query_text="새로운 검색어",
+        filters=[],
+    )])
+    monkeypatch.setattr(tools, "text_to_hybrid_vector", lambda _: _hybrid())
+
+    query = tools.query_builder(
+        Plan(
+            plan_id="plan_2",
+            source="qdrant",
+            query="새로운 의미 검색",
+            purpose="검색어 변경",
+            dependencies=[],
+            scope_id="scope_1",
+        ),
+        user_question="질문",
+        dependencies=[],
+        recent_failures=[failed_result],
+        qdrant_schema="schema",
+        llm=llm,
+    )
+
+    assert query.query_text == "새로운 검색어"
+    assert len(llm.calls) == 1
+
+
 def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
     failed_result = RetrievalResult(
         result_id="retrieval:plan_1",
@@ -465,7 +548,7 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
     assert result.metadata["failure_stage"] == "query_builder"
 
 
-def test_retrieve_search_preserves_plan_purpose(monkeypatch):
+def test_retrieve_search_metadata_excludes_plan_information(monkeypatch):
     plan = Plan(
         plan_id="plan_4",
         source="qdrant",
@@ -505,7 +588,6 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
         "duplicate_point_count": 0,
         "returned_point_count": 0,
         "r_table_detail": "records",
-        "plan_purpose": "특별관계자 명단 확인"
     }
     assert update["retrieved_qdrant_point_ids"] == []
     assert update["retrieval_results"][0].status == "NO_RESULTS"
@@ -860,3 +942,99 @@ def test_retrieve_search_rejects_missing_dependency():
         assert "retrieval:missing" in str(error)
     else:
         raise AssertionError("존재하지 않는 dependency가 허용되었습니다.")
+
+
+def test_query_builder_receives_recent_failures_not_listed_in_dependencies(
+    monkeypatch,
+):
+    """Retriever가 실패 결과를 dependencies에 넣지 않아도, builder는 같은
+
+    source의 최근 실패를 반드시 봐야 한다. 보지 못하면 같은 오류 쿼리를
+    다시 생성한다."""
+
+    plan = Plan(
+        plan_id="plan_5",
+        source="qdrant",
+        query="삼성전자 특별관계자",
+        purpose="특별관계자 명단 확인",
+        dependencies=[],
+        scope_id="scope_1",
+    )
+    failed = RetrievalResult(
+        result_id="retrieval:plan_4",
+        source="qdrant",
+        status="NO_RESULTS",
+        query='{"filters": [{"key": "corp_name", "match": "없는기업"}]}',
+        items=[],
+        result_count=0,
+        metadata={"failure_stage": "query_executor"},
+    )
+
+    captured = {}
+
+    def fake_query_builder(_plan, **kwargs):
+        captured["recent_failures"] = kwargs.get("recent_failures")
+        return QdrantQuery(
+            mode="vector",
+            query_text="삼성전자 특별관계자",
+            query_vector=_hybrid(),
+        )
+
+    monkeypatch.setattr(tools, "query_builder", fake_query_builder)
+    monkeypatch.setattr(
+        tools,
+        "query_executor",
+        lambda *_, **__: QueryResponse(points=[]),
+    )
+
+    retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "삼성전자의 특별관계자 목록을 알려줘",
+            "scope_candidates": [_global_scope()],
+            "retrieval_results": [failed],
+            "next_plan_seq": 5,
+        },
+    })
+
+    assert [result.result_id for result in captured["recent_failures"]] == [
+        "retrieval:plan_4",
+    ]
+
+
+def test_recent_failures_exclude_successful_and_other_source_results():
+    plan = Plan(
+        plan_id="plan_5",
+        source="qdrant",
+        query="q",
+        purpose="p",
+        dependencies=["retrieval:plan_2"],
+        scope_id="scope_1",
+    )
+
+    def _result(result_id: str, source: str, status: str) -> RetrievalResult:
+        return RetrievalResult(
+            result_id=result_id,
+            source=source,
+            status=status,
+            query="q",
+            items=[],
+            result_count=0,
+        )
+
+    dependency = _result("retrieval:plan_2", "qdrant", "NO_RESULTS")
+    state = {
+        "question_id": "q",
+        "question_text": "질문",
+        "retrieval_results": [
+            _result("retrieval:plan_1", "qdrant", "SUCCESS"),
+            dependency,
+            _result("retrieval:plan_3", "neo4j", "ERROR"),
+            _result("retrieval:plan_4", "qdrant", "INVALID_QUERY"),
+        ],
+    }
+
+    failures = tools.collect_recent_failures(plan, state, [dependency])
+
+    assert [result.result_id for result in failures] == ["retrieval:plan_4"]

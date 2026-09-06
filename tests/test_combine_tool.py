@@ -39,7 +39,6 @@ def _derived_result(
     metadata = {} if result_kind is None else {"result_kind": result_kind}
     return RetrievalResult(
         result_id=result_id,
-        plan_id=result_id.removeprefix("derived:"),
         source=source,
         status=status,
         query="{}",
@@ -624,7 +623,6 @@ def test_ordering_ties_preserve_input_order():
 def test_ordering_result_cannot_be_reused_as_scalar_input():
     ordering_result = RetrievalResult(
         result_id="derived:plan_order",
-        plan_id="plan_order",
         source="derived",
         status="SUCCESS",
         query="{}",
@@ -732,7 +730,6 @@ def test_same_explicit_units_succeed():
 def test_non_string_unit_raises_value_error():
     malformed = RetrievalResult(
         result_id="derived:plan_1",
-        plan_id="plan_1",
         source="derived",
         status="SUCCESS",
         query="{}",
@@ -782,7 +779,6 @@ def test_whitespace_only_disclosure_id_in_reference_makes_invalid_input():
 def test_evidence_id_without_section_id_in_reference_makes_invalid_input():
     incomplete = RetrievalResult(
         result_id="derived:plan_1",
-        plan_id="plan_1",
         source="derived",
         status="SUCCESS",
         query="{}",
@@ -837,7 +833,6 @@ def test_item_with_mixed_valid_and_invalid_references_makes_invalid_input():
     # 있으면, 무효한 것만 조용히 건너뛰지 않고 전체를 거부한다.
     mixed = RetrievalResult(
         result_id="derived:plan_1",
-        plan_id="plan_1",
         source="derived",
         status="SUCCESS",
         query="{}",
@@ -887,7 +882,6 @@ def test_nonexistent_result_id_raises_value_error():
 def test_non_derived_source_raises_value_error():
     raw_result = RetrievalResult(
         result_id="retrieval:plan_1",
-        plan_id="plan_1",
         source="qdrant",
         query="q",
         items=[{"type": "r_table"}],
@@ -1004,7 +998,6 @@ def test_blank_variable_name_raises_value_error():
 def test_non_record_item_raises_value_error():
     malformed = RetrievalResult(
         result_id="derived:plan_1",
-        plan_id="plan_1",
         source="derived",
         status="SUCCESS",
         query="{}",
@@ -1038,6 +1031,5 @@ def test_next_plan_seq_uses_state_counter():
     )
 
     result = update["retrieval_results"][0]
-    assert result.plan_id == "plan_9"
     assert result.result_id == "derived:plan_9"
     assert update["next_plan_seq"] == 10

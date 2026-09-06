@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 import main
@@ -20,7 +22,6 @@ class _FakeGraph:
             "selected_result_ids": ["retrieval:plan_1"],
             "retrieval_results": [RetrievalResult(
                 result_id="retrieval:plan_1",
-                plan_id="plan_1",
                 source="qdrant",
                 query="삼성전자 설비 투자",
                 items=[{"text": "검색 문서 본문"}],
@@ -34,6 +35,7 @@ class _FakeGraph:
                     evidence_id="d20240306000686:src0:s27:e8",
                 )],
             ),
+            "answer_validation_status": "PASSED",
         }
 
 
@@ -67,11 +69,53 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
         "[사업보고서 (2023.12)(20240306000686) > "
         "IV. 이사의 경영진단 및 분석의견 > 가. 연결 재무상태]"
     )
-    assert payload["think_trace"] == (
-        '{"query_text": "삼성전자의 설비 투자를 알려줘", '
-        '"reason": "관련 근거를 찾았습니다."}'
-    )
+    trace = json.loads(payload["think_trace"])
+    assert trace["query_text"] == "삼성전자의 설비 투자를 알려줘"
+    assert trace["question_analysis"]["decision"] == "retrieve"
+    assert trace["retrieval_history"] == [{
+        "result_id": "retrieval:plan_1",
+        "source": "qdrant",
+        "status": "SUCCESS",
+        "query": "삼성전자 설비 투자",
+        "result_count": 1,
+    }]
+    assert trace["selected_evidence"]["result_ids"] == ["retrieval:plan_1"]
+    assert len(trace["selected_evidence"]["citations"]) == 1
+    assert trace["answer_validation"]["status"] == "PASSED"
+    assert trace["final_basis"] == {
+        "retrieval_status": "COMPLETE",
+        "retrieval_finish_reason": "관련 근거를 찾았습니다.",
+    }
     assert all(isinstance(value, str) for value in payload.values())
+
+
+def test_think_trace_includes_calculation_and_sanitizes_errors():
+    trace = json.loads(main._build_think_trace({
+        "question_text": "매출액 합계를 구해줘",
+        "retrieval_results": [RetrievalResult(
+            result_id="derived:plan_2",
+            source="derived",
+            status="SUCCESS",
+            query='{"operation":"sum"}',
+            items=[{
+                "type": "record",
+                "fields": {
+                    "variable_name": "매출액 합계",
+                    "operation": "sum",
+                    "value": "300",
+                    "unit": "억원",
+                    "input_count": 2,
+                },
+            }],
+            result_count=1,
+        )],
+        "errors": ["password=secret internal endpoint"],
+    }))
+
+    assert trace["calculation_history"][0]["operation"] == "sum"
+    assert trace["calculation_history"][0]["value"] == "300"
+    assert trace["warnings"]["count"] == 1
+    assert "secret" not in json.dumps(trace)
 
 
 class _FakeDirectGraph:

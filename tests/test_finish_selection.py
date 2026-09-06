@@ -21,25 +21,21 @@ def _message_payload(state: dict) -> dict:
 def _result(result_id: str, item_count: int = 2) -> RetrievalResult:
     return RetrievalResult(
         result_id=result_id,
-        plan_id=result_id.removeprefix("retrieval:"),
         source="qdrant",
         query="검색 쿼리",
         items=[{"value": index} for index in range(item_count)],
         result_count=item_count,
-        metadata={"plan_purpose": "질문의 핵심 정보 확인"}
     )
 
 
 def _failed_result(result_id: str, status: str = "NO_RESULTS") -> RetrievalResult:
     return RetrievalResult(
         result_id=result_id,
-        plan_id=result_id.removeprefix("retrieval:"),
         source="qdrant",
         status=status,
         query="검색 쿼리",
         items=[],
         result_count=0,
-        metadata={"plan_purpose": "질문의 핵심 정보 확인"}
     )
 
 

@@ -42,6 +42,7 @@ from .utils import (
     resolve_question_analyzer_output,
     execute_tool_call,
     run_narrow_scope_agent,
+    UNSUPPORTED_ANSWER_FALLBACK,
     validate_and_repair_answer,
     validate_retriever_tool_call,
 )
@@ -51,6 +52,16 @@ graph_builder = StateGraph(AgentState)
 
 # DB retrieval 최대 반복 횟수
 MAX_RETRIEVAL_COUNT = 5
+
+# 검증 실패를 답변 실패로 번지게 하지 않을 예외들. 외부 요인(LLM 응답,
+# 네트워크)에서 오는 것만 포함하며, 코드 결함은 일부러 제외한다.
+ANSWER_VALIDATION_FAILURES = (
+    ValidationError,
+    ValueError,
+    TimeoutError,
+    ConnectionError,
+    OSError,
+)
 MAX_TOOL_CALL_RETRIES = MAX_LLM_RETRIES
 
 
@@ -261,7 +272,17 @@ def answer_validator(
         *,
         llm: Any | None = None
 ) -> dict:
-    """answer_generator의 초안을 근거·요구사항과 대조해 검증하고 필요하면 고친다."""
+    """answer_generator의 초안을 근거·요구사항과 대조해 검증하고 필요하면 고친다.
+
+    검증 자체가 외부 요인으로 실패하면(LLM timeout, 연결 오류, 구조적
+    출력 재시도 소진 등) 예외를 밖으로 던지지 않고 검증 전 답변을 그대로
+    반환한다. 이 노드는 검색 기반 답변의 필수 종료 경로이므로, 여기서
+    예외가 나가면 이미 정상적으로 생성된 답변까지 API 500이 된다.
+
+    반대로 KeyError처럼 코드 결함에서 오는 예외는 잡지 않는다. 모두
+    잡아버리면 계약 위반이 "검증 생략"으로 조용히 묻혀 테스트에서도
+    드러나지 않는다.
+    """
 
     print("-- answer_validator 노드 호출 --")
 
@@ -271,7 +292,28 @@ def answer_validator(
     if not isinstance(ai_answer, AiAnswer):
         ai_answer = AiAnswer.model_validate(ai_answer)
 
-    return {"ai_answer": validate_and_repair_answer(state, ai_answer, llm=llm)}
+    try:
+        validated = validate_and_repair_answer(state, ai_answer, llm=llm)
+    except ANSWER_VALIDATION_FAILURES as error:
+        print(f"answer_validator 실패, 검증 전 답변을 그대로 사용합니다: {error}")
+        errors = list(state.get("errors", []))
+        errors.append(f"answer_validator 실패: {type(error).__name__}: {error}")
+        return {
+            "ai_answer": ai_answer,
+            "answer_validation_status": "SKIPPED",
+            "errors": errors,
+        }
+
+    if validated.answer.startswith(UNSUPPORTED_ANSWER_FALLBACK):
+        validation_status = "FALLBACK"
+    elif validated != ai_answer:
+        validation_status = "REPAIRED"
+    else:
+        validation_status = "PASSED"
+    return {
+        "ai_answer": validated,
+        "answer_validation_status": validation_status,
+    }
 
 
 

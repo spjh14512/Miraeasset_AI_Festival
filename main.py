@@ -35,6 +35,50 @@ def _model_dump(value: Any) -> Any:
     return value
 
 
+def _retrieval_trace(result: Any) -> dict[str, Any]:
+    """RetrievalResult에서 외부에 공개할 실행 기록만 추출합니다."""
+
+    payload = _model_dump(result)
+    if not isinstance(payload, dict):
+        return {"result_id": "", "source": "", "status": "ERROR"}
+
+    trace = {
+        "result_id": str(payload.get("result_id", "")),
+        "source": str(payload.get("source", "")),
+        "status": str(payload.get("status", "")),
+        "query": str(payload.get("query", "")),
+        "result_count": int(payload.get("result_count", 0)),
+    }
+    metadata = payload.get("metadata")
+    if trace["status"] != "SUCCESS" and isinstance(metadata, dict):
+        trace["failure"] = {
+            "stage": str(metadata.get("failure_stage", "")),
+            "type": str(metadata.get("error_type", "")),
+        }
+    return trace
+
+
+def _calculation_trace(result: Any) -> dict[str, Any]:
+    """계산 RetrievalResult에서 연산과 결과를 추출합니다."""
+
+    payload = _model_dump(result)
+    items = payload.get("items", []) if isinstance(payload, dict) else []
+    fields: dict[str, Any] = {}
+    if items and isinstance(items[0], dict):
+        candidate = items[0].get("fields")
+        if isinstance(candidate, dict):
+            fields = candidate
+    return {
+        "result_id": str(payload.get("result_id", "")),
+        "status": str(payload.get("status", "")),
+        "variable_name": fields.get("variable_name"),
+        "operation": fields.get("operation"),
+        "value": fields.get("value", fields.get("ordered_results")),
+        "unit": fields.get("unit"),
+        "input_count": fields.get("input_count"),
+    }
+
+
 def _build_retrieved_context(output_state: dict[str, Any]) -> str:
     ai_answer = output_state.get("ai_answer")
     if hasattr(ai_answer, "citation"):
@@ -54,21 +98,80 @@ def _build_retrieved_context(output_state: dict[str, Any]) -> str:
 
 
 def _build_think_trace(output_state: dict[str, Any]) -> str:
-    """Return an execution summary without exposing private chain-of-thought."""
+    """Return an auditable execution summary without private chain-of-thought."""
 
     analysis = output_state.get("question_analysis")
     analysis_payload = _model_dump(analysis) if analysis is not None else {}
-    decision_reason = (
-        analysis_payload.get("decision_reason", "")
-        if isinstance(analysis_payload, dict)
-        else ""
+    if not isinstance(analysis_payload, dict):
+        analysis_payload = {}
+
+    sub_questions = analysis_payload.get("sub_questions", [])
+    requested_facts = list(dict.fromkeys(
+        fact
+        for sub_question in sub_questions
+        if isinstance(sub_question, dict)
+        for fact in sub_question.get("requested_facts", [])
+        if isinstance(fact, str)
+    ))
+    retrieval_results = output_state.get("retrieval_results", [])
+    search_results = [
+        result
+        for result in retrieval_results
+        if _model_dump(result).get("source") != "derived"
+    ]
+    calculation_results = [
+        result
+        for result in retrieval_results
+        if _model_dump(result).get("source") == "derived"
+    ]
+    ai_answer = output_state.get("ai_answer")
+    answer_payload = _model_dump(ai_answer) if ai_answer is not None else {}
+    citations = (
+        answer_payload.get("citation", [])
+        if isinstance(answer_payload, dict)
+        else []
     )
     trace = {
         "query_text": str(output_state.get("question_text", "")),
-        "reason": str(
-            output_state.get("retrieval_finish_reason") or decision_reason
-        ),
+        "question_analysis": {
+            "decision": str(analysis_payload.get("decision", "")),
+            "normalized_question": str(
+                analysis_payload.get("normalized_question", "")
+            ),
+            "decision_reason": str(analysis_payload.get("decision_reason", "")),
+            "requested_facts": requested_facts,
+        },
+        "retrieval_history": [
+            _retrieval_trace(result)
+            for result in search_results
+        ],
+        "calculation_history": [
+            _calculation_trace(result)
+            for result in calculation_results
+        ],
+        "selected_evidence": {
+            "result_ids": list(output_state.get("selected_result_ids", [])),
+            "citations": citations,
+        },
+        "answer_validation": {
+            "status": str(
+                output_state.get("answer_validation_status", "NOT_RUN")
+            ),
+        },
+        "final_basis": {
+            "retrieval_status": str(output_state.get("retrieval_status", "")),
+            "retrieval_finish_reason": str(
+                output_state.get("retrieval_finish_reason", "")
+            ),
+        },
     }
+    # 상세 예외 문구는 접속 정보를 노출할 수 있으므로 건수만 공개합니다.
+    errors = output_state.get("errors")
+    if errors:
+        trace["warnings"] = {
+            "count": len(errors),
+            "message": "일부 처리 단계가 실패하거나 생략됐습니다.",
+        }
     return _as_json_string(trace)
 
 

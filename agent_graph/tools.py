@@ -89,13 +89,6 @@ def retrieve_search(
         )
         new_point_ids = []
 
-    retrieval_result = retrieval_result.model_copy(update={
-        "metadata": {
-            **retrieval_result.metadata,
-            "plan_purpose": executable_plan.purpose,
-        }
-    })
-
     update = {
         "next_plan_seq": next_plan_seq + 1,
         "retrieval_results": [retrieval_result],
@@ -129,7 +122,6 @@ def retrieve_correction_history(
     except RuntimeError as error:
         retrieval_result = RetrievalResult(
             result_id=f"retrieval:{plan_id}",
-            plan_id=plan_id,
             source="neo4j",
             status=_classify_execution_error(error),
             query="retrieve correction history by disclosure_id",
@@ -140,17 +132,8 @@ def retrieve_correction_history(
                 "error_type": type(error).__name__,
                 "error_message": str(error),
                 "requested_disclosure_id": disclosure_id,
-                "plan_purpose": "공시 정정이력 확인",
             },
         )
-    else:
-        retrieval_result = retrieval_result.model_copy(update={
-            "metadata": {
-                **retrieval_result.metadata,
-                "plan_purpose": "공시 정정이력 확인",
-            }
-        })
-
     return {
         "next_plan_seq": next_plan_seq + 1,
         "retrieval_results": [retrieval_result],
@@ -286,7 +269,6 @@ def calculate_table_statistic(
     def invalid(reason: str, failure_stage: str) -> dict:
         result = _build_calculation_invalid_result(
             result_id=result_id,
-            plan_id=plan_id,
             query=request_query,
             reason=reason,
             failure_stage=failure_stage,
@@ -393,7 +375,6 @@ def calculate_table_statistic(
     }
     result = RetrievalResult(
         result_id=result_id,
-        plan_id=plan_id,
         source="derived",
         status="SUCCESS",
         query=request_query,
@@ -524,7 +505,6 @@ def combine_numeric_results(
     def invalid(reason: str, failure_stage: str) -> dict:
         result = _build_calculation_invalid_result(
             result_id=result_id,
-            plan_id=plan_id,
             query=request_query,
             reason=reason,
             failure_stage=failure_stage,
@@ -612,7 +592,6 @@ def combine_numeric_results(
         }
         result = RetrievalResult(
             result_id=result_id,
-            plan_id=plan_id,
             source="derived",
             status="SUCCESS",
             query=request_query,
@@ -640,7 +619,6 @@ def combine_numeric_results(
     }
     result = RetrievalResult(
         result_id=result_id,
-        plan_id=plan_id,
         source="derived",
         status="SUCCESS",
         query=request_query,
