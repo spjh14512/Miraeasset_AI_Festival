@@ -18,8 +18,6 @@ from agent_graph.state import (
 from agent_graph.utils import (
     build_retriever_human_message,
     enforce_question_clarification_policy,
-    load_issuer_universe,
-    normalize_question_analysis_entities,
 )
 
 
@@ -40,6 +38,7 @@ def _sub_question() -> SubQuestion:
             "mention": "삼성전자",
             "roles": ["ISSUER"],
             "canonical_name": "삼성전자",
+            "corp_code": "00126380",
             "match_status": "MATCHED",
         }],
         events=[{
@@ -296,57 +295,6 @@ def test_clarification_policy_does_not_require_period_for_event_amount():
     )
 
     assert enforce_question_clarification_policy(analysis).decision == "retrieve"
-
-
-def test_entity_normalization_uses_registry_for_issuer():
-    analysis = QuestionAnalysis(
-        decision="retrieve",
-        normalized_question="삼성전자 정보를 알려줘",
-        decision_reason="검색이 필요합니다.",
-        sub_questions=[SubQuestion(
-            question="삼성전자 정보를 알려줘",
-            entities=[{
-                "mention": "삼성전자",
-                "roles": ["ISSUER"],
-                "canonical_name": "Samsung Electronics Co., Ltd.",
-                "match_status": "MATCHED",
-            }],
-            intents=["DETAIL"],
-            requested_facts=["삼성전자 정보"],
-        )],
-    )
-
-    normalized = normalize_question_analysis_entities(analysis)
-    entity = normalized.sub_questions[0].entities[0]
-
-    assert entity.canonical_name == "삼성전자"
-    assert entity.match_status == "MATCHED"
-    assert len(load_issuer_universe()) == 70
-
-
-def test_entity_normalization_marks_only_unknown_issuer_out_of_universe():
-    analysis = QuestionAnalysis(
-        decision="retrieve",
-        normalized_question="OpenAI와 삼성전자의 계약",
-        decision_reason="검색이 필요합니다.",
-        sub_questions=[SubQuestion(
-            question="OpenAI와 삼성전자의 계약을 알려줘",
-            entities=[
-                {"mention": "OpenAI", "roles": ["ISSUER"]},
-                {"mention": "Arm", "roles": ["TARGET"]},
-            ],
-            intents=["DETAIL"],
-            requested_facts=["계약 내용"],
-        )],
-    )
-
-    normalized = normalize_question_analysis_entities(analysis)
-    issuer, target = normalized.sub_questions[0].entities
-
-    assert issuer.match_status == "OUT_OF_UNIVERSE"
-    assert issuer.canonical_name is None
-    assert target.match_status == "UNKNOWN"
-    assert target.canonical_name is None
 
 
 def test_question_analyzer_rejects_an_empty_question():

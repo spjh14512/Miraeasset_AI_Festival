@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal, InvalidOperation
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
@@ -44,14 +44,16 @@ from .utils import (
 def retrieve_search(
     plan: PlanDraft,
     state: Annotated[AgentState, InjectedState],
-    limit: int = 5,
+    breadth: Literal["initial", "expand"] = "initial",
 ) -> dict:
     """전달받은 단일 plan을 즉시 실행하고 retrieval 결과를 state에 추가합니다.
 
     args:
         plan(PlanDraft): 즉시 실행할 source, query, purpose, dependencies와
             application이 미리 생성한 scope_id
-        limit(int): Qdrant에서 조회할 누적 상위 point 수. 최초 검색은 5, 추가 검색은 5 단위로 늘립니다. Neo4j 검색에는 적용하지 않습니다.
+        breadth(str): Qdrant 검색의 initial 또는 expand 의도. 실제 point limit은
+            application이 Scope, 질문 intent와 동일 검색 이력으로 결정합니다.
+            Neo4j 검색에는 적용하지 않습니다.
 
     return:
         dict: 자동 할당된 plan_id와 검색 결과를 포함한 state update
@@ -72,7 +74,7 @@ def retrieve_search(
             executable_plan,
             state=state,
             dependencies=dependencies,
-            limit=limit,
+            breadth=breadth,
         )
     except (ValidationError, RepeatedNoResultsFilterError) as error:
         retrieval_result = _build_failed_retrieval_result(

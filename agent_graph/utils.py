@@ -1,8 +1,8 @@
 import csv
+import hashlib
 import json
 import re
 import statistics
-import unicodedata
 from calendar import monthrange
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -77,6 +77,15 @@ DOCUMENT_MANIFEST_PATH = DATA_ROOT / "manifest.jsonl"
 MARKET_CAP_FIELD = "market_cap"
 MARKET_CAP_AS_OF_DATE = "2026-07-24"
 MARKET_CAP_AS_OF_NOTE = "(시가총액은 2026년 7월 24일 기준, 코퍼스 70개사 대상)"
+QDRANT_SCOPE_INITIAL_LIMITS = {
+    "SECTION": 3,
+    "DISCLOSURE": 5,
+    "COMPANY": 8,
+    "GLOBAL": 10,
+}
+QDRANT_BROAD_INTENTS = {"COMPARISON", "TREND", "HISTORY"}
+QDRANT_EXPANSION_STEP = 5
+QDRANT_MAX_ADAPTIVE_LIMIT = 20
 
 # 근거 자체에는 단위·의미가 적혀 있지 않지만 application이 보장하는 필드 정보입니다.
 TRUSTED_FIELD_SEMANTICS = {
@@ -169,67 +178,62 @@ def load_issuer_universe() -> tuple[dict[str, str], ...]:
     return tuple({key: value.strip() for key, value in row.items()} for row in rows)
 
 
-def _normalize_company_identifier(value: str) -> str:
-    """회사 식별 문자열을 exact comparison용으로만 보수적으로 정규화합니다."""
-
-    normalized = unicodedata.normalize("NFKC", value).casefold().strip()
-    return re.sub(r"[\s.,()㈜\-_/]", "", normalized)
-
-
-def _issuer_universe_matches(mention: str) -> list[dict[str, str]]:
-    """한 entity mention과 정확히 일치하는 issuer registry row를 반환합니다."""
-
-    normalized_mention = _normalize_company_identifier(mention)
-    if not normalized_mention:
-        return []
-    match_fields = (
-        "corp_code",
-        "stock_code",
-        "corp_name",
-        "listed_name",
-        "corp_eng_name",
-    )
-    return [
-        row
-        for row in load_issuer_universe()
-        if normalized_mention in {
-            _normalize_company_identifier(row.get(field, ""))
-            for field in match_fields
-            if row.get(field)
-        }
-    ]
-
-
-def normalize_question_analysis_entities(
+def validate_question_analysis_issuers(
     analysis: QuestionAnalysis,
 ) -> QuestionAnalysis:
-    """Question Analyzer의 entity 출력을 issuer universe와 role별로 대조합니다."""
+    """LLM이 선택한 ISSUER 이름·기업코드가 동일 universe 행인지 검증합니다."""
 
-    normalized_subquestions = []
+    universe = load_issuer_universe()
+    issuer_pairs = {(row["corp_name"], row["corp_code"]) for row in universe}
+    corp_names_by_code = {row["corp_code"]: row["corp_name"] for row in universe}
+    issuer_rows_by_name_and_stock_code = {
+        (row["corp_name"], row["stock_code"]): row
+        for row in universe
+    }
+    issuer_rows_by_stock_code = {row["stock_code"]: row for row in universe}
     for subquestion in analysis.sub_questions:
-        normalized_entities = []
         for entity in subquestion.entities:
-            matches = _issuer_universe_matches(entity.mention)
-            if len(matches) == 1:
-                canonical_name = matches[0]["corp_name"]
-                match_status = "MATCHED"
-            elif len(matches) > 1:
-                canonical_name = None
-                match_status = "AMBIGUOUS"
-            elif "ISSUER" in entity.roles:
-                canonical_name = None
-                match_status = "OUT_OF_UNIVERSE"
-            else:
-                canonical_name = None
-                match_status = "UNKNOWN"
-            normalized_entities.append(entity.model_copy(update={
-                "canonical_name": canonical_name,
-                "match_status": match_status,
-            }))
-        normalized_subquestions.append(subquestion.model_copy(update={
-            "entities": normalized_entities,
-        }))
-    return analysis.model_copy(update={"sub_questions": normalized_subquestions})
+            if "ISSUER" not in entity.roles:
+                continue
+            has_name = entity.canonical_name is not None
+            has_code = entity.corp_code is not None
+            if has_name != has_code:
+                raise ValueError(
+                    "ISSUER의 canonical_name과 corp_code는 함께 제공하거나 "
+                    "함께 비워야 합니다."
+                )
+            if has_name:
+                if (entity.canonical_name, entity.corp_code) not in issuer_pairs:
+                    stock_code_row = issuer_rows_by_name_and_stock_code.get(
+                        (entity.canonical_name, entity.corp_code)
+                    )
+                    if stock_code_row is not None:
+                        entity.corp_code = stock_code_row["corp_code"]
+                        continue
+                    expected_name = corp_names_by_code.get(entity.corp_code)
+                    stock_code_owner = issuer_rows_by_stock_code.get(entity.corp_code)
+                    if expected_name is not None:
+                        correction = (
+                            f"universe에서 corp_code={entity.corp_code!r}인 행의 "
+                            f"corp_name은 {expected_name!r}입니다."
+                        )
+                    elif stock_code_owner is not None:
+                        correction = (
+                            f"반환한 코드는 {stock_code_owner['corp_name']!r}의 "
+                            f"6자리 stock_code입니다. corp_code에는 같은 행의 "
+                            f"8자리 값 {stock_code_owner['corp_code']!r}을 사용하세요."
+                        )
+                    else:
+                        correction = (
+                            f"corp_code={entity.corp_code!r}도 universe에 없습니다."
+                        )
+                    raise ValueError(
+                        "ISSUER의 canonical_name과 corp_code가 universe의 동일한 "
+                        "행과 일치하지 않습니다. "
+                        f"반환값: canonical_name={entity.canonical_name!r}, "
+                        f"corp_code={entity.corp_code!r}. {correction}"
+                    )
+    return analysis
 
 
 def enforce_question_clarification_policy(
@@ -294,10 +298,11 @@ def enforce_question_clarification_policy(
 
 
 def subquestion_has_out_of_universe_issuer(subquestion: SubQuestion) -> bool:
-    """지원 universe 밖의 ISSUER가 SubQuestion에 포함됐는지 확인합니다."""
+    """universe에서 유효한 이름·코드 쌍을 선택하지 못한 ISSUER인지 확인합니다."""
 
     return any(
-        "ISSUER" in entity.roles and entity.match_status == "OUT_OF_UNIVERSE"
+        "ISSUER" in entity.roles
+        and (entity.canonical_name is None or entity.corp_code is None)
         for entity in subquestion.entities
     )
 
@@ -1027,11 +1032,12 @@ def _scope_issuer_names(subquestion: SubQuestion) -> list[str]:
     """SubQuestion에서 공시 발행회사로 해석된 기업명을 추출합니다."""
 
     names = [
-        (entity.canonical_name or entity.mention).strip()
+        entity.canonical_name.strip()
         for entity in subquestion.entities
         if "ISSUER" in entity.roles
-        and entity.match_status not in {"NOT_FOUND", "OUT_OF_UNIVERSE"}
-        and (entity.canonical_name or entity.mention).strip()
+        and entity.canonical_name is not None
+        and entity.corp_code is not None
+        and entity.canonical_name.strip()
     ]
     return list(dict.fromkeys(names))
 
@@ -1526,12 +1532,129 @@ def _build_query_builder_human_message(
         )
     )
 
+
+def _qdrant_search_signature(
+    plan: Plan,
+    query: QdrantQuery,
+) -> str:
+    """Scope와 실행 query가 같은 Qdrant 검색인지 식별할 안정적인 key를 만듭니다."""
+
+    filters = sorted(
+        (
+            condition.model_dump(mode="json", exclude_none=True)
+            for condition in query.filters
+        ),
+        key=lambda item: (item["key"], json.dumps(item, sort_keys=True)),
+    )
+    payload = {
+        "scope_id": plan.scope_id,
+        "mode": query.mode,
+        "query_text": " ".join((query.query_text or "").split()).casefold(),
+        "filters": filters,
+    }
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+
+
+def _qdrant_scope_intents(
+    scope: Scope | None,
+    state: AgentState,
+) -> set[str]:
+    """선택된 Scope와 연결된 SubQuestion intent를 반환합니다."""
+
+    if scope is None:
+        return set()
+    analysis_value = state.get("question_analysis")
+    if analysis_value is None:
+        return set()
+    analysis = QuestionAnalysis.model_validate(analysis_value)
+    for subquestion in analysis.sub_questions:
+        if subquestion.subquestion_id == scope.subquestion_id:
+            return set(subquestion.intents)
+    return set()
+
+
+def _initial_qdrant_limit(
+    query: QdrantQuery,
+    scope: Scope | None,
+    state: AgentState,
+) -> int:
+    """Scope, intent와 exact identifier 조회 여부로 최초 point 수를 정합니다."""
+
+    evidence_filter = next(
+        (
+            condition
+            for condition in query.filters
+            if condition.key == "evidence_id" and condition.match is not None
+        ),
+        None,
+    )
+    if query.mode == "filter" and evidence_filter is not None:
+        count = (
+            len(evidence_filter.match)
+            if isinstance(evidence_filter.match, list)
+            else 1
+        )
+        return min(max(count, 1), QDRANT_MAX_ADAPTIVE_LIMIT)
+
+    scope_level = scope.level if scope is not None else "GLOBAL"
+    limit = QDRANT_SCOPE_INITIAL_LIMITS[scope_level]
+    if _qdrant_scope_intents(scope, state) & QDRANT_BROAD_INTENTS:
+        limit += QDRANT_EXPANSION_STEP
+    return min(limit, QDRANT_MAX_ADAPTIVE_LIMIT)
+
+
+def _resolve_qdrant_limit(
+    plan: Plan,
+    query: QdrantQuery,
+    scope: Scope | None,
+    state: AgentState,
+    breadth: Literal["initial", "expand"],
+) -> tuple[int, str]:
+    """동일 검색의 누적 limit을 application 정책에 따라 결정합니다."""
+
+    signature = _qdrant_search_signature(plan, query)
+    initial_limit = _initial_qdrant_limit(query, scope, state)
+    if breadth == "initial":
+        return initial_limit, signature
+
+    previous_limits = []
+    for result_value in state.get("retrieval_results", []):
+        result = (
+            result_value
+            if isinstance(result_value, RetrievalResult)
+            else RetrievalResult.model_validate(result_value)
+        )
+        requested_limit = result.metadata.get("requested_limit")
+        if (
+            result.source == "qdrant"
+            and result.metadata.get("search_signature") == signature
+            and isinstance(requested_limit, int)
+        ):
+            previous_limits.append(requested_limit)
+    if not previous_limits:
+        return initial_limit, signature
+    return min(
+        max(previous_limits) + QDRANT_EXPANSION_STEP,
+        QDRANT_MAX_ADAPTIVE_LIMIT,
+    ), signature
+
+
+def _is_exhaustive_table_query(query: QdrantQuery) -> bool:
+    """정확한 table_id filter 조회인지 확인합니다."""
+
+    return query.mode == "filter" and any(
+        condition.key == "chunking.table_id" and condition.match is not None
+        for condition in query.filters
+    )
+
+
 def _execute_retrieval_plan(
     plan: Plan,
     *,
     state: AgentState,
     dependencies: list[RetrievalResult],
-    limit: int,
+    breadth: Literal["initial", "expand"],
 ) -> tuple[RetrievalResult, list[str], list[str]]:
     """Plan의 source에 맞는 검색을 실행하고 정규화된 결과를 반환합니다."""
 
@@ -1555,16 +1678,6 @@ def _execute_retrieval_plan(
 
     if plan.source != "qdrant":
         raise ValueError("retrieval source가 neo4j 또는 qdrant가 아닙니다.")
-    if (
-        not isinstance(limit, int)
-        or isinstance(limit, bool)
-        or limit > 100
-        or limit < 5
-        or limit % 5 != 0
-    ):
-        raise ValueError(
-            "Qdrant limit은 5 이상 100 이하의 5 배수여야 합니다."
-        )
 
     qdrant_query = query_builder(
         plan,
@@ -1573,10 +1686,22 @@ def _execute_retrieval_plan(
         scope=scope,
         recent_failures=recent_failures,
     )
+    limit, search_signature = _resolve_qdrant_limit(
+        plan,
+        qdrant_query,
+        scope,
+        state,
+        breadth,
+    )
     qdrant_query.limit = limit
+    exhaustive = _is_exhaustive_table_query(qdrant_query)
     print("-- Qdrant에서 Query retrieval을 실행합니다. --\n\n")
     try:
-        raw_result = query_executor(qdrant_query, scope=scope)
+        raw_result = query_executor(
+            qdrant_query,
+            scope=scope,
+            exhaustive=exhaustive,
+        )
     except RuntimeError as error:
         error.retrieval_query = qdrant_query.model_dump_json(
             exclude={"query_vector"}
@@ -1619,9 +1744,14 @@ def _execute_retrieval_plan(
         selected_item_ids=selected_item_ids,
         metadata={
             "mode": qdrant_query.mode,
+            "breadth": breadth,
             "requested_limit": limit,
+            "search_signature": search_signature,
+            "exhaustive": exhaustive,
             "raw_point_count": len(raw_points),
             "duplicate_point_count": len(raw_points) - len(points),
+            "new_point_count": len(points),
+            "has_more_candidates": not exhaustive and len(raw_points) >= limit,
         },
     )
     if raw_points and not points:

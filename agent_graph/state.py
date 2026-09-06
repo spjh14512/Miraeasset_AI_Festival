@@ -117,8 +117,26 @@ class EntityMention(BaseModel):
 
     mention: str = Field(..., min_length=1)
     roles: list[EntityRole] = Field(..., min_length=1)
-    canonical_name: str | None = None
-    match_status: EntityMatchStatus = "UNKNOWN"
+    canonical_name: str | None = Field(
+        default=None,
+        description=(
+            "ISSUER를 선택했다면 issuer_universe_tsv의 동일 행에 있는 "
+            "corp_name을 글자 그대로 복사한 값. 일반적인 정규화 이름이나 "
+            "corp_eng_name, listed_name을 쓰지 않습니다."
+        ),
+    )
+    corp_code: str | None = Field(
+        default=None,
+        description=(
+            "ISSUER를 선택했다면 canonical_name과 동일한 "
+            "issuer_universe_tsv 행의 8자리 DART corp_code를 글자 그대로 "
+            "복사한 값. 6자리 stock_code를 사용하지 않습니다."
+        ),
+    )
+    match_status: EntityMatchStatus = Field(
+        default="UNKNOWN",
+        description="ISSUER의 universe 식별 상태 또는 비ISSUER entity의 식별 상태.",
+    )
 
     @field_validator("mention")
     @classmethod

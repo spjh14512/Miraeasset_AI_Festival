@@ -40,11 +40,11 @@ from .utils import (
     generate_answer,
     execute_tool_call,
     load_issuer_universe_tsv,
-    normalize_question_analysis_entities,
     run_narrow_scope_agent,
     UNSUPPORTED_ANSWER_FALLBACK,
     validate_and_repair_answer,
     subquestion_has_out_of_universe_issuer,
+    validate_question_analysis_issuers,
     validate_retriever_tool_call,
 )
 
@@ -137,6 +137,9 @@ def question_analyzer(
                 if isinstance(response, QuestionAnalyzerOutput)
                 else QuestionAnalyzerOutput.model_validate(response)
             )
+            question_analysis = validate_question_analysis_issuers(
+                analyzer_output.question_analysis
+            )
             break
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
@@ -146,9 +149,6 @@ def question_analyzer(
                 error,
             )))
 
-    question_analysis = normalize_question_analysis_entities(
-        analyzer_output.question_analysis
-    )
     question_analysis = enforce_question_clarification_policy(question_analysis)
     question_analysis = assign_subquestion_ids(question_analysis)
     print("질문 분석 결과:\n", question_analysis, "\n" + "\n\n")
@@ -183,8 +183,8 @@ def scope_resolver(state: AgentState) -> dict:
             raise ValueError("SubQuestion에 subquestion_id가 없습니다.")
         if subquestion_has_out_of_universe_issuer(subquestion):
             print(
-                f"[scope_resolver] {subquestion_id}의 ISSUER가 지원 universe에 "
-                "없어 Scope 생성을 건너뜁니다."
+                f"[scope_resolver] {subquestion_id}의 ISSUER 이름·기업코드가 "
+                "universe에서 선택되지 않아 Scope 생성을 건너뜁니다."
             )
             continue
         try:

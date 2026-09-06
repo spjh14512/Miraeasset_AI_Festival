@@ -85,6 +85,9 @@ def test_question_analyzer_retries_invalid_structured_output():
                 "entities": [{
                     "mention": "삼성전자",
                     "roles": ["ISSUER"],
+                    "canonical_name": "삼성전자",
+                    "corp_code": "00126380",
+                    "match_status": "MATCHED",
                 }],
                 "events": [],
                 "intents": ["DETAIL"],
@@ -102,6 +105,47 @@ def test_question_analyzer_retries_invalid_structured_output():
     assert update["question_analysis"].normalized_question == "삼성전자 정보"
     assert len(llm.calls) == 2
     assert "application 검증" in llm.calls[1][-1].content
+
+
+def test_question_analyzer_retries_issuer_pair_outside_universe():
+    def output(corp_code: str, match_status: str = "MATCHED") -> QuestionAnalyzerOutput:
+        return QuestionAnalyzerOutput(question_analysis=QuestionAnalysis(
+            decision="retrieve",
+            normalized_question="삼성전자 정보",
+            decision_reason="검색이 필요합니다.",
+            sub_questions=[{
+                "question": "삼성전자의 정보는 무엇인가?",
+                "entities": [{
+                    "mention": "삼성전자",
+                    "roles": ["ISSUER"],
+                    "canonical_name": "삼성전자",
+                    "corp_code": corp_code,
+                    "match_status": match_status,
+                }],
+                "events": [],
+                "intents": ["DETAIL"],
+                "periods": [],
+                "requested_facts": ["기업 정보"],
+            }],
+        ))
+
+    llm = _SequenceLlm([
+        output("00164779"),
+        output("00126380", match_status="UNKNOWN"),
+    ])
+
+    update = graph_module.question_analyzer({
+        "question_id": "question-1",
+        "question_text": "삼성전자 정보를 알려줘",
+    }, llm=llm)
+
+    entity = update["question_analysis"].sub_questions[0].entities[0]
+    assert entity.corp_code == "00126380"
+    assert entity.match_status == "UNKNOWN"
+    assert len(llm.calls) == 2
+    assert "동일한 행" in llm.calls[1][-1].content
+    assert "canonical_name='삼성전자'" in llm.calls[1][-1].content
+    assert "corp_name은 'SK하이닉스'" in llm.calls[1][-1].content
 
 
 def test_cypher_builder_retries_invalid_parameters_json():

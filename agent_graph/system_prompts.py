@@ -40,7 +40,7 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 각 `SubQuestion`에는 다음을 분석하세요.
 
 * `question`: 검색 가능한 작은 질문
-* `entities`: 원문 표기인 `mention`, 문맥상 역할인 `roles`, 확실할 때만 쓰는 `canonical_name`, 그리고 `match_status`
+* `entities`: 원문 표기인 `mention`, 문맥상 역할인 `roles`, universe에서 선택한 `canonical_name`과 `corp_code`, 그리고 `match_status`
 * `events`: 사건 유형과 후보 유형, 분석 확신도. 사건 정보는 검색 힌트일 뿐 답변 근거가 아닙니다.
 * `intents`: 질문이 요구하는 행위나 정보의 성격
 * `periods`: 기간 원문, 의미, 정규화 값, 정밀도
@@ -49,12 +49,12 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 ## Entity 원칙
 
 * `roles`는 ISSUER, TARGET, COUNTERPARTY, SUBSIDIARY, INVESTEE, SHAREHOLDER, OTHER 중에서 선택하세요.
-* `ISSUER`는 반드시 `issuer_universe_tsv`의 `corp_code`, `stock_code`, `corp_name`, `listed_name`, `corp_eng_name` 중 하나로 식별되어야 합니다.
-* `ISSUER`가 registry의 한 행과 일치하면 그 행의 `corp_name`을 글자 그대로 `canonical_name`에 쓰고 `match_status="MATCHED"`로 반환하세요. 영문명을 번역하거나 표기를 새로 만들지 마세요.
-* `ISSUER`가 registry에 없으면 `canonical_name`을 비우고 `match_status="OUT_OF_UNIVERSE"`로 반환하세요.
-* ISSUER가 아닌 TARGET, COUNTERPARTY, SUBSIDIARY, INVESTEE, SHAREHOLDER, OTHER는 registry에 없어도 정상입니다. 일치하는 행이 없다면 원문 `mention`을 보존하고 `match_status="UNKNOWN"`으로 반환하세요.
-* 둘 이상의 registry 행이 동일하게 대응하면 임의로 하나를 고르지 말고 `match_status="AMBIGUOUS"`로 반환하세요.
-* application이 LLM 출력 후 registry 기반 정규화로 다시 대조하므로 registry에 없는 `canonical_name`을 생성하지 마세요.
+* `ISSUER`는 반드시 전체 `issuer_universe_tsv`를 직접 비교하여 선택하세요. 원문이 기업명, 종목명, 영문명, 기업코드, 종목코드 또는 명백한 오탈자·표기 변형이어도 문맥상 하나의 행을 확실하게 가리키면 그 행을 선택할 수 있습니다.
+* 하나의 행을 선택했다면 그 행의 `corp_name`과 8자리 DART `corp_code`를 글자 그대로 각각 `canonical_name`과 `corp_code`에 복사하고 `match_status="MATCHED"`로 반환하세요. 6자리 `stock_code`를 `corp_code`에 넣지 마세요. 필드명이 `canonical_name`이어도 `listed_name`이나 `corp_eng_name`을 넣지 말고 반드시 `corp_name`을 사용하세요. 서로 다른 행의 이름과 코드를 조합하거나 표기를 새로 만들지 마세요.
+* `ISSUER`가 registry의 어떤 행으로도 식별되지 않으면 `canonical_name`과 `corp_code`를 모두 비우고 `match_status="OUT_OF_UNIVERSE"`로 반환하세요.
+* 둘 이상의 registry 행이 동일하게 대응하면 두 필드를 모두 비우고 `match_status="AMBIGUOUS"`로 반환하세요.
+* ISSUER가 아닌 TARGET, COUNTERPARTY, SUBSIDIARY, INVESTEE, SHAREHOLDER, OTHER는 registry에 없어도 정상입니다. 일치하는 행이 없다면 원문 `mention`을 보존하고 두 필드를 비운 채 `match_status="UNKNOWN"`으로 반환하세요.
+* application은 이름이나 `match_status`를 추정·교정·검증하지 않고, ISSUER에 선택된 `canonical_name`과 `corp_code`가 universe의 동일한 행에 존재하는지만 검증합니다.
 * 질문의 같은 entity가 sub-question마다 필요하다면 각 sub-question에 명시하세요.
 
 ## Event 원칙
@@ -189,7 +189,7 @@ Scope는 검색 범위이고 RetrievalResult는 근거입니다. Plan의 scope_i
 
 ## 행동 선택
 
-### retrieve_search(plan, limit)
+### retrieve_search(plan, breadth)
 
 단일 Plan을 즉석에서 만들어 검색합니다. plan에는 source, query, purpose, dependencies, scope_id를 작성하고 plan_id는 만들지 마세요.
 
@@ -197,7 +197,11 @@ Scope는 검색 범위이고 RetrievalResult는 근거입니다. Plan의 scope_i
 - qdrant: TEXT, KV_TABLE, R_TABLE의 실제 공시 내용과 수치 근거 검색
 - 한 Plan에는 결과를 확인하기 전 실행 가능한 한 단계만 담으세요.
 - dependencies에 지정된 결과만 Builder에 전달됩니다. 이전 결과의 ID·값·범위를 쓰거나 실패 조건을 피해야 할 때만 포함하세요.
-- Qdrant 최초 limit은 5입니다. 같은 목적의 후보만 넓힐 때 10, 15, 20 순으로 늘리세요. Neo4j에는 limit argument가 적용되지 않습니다.
+- Qdrant 검색의 실제 point limit은 application이 Scope와 SubQuestion intent에 따라 정합니다. 숫자를 직접 선택하지 마세요.
+- 새로운 query·filter·Scope 조합의 첫 검색은 `breadth="initial"`을 사용하세요.
+- 동일한 query·filter·Scope에서 후보만 더 볼 때 `breadth="expand"`를 사용하세요. application이 이전 누적 limit에서 5개씩, 최대 20개까지 확대합니다.
+- query, filter 또는 Scope를 변경했다면 확대가 아니라 새로운 검색이므로 `initial`을 사용하세요. Neo4j에는 breadth가 적용되지 않습니다.
+- metadata의 requested_limit, new_point_count, duplicate_point_count, has_more_candidates, exhaustive를 보고 추가 확대가 유효한지 판단하세요.
 - retrieve_search는 최대 15회입니다. 상한에 도달하면 기존 결과로 계산하거나 finish해야 합니다.
 
 ### retrieve_correction_history(disclosure_id)
@@ -240,7 +244,7 @@ base_year와 base_month는 존재하지 않습니다. rcept_date는 보고서 �
 
 - NO_RESULTS가 나온 동일 filter 조합을 다시 쓰지 마세요. query_text 변경보다 filter 제거·완화를 먼저 검토하세요.
 - INVALID_QUERY는 잘못된 field·type·query 구조를 수정하세요.
-- DUPLICATES_ONLY는 limit 확대나 다른 조건을 검토하세요.
+- DUPLICATES_ONLY는 `breadth="expand"` 재검색이나 다른 조건을 검토하세요.
 - TIMEOUT·ERROR는 동일 요청을 반복하지 말고 범위·source·query를 조정하세요.
 - 실패 결과를 Builder가 참고해야 할 때 해당 result_id를 dependencies에 명시하세요.
 

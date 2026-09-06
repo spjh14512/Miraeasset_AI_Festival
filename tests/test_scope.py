@@ -34,6 +34,7 @@ def _subquestion() -> SubQuestion:
             "mention": "삼성전자",
             "roles": ["ISSUER"],
             "canonical_name": "삼성전자",
+            "corp_code": "00126380",
             "match_status": "MATCHED",
         }],
         events=[{
@@ -395,6 +396,7 @@ def test_scope_resolver_skips_out_of_universe_issuer(monkeypatch, capsys):
     subquestion = state["question_analysis"].sub_questions[0]
     unsupported_entity = subquestion.entities[0].model_copy(update={
         "canonical_name": None,
+        "corp_code": None,
         "match_status": "OUT_OF_UNIVERSE",
     })
     unsupported_subquestion = subquestion.model_copy(update={
@@ -415,7 +417,7 @@ def test_scope_resolver_skips_out_of_universe_issuer(monkeypatch, capsys):
     assert update["scope_candidates"] == []
     assert update["think_trace_events"] == []
     assert calls == []
-    assert "지원 universe에 없어 Scope 생성을 건너뜁니다" in capsys.readouterr().out
+    assert "universe에서 선택되지 않아 Scope 생성을 건너뜁니다" in capsys.readouterr().out
 
 
 def test_scope_selection_rejects_ids_not_returned_by_neo4j():
@@ -449,7 +451,7 @@ def test_retriever_tool_validation_rejects_unknown_scope():
                         "dependencies": [],
                         "scope_id": "scope_missing",
                     },
-                    "limit": 5,
+                    "breadth": "initial",
                 },
             },
         )

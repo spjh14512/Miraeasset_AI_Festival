@@ -22,7 +22,8 @@ def test_question_analyzer_prompt_matches_current_contract():
     assert "periods" in prompt
     assert "requested_facts" in prompt
     assert "synthesis_requirement" in prompt
-    assert "registry 기반 정규화" in prompt
+    assert "corp_code" in prompt
+    assert "match_status`를 추정·교정·검증하지 않고" in prompt
     assert "OUT_OF_UNIVERSE" in prompt
     assert "ISSUER가 아닌 TARGET" in prompt
     assert "QuestionAnalyzerOutput" in prompt
@@ -40,7 +41,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
         "retrieval_results",
         "retrieval_search_count",
         "max_retrieval_search_count",
-        "retrieve_search(plan, limit)",
+        "retrieve_search(plan, breadth)",
         "retrieve_correction_history(disclosure_id)",
         "calculate_table_statistic",
         "combine_numeric_results",
@@ -53,6 +54,9 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     ):
         assert value in prompt
     assert "최대 15회" in prompt
+    assert 'breadth="initial"' in prompt
+    assert 'breadth="expand"' in prompt
+    assert "최대 20개" in prompt
     assert "Answer Generator는 계산하지 않고" in prompt
     assert "계산이 필요한 질문에서 원시 숫자만 선택한 채 finish하지 마세요" in prompt
     assert "OUT_OF_UNIVERSE" in prompt

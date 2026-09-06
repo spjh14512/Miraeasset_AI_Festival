@@ -655,15 +655,19 @@ def test_retrieve_search_metadata_preserves_purpose(monkeypatch):
         },
     })
 
-    assert update["retrieval_results"][0].metadata == {
-        "mode": "vector",
-        "requested_limit": 5,
-        "raw_point_count": 0,
-        "duplicate_point_count": 0,
-        "returned_point_count": 0,
-        "r_table_detail": "records",
-        "purpose": "특별관계자 명단 확인",
-    }
+    metadata = update["retrieval_results"][0].metadata
+    assert metadata["mode"] == "vector"
+    assert metadata["breadth"] == "initial"
+    assert metadata["requested_limit"] == 10
+    assert len(metadata["search_signature"]) == 16
+    assert metadata["exhaustive"] is False
+    assert metadata["raw_point_count"] == 0
+    assert metadata["duplicate_point_count"] == 0
+    assert metadata["new_point_count"] == 0
+    assert metadata["has_more_candidates"] is False
+    assert metadata["returned_point_count"] == 0
+    assert metadata["r_table_detail"] == "records"
+    assert metadata["purpose"] == "특별관계자 명단 확인"
     assert update["retrieved_qdrant_point_ids"] == []
     assert update["retrieval_results"][0].status == "NO_RESULTS"
     assert update["retrieval_search_count"] == 1
@@ -828,10 +832,10 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
     )
     points = [
         _r_table_point(f"00000000-0000-0000-0000-{index:012d}")
-        for index in range(1, 11)
+        for index in range(1, 16)
     ]
     raw_results = [
-        QueryResponse(points=points[:5]),
+        QueryResponse(points=points[:10]),
         QueryResponse(points=points),
     ]
     executed_limits = []
@@ -854,7 +858,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
 
     first_update = retrieve_search.invoke({
         "plan": first_plan,
-        "limit": 5,
+        "breadth": "initial",
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
@@ -867,7 +871,7 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
 
     second_update = retrieve_search.invoke({
         "plan": second_plan,
-        "limit": 10,
+        "breadth": "expand",
         "state": {
             "question_id": "question-1",
             "question_text": "삼성전자의 특별관계자 목록을 알려줘",
@@ -881,46 +885,153 @@ def test_retrieve_search_expands_limit_and_returns_only_new_points(monkeypatch):
     })
     second_result = second_update["retrieval_results"][0]
 
-    assert executed_limits == [5, 10]
-    assert len(first_result.items) == 5
+    assert executed_limits == [10, 15]
+    assert len(first_result.items) == 10
     assert first_result.metadata["duplicate_point_count"] == 0
-    assert first_result.metadata["returned_point_count"] == 5
+    assert first_result.metadata["returned_point_count"] == 10
+    assert first_result.metadata["has_more_candidates"] is True
     assert len(second_result.items) == 5
-    assert second_result.metadata["requested_limit"] == 10
-    assert second_result.metadata["raw_point_count"] == 10
-    assert second_result.metadata["duplicate_point_count"] == 5
+    assert second_result.metadata["requested_limit"] == 15
+    assert second_result.metadata["raw_point_count"] == 15
+    assert second_result.metadata["duplicate_point_count"] == 10
     assert second_result.metadata["returned_point_count"] == 5
     assert second_update["retrieved_qdrant_point_ids"] == [
         str(point.id) for point in points
     ]
 
 
-def test_retrieve_search_rejects_non_progressive_qdrant_limit():
+def test_retrieve_search_exposes_breadth_instead_of_raw_limit():
+    properties = retrieve_search.args_schema.model_json_schema()["properties"]
+
+    assert "limit" not in properties
+    assert properties["breadth"]["default"] == "initial"
+    assert properties["breadth"]["enum"] == ["initial", "expand"]
+
+
+@pytest.mark.parametrize(
+    ("scope", "expected_limit"),
+    [
+        (
+            Scope(
+                scope_id="scope_1",
+                subquestion_id="subquestion_1",
+                level="SECTION",
+                corp_names=["삼성전자"],
+                corp_codes=["00126380"],
+                disclosure_ids=["d1"],
+                section_ids=["s1"],
+                reason="관련 섹션",
+            ),
+            3,
+        ),
+        (
+            Scope(
+                scope_id="scope_1",
+                subquestion_id="subquestion_1",
+                level="DISCLOSURE",
+                corp_names=["삼성전자"],
+                corp_codes=["00126380"],
+                disclosure_ids=["d1"],
+                section_ids=[],
+                reason="관련 공시",
+            ),
+            5,
+        ),
+        (
+            Scope(
+                scope_id="scope_1",
+                subquestion_id="subquestion_1",
+                level="COMPANY",
+                corp_names=["삼성전자"],
+                corp_codes=["00126380"],
+                disclosure_ids=[],
+                section_ids=[],
+                reason="관련 기업",
+            ),
+            8,
+        ),
+        (_global_scope(), 10),
+    ],
+)
+def test_initial_qdrant_limit_depends_on_scope(scope, expected_limit):
+    query = QdrantQuery(mode="vector", query_text="삼성전자 자산총계")
+
+    assert tools._initial_qdrant_limit(query, scope, {}) == expected_limit
+
+
+def test_initial_qdrant_limit_expands_for_broad_intent():
+    scope = _global_scope()
+    state = {
+        "question_analysis": {
+            "decision": "retrieve",
+            "normalized_question": "기업별 자산총계를 비교해줘",
+            "decision_reason": "검색이 필요합니다.",
+            "sub_questions": [{
+                "subquestion_id": "subquestion_1",
+                "question": "전체 기업의 자산총계 비교",
+                "entities": [],
+                "events": [],
+                "intents": ["COMPARISON"],
+                "periods": [],
+                "requested_facts": ["기업별 자산총계"],
+            }],
+        },
+    }
+    query = QdrantQuery(mode="vector", query_text="기업별 자산총계")
+
+    assert tools._initial_qdrant_limit(query, scope, state) == 15
+
+
+def test_exact_evidence_filter_uses_identifier_count_as_limit():
+    query = QdrantQuery(
+        mode="filter",
+        filters=[{
+            "key": "evidence_id",
+            "match": ["evidence-1", "evidence-2"],
+        }],
+    )
+
+    assert tools._initial_qdrant_limit(query, _global_scope(), {}) == 2
+
+
+def test_retrieve_search_uses_exhaustive_mode_for_table_id(monkeypatch):
     plan = Plan(
         plan_id="plan_1",
         source="qdrant",
-        query="삼성전자 특별관계자",
-        purpose="근거 검색",
+        query="확인된 표 전체 조회",
+        purpose="분할된 표의 모든 chunk 확인",
         dependencies=[],
         scope_id="scope_1",
     )
+    query = QdrantQuery(
+        mode="filter",
+        filters=[{"key": "chunking.table_id", "match": "table-1"}],
+    )
+    call = {}
+    monkeypatch.setattr(tools, "query_builder", lambda *_args, **_kwargs: query)
 
-    try:
-        retrieve_search.invoke({
-            "plan": plan,
-            "limit": 4,
-            "state": {
-                "question_id": "question-1",
-                "question_text": "삼성전자의 특별관계자 목록을 알려줘",
-                "scope_candidates": [_global_scope()],
-                "retrieval_results": [],
-                "next_plan_seq": 1,
-            },
-        })
-    except ValueError as error:
-        assert "Qdrant limit" in str(error)
-    else:
-        raise AssertionError("progressive limit 규칙을 벗어난 값이 허용되었습니다.")
+    def execute(_query, **kwargs):
+        call.update(kwargs)
+        return ([], None)
+
+    monkeypatch.setattr(tools, "query_executor", execute)
+
+    update = retrieve_search.invoke({
+        "plan": plan,
+        "breadth": "initial",
+        "state": {
+            "question_id": "question-1",
+            "question_text": "표 전체를 조회해줘",
+            "scope_candidates": [_global_scope()],
+            "retrieval_results": [],
+            "next_plan_seq": 1,
+        },
+    })
+
+    metadata = update["retrieval_results"][0].metadata
+    assert call["exhaustive"] is True
+    assert metadata["exhaustive"] is True
+    assert metadata["has_more_candidates"] is False
 
 
 def test_retrieve_search_passes_only_plan_dependencies_to_builder(monkeypatch):

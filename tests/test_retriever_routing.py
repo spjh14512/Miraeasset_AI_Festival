@@ -149,7 +149,7 @@ def test_retriever_retries_unknown_plan_dependency():
                     "dependencies": ["d20240306000686"],
                     "scope_id": "scope_1",
                 },
-                "limit": 5,
+                "breadth": "initial",
             },
         }
     ]])
@@ -172,7 +172,7 @@ def test_retriever_retries_retrieve_search_without_scope_id():
                     "purpose": "판매전략 근거 확인",
                     "dependencies": [],
                 },
-                "limit": 5,
+                "breadth": "initial",
             },
         }
     ]])
@@ -196,7 +196,7 @@ def test_retriever_retries_retrieve_search_after_maximum_count():
                     "dependencies": [],
                     "scope_id": "scope_1",
                 },
-                "limit": 5,
+                "breadth": "initial",
             },
         }
     ]])
@@ -229,7 +229,7 @@ def test_retriever_ignores_finish_when_another_tool_is_called(monkeypatch):
                     "dependencies": [],
                     "scope_id": "scope_1",
                 },
-                "limit": 5,
+                "breadth": "initial",
             },
         },
     ]])
