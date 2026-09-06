@@ -20,8 +20,8 @@ from .llm import (
 from .state import Plan
 
 
-DEFAULT_CONTENT_CHARACTER_LIMIT = 1_000
-DEFAULT_ITEM_COUNT_LIMIT = 30
+DEFAULT_CONTENT_CHARACTER_LIMIT = 1000
+DEFAULT_ITEM_COUNT_LIMIT = 10
 COMPACTABLE_POINT_KINDS = {"KV_TABLE", "R_TABLE"}
 
 
@@ -176,7 +176,10 @@ def _compactor_input(point: Any, plan: Plan) -> tuple[dict[str, Any], list[int]]
 
     return (
         {
-            "plan": plan.model_dump(mode="json"),
+            "plan": {
+                "query": plan.query,
+                "purpose": plan.purpose,
+            },
             "point_kind": point_kind,
             **table_context,
             "items": items,

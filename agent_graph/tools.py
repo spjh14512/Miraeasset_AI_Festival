@@ -212,6 +212,10 @@ def calculate_table_statistic(
 ) -> dict:
     """검색된 R_TABLE의 한 열에 통계 연산을 적용하고 결과를 새 RetrievalResult로 state에 저장합니다.
 
+    표에 이미 존재하는 특정 셀을 읽어 그대로 답하거나 여러 값을 각각
+    나열하는 용도로 호출하지 마세요. 합계, 평균, 중앙값, 최댓값처럼
+    원본 표에 없는 통계값을 산출할 때 사용합니다.
+
     R_TABLE에만 사용할 수 있습니다. LLM은 숫자를 직접 계산하거나
     전달하지 않습니다 — 어떤 열에 어떤 연산을 적용할지만 지정하면, 실제
     값 추출과 연산은 이 tool이 state에서 직접 수행합니다.
@@ -434,6 +438,9 @@ def combine_numeric_results(
     서로 다른 표를 calculate_table_statistic 하나에 직접 섞을 수 없으므로,
     표마다 각각 계산한 뒤 이 tool로 조합하세요. LLM은 어떤 결과들을
     어떤 연산으로 조합할지만 지정하고, 실제 산술은 이 tool이 수행합니다.
+    원본 qdrant/neo4j RetrievalResult(`retrieval:*`)는 직접 참조할 수
+    없습니다. 표의 특정 값을 그대로 조회·나열하는 질문에는 이 tool을
+    사용하지 말고 해당 원본 SUCCESS 결과를 선택하여 finish하세요.
 
     args:
         variable_name(str): 조합 결과에 붙일 사람이 읽을 이름. 빈

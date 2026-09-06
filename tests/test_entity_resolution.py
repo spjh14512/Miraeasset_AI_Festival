@@ -8,7 +8,6 @@ import yaml
 from agent_graph.state import QuestionAnalysis, SubQuestion
 from agent_graph.utils import (
     load_issuer_universe,
-    subquestion_has_out_of_universe_issuer,
     validate_question_analysis_issuers,
 )
 
@@ -132,15 +131,31 @@ def test_validator_accepts_out_of_universe_without_selected_row():
     assert entity.corp_code is None
 
 
-def test_missing_issuer_pair_is_unresolved_regardless_of_match_status():
+def test_validator_rejects_missing_issuer_pair_with_matched_status():
     analysis = _analysis("삼성전자", match_status="MATCHED")
 
-    validated = validate_question_analysis_issuers(analysis)
+    with pytest.raises(ValueError, match="OUT_OF_UNIVERSE 또는 AMBIGUOUS"):
+        validate_question_analysis_issuers(analysis)
 
-    assert validated.sub_questions[0].entities[0].match_status == "MATCHED"
-    assert subquestion_has_out_of_universe_issuer(
-        validated.sub_questions[0]
-    ) is True
+
+def test_validator_rejects_unknown_status_for_unresolved_issuer():
+    analysis = _analysis("삼성전자", match_status="UNKNOWN")
+
+    with pytest.raises(ValueError, match="OUT_OF_UNIVERSE 또는 AMBIGUOUS"):
+        validate_question_analysis_issuers(analysis)
+
+
+def test_validator_rejects_issuer_missing_from_subquestion_text():
+    analysis = _analysis(
+        "LG유플러스",
+        canonical_name="LG유플러스",
+        corp_code="00231363",
+        match_status="MATCHED",
+    )
+    analysis.sub_questions[0].question = "삼성전자의 연결 유동자산"
+
+    with pytest.raises(ValueError, match="모든 ISSUER"):
+        validate_question_analysis_issuers(analysis)
 
 
 def test_validator_does_not_match_non_issuer_entities():

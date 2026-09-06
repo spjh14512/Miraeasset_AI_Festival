@@ -91,14 +91,34 @@ def bind_structured_output(llm: Any, output_model: type[BaseModel]) -> Any:
     )
 
 
+def format_output_error(error: BaseException) -> str:
+    """검증 오류에서 field, 원인과 짧은 invalid input만 추출합니다."""
+
+    if hasattr(error, "errors"):
+        try:
+            details = error.errors(include_url=False)
+        except TypeError:
+            details = error.errors()
+        messages = []
+        for detail in details:
+            location = ".".join(map(str, detail.get("loc", ()))) or "output"
+            message = f"{location}: {detail.get('msg', '')}"
+            invalid_input = detail.get("input")
+            if isinstance(invalid_input, (str, int, float, bool)):
+                rendered_input = repr(invalid_input)
+                if len(rendered_input) <= 120:
+                    message += f" (input={rendered_input})"
+            messages.append(message)
+        return "; ".join(messages)
+    return str(error)
+
+
 def build_output_retry_message(component: str, error: BaseException) -> str:
     """LLM 출력 검증 오류를 해당 LLM의 재생성 요청으로 변환합니다."""
 
     return (
-        f"방금 생성한 {component} 출력이 application 검증을 통과하지 못했습니다.\n"
-        f"오류: {type(error).__name__}: {error}\n"
-        "오류 원인을 수정하여 전체 출력을 요구된 schema 또는 tool call 형식으로 "
-        "다시 생성하세요. 오류가 난 출력을 그대로 반복하지 마세요."
+        f"{component} 검증 실패: {format_output_error(error)}\n"
+        "오류를 수정해 요구된 전체 출력을 다시 생성하세요."
     )
 
 

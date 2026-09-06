@@ -475,8 +475,8 @@ def test_query_builder_logs_human_message(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "[query builder human message]:" in output
     assert '"user_question": "삼성전자의 특별관계자를 알려줘"' in output
-    assert '"plan_id": "plan_1"' in output
-    assert '"previous_results": []' in output
+    assert '"plan_id"' not in output
+    assert '"previous_results"' not in output
     assert '"dependencies"' not in output
 
 
@@ -651,6 +651,39 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
     result = update["retrieval_results"][0]
     assert result.status == "INVALID_QUERY"
     assert result.metadata["failure_stage"] == "query_builder"
+
+
+def test_retrieve_search_compacts_pydantic_error_message(monkeypatch):
+    plan = Plan(
+        plan_id="plan_2",
+        source="qdrant",
+        query="삼성전자 유동자산",
+        purpose="유동자산 확인",
+        dependencies=[],
+        scope_id="scope_1",
+    )
+
+    def reject_removed_filter(*_args, **_kwargs):
+        tools.QdrantFilter(key="corp_name", match="삼성전자")
+
+    monkeypatch.setattr(tools, "query_builder", reject_removed_filter)
+
+    update = retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "삼성전자 유동자산",
+            "scope_candidates": [_global_scope()],
+            "retrieval_results": [],
+            "next_plan_seq": 2,
+        },
+    })
+
+    error_message = update["retrieval_results"][0].metadata["error_message"]
+    assert "key:" in error_message
+    assert "corp_name" in error_message
+    assert "errors.pydantic.dev" not in error_message
+    assert "input_type" not in error_message
 
 
 def test_retrieve_search_metadata_preserves_purpose(monkeypatch):

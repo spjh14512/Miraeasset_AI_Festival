@@ -26,6 +26,9 @@ def test_question_analyzer_prompt_matches_current_contract():
     assert "match_status`를 추정·교정·검증하지 않고" in prompt
     assert "OUT_OF_UNIVERSE" in prompt
     assert "ISSUER가 아닌 TARGET" in prompt
+    assert "ISSUER에는 `UNKNOWN`이나 `NOT_FOUND`를 사용하지 마세요" in prompt
+    assert "삼성전자와 LG유플러스" in prompt
+    assert "두 SubQuestion으로 분리" in prompt
     assert "QuestionAnalyzerOutput" in prompt
     assert "Plan, PlanDraft, retrieval source" in prompt
     assert "Cypher 또는 Qdrant filter를 생성하지 마세요" in prompt
@@ -39,8 +42,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
         "sub_questions",
         "scope_candidates",
         "retrieval_results",
-        "retrieval_search_count",
-        "max_retrieval_search_count",
+        "remaining_search_count",
         "retrieve_search(plan, breadth)",
         "retrieve_correction_history(disclosure_id)",
         "calculate_table_statistic",
@@ -67,6 +69,7 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "공시 본문 문장" in prompt
     assert "OUT_OF_UNIVERSE" in prompt
     assert "GLOBAL 검색으로 바꾸거나" in prompt
+    assert "임의의 scope_id를 만들지 마세요" in prompt
     assert "create_plan" not in prompt
     assert "modify_plan" not in prompt
     assert "QueryPlan" not in prompt
@@ -116,13 +119,20 @@ def test_narrow_scope_prompt_matches_internal_agent_contract():
     assert not hasattr(sp, "NARROW_SCOPE_SYSTEM_PROMPT")
     assert "knowledge_hints" in disclosure_prompt
     assert "disclosure_candidates" in disclosure_prompt
-    assert "searched_rcept_date_range" in disclosure_prompt
+    assert "searched_rcept_date_range" not in disclosure_prompt
     assert "REPORTING_PERIOD" in disclosure_prompt
-    for kind in ("FILING_DATE", "EVENT_DATE", "AS_OF"):
-        assert kind in disclosure_prompt
     assert "knowledge_hints" in section_prompt
     assert "section_candidates" in section_prompt
     assert "DISCLOSURE Scope" in section_prompt
+
+
+def test_answer_validator_prompt_owns_constant_trusted_semantics():
+    prompt = sp.ANSWER_VALIDATOR_SYSTEM_PROMPT
+
+    assert "2026-07-24 기준" in prompt
+    assert "시가총액은 2026년 7월 24일 기준" in prompt
+    assert "trusted_application_notes" not in prompt
+    assert "trusted_field_semantics" not in prompt
 
 
 def test_qdrant_builder_uses_flat_payload_filter_paths():

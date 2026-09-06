@@ -108,9 +108,7 @@ class _SequenceLlm:
 
 
 def _validator_payload(state: dict, ai_answer: AiAnswer) -> dict:
-    content = build_answer_validator_human_message(state, ai_answer).content
-    json_dump = content.split("[입력]\n\n", 1)[1].split("\n\n\n[출력]", 1)[0]
-    return json.loads(json_dump)
+    return json.loads(build_answer_validator_human_message(state, ai_answer).content)
 
 
 # Validator 입력 -----------------------------------------------------------
@@ -157,13 +155,14 @@ def test_validator_payload_marks_company_metadata_as_uncitable():
     assert payload["retrieval_results"][0]["source_ids"] == []
 
 
-def test_validator_payload_declares_trusted_application_notes():
+def test_validator_payload_omits_constant_application_notes():
     state = _state([_company_record_item()])
     ai_answer = AiAnswer(answer=f"시가총액입니다. {MARKET_CAP_AS_OF_NOTE}", citation=[])
 
     payload = _validator_payload(state, ai_answer)
 
-    assert MARKET_CAP_AS_OF_NOTE in payload["trusted_application_notes"]
+    assert "trusted_application_notes" not in payload
+    assert "trusted_field_semantics" not in payload
 
 
 # LLM 판정 정규화 ----------------------------------------------------------

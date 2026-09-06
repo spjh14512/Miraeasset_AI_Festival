@@ -13,9 +13,7 @@ from agent_graph.utils import (
 
 
 def _message_payload(state: dict) -> dict:
-    content = build_answer_generator_human_message(state).content
-    json_dump = content.split("[입력]\n\n", 1)[1].split("\n\n\n[출력]", 1)[0]
-    return json.loads(json_dump)
+    return json.loads(build_answer_generator_human_message(state).content)
 
 
 def _result(result_id: str, item_count: int = 2) -> RetrievalResult:

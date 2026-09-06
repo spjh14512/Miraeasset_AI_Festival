@@ -39,8 +39,9 @@ from .utils import (
     enforce_question_clarification_policy,
     generate_answer,
     execute_tool_call,
-    load_issuer_universe_tsv,
+    load_issuer_universe_for_llm_tsv,
     run_narrow_scope_agent,
+    RepeatedFailedPlanError,
     UNSUPPORTED_ANSWER_FALLBACK,
     validate_and_repair_answer,
     subquestion_has_out_of_universe_issuer,
@@ -122,7 +123,7 @@ def question_analyzer(
         HumanMessage(content=json.dumps(
             {
                 "current_date": date.today().isoformat(),
-                "issuer_universe_tsv": load_issuer_universe_tsv(),
+                "issuer_universe_tsv": load_issuer_universe_for_llm_tsv(),
                 "user_question": question,
             },
             ensure_ascii=False,
@@ -264,10 +265,44 @@ def retriever(
             break
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_TOOL_CALL_RETRIES:
-                raise ValueError(
-                    "재시도 후에도 유효한 tool을 정확히 하나 생성하지 못했습니다. "
-                    f"마지막 오류: {error}"
-                ) from error
+                if isinstance(error, RepeatedFailedPlanError):
+                    tool_call = {
+                        "name": "finish",
+                        "args": {
+                            "status": "INSUFFICIENT",
+                            "reason": (
+                                "동일한 검색 계획이 반복 실패했고 새로운 유효한 "
+                                "검색 전략을 생성하지 못했습니다."
+                            ),
+                            "selected_result_ids": [],
+                        },
+                    }
+                    break
+                if not state.get("scope_candidates"):
+                    tool_call = {
+                        "name": "finish",
+                        "args": {
+                            "status": "INSUFFICIENT",
+                            "reason": (
+                                "검색에 사용할 유효한 Scope가 없어 retrieval을 "
+                                "진행할 수 없습니다."
+                            ),
+                            "selected_result_ids": [],
+                        },
+                    }
+                    break
+                tool_call = {
+                    "name": "finish",
+                    "args": {
+                        "status": "INSUFFICIENT",
+                        "reason": (
+                            "Retriever가 재시도 후에도 유효한 다음 행동을 "
+                            "생성하지 못해 안전하게 검색을 종료했습니다."
+                        ),
+                        "selected_result_ids": [],
+                    },
+                }
+                break
             messages.append(HumanMessage(content=build_output_retry_message(
                 "Retriever tool call",
                 error,

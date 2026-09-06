@@ -41,6 +41,7 @@ from .llm import (
     QDRANT_QUERY_BUILDER_MAX_COMPLETION_TOKENS,
     bind_structured_output,
     build_output_retry_message,
+    format_output_error,
     get_llm,
     invoke_with_rate_limit_retry,
 )
@@ -87,13 +88,6 @@ QDRANT_BROAD_INTENTS = {"COMPARISON", "TREND", "HISTORY"}
 QDRANT_EXPANSION_STEP = 5
 QDRANT_MAX_ADAPTIVE_LIMIT = 20
 
-# 근거 자체에는 단위·의미가 적혀 있지 않지만 application이 보장하는 필드 정보입니다.
-TRUSTED_FIELD_SEMANTICS = {
-    MARKET_CAP_FIELD: (
-        f"Company 노드의 시가총액이며 단위는 억원, {MARKET_CAP_AS_OF_DATE} 기준입니다. "
-        "근거 payload에도 이미 단위와 기준일이 붙은 형태로 제공됩니다."
-    ),
-}
 CITATION_CONTEXT_QUERY = """
 UNWIND $citations AS citation
 MATCH (d:Disclosure {id: citation.disclosure_id})
@@ -162,6 +156,17 @@ SCOPE_KNOWLEDGE_HINT_FIELDS = (
     "datasets",
     "categories",
 )
+ISSUER_LLM_FIELDS = (
+    "corp_code",
+    "stock_code",
+    "corp_name",
+    "listed_name",
+    "corp_eng_name",
+)
+
+
+class RepeatedFailedPlanError(ValueError):
+    """동일한 retrieval Plan의 허용 실패 횟수가 소진됐음을 나타냅니다."""
 
 
 @lru_cache(maxsize=1)
@@ -177,6 +182,18 @@ def load_issuer_universe() -> tuple[dict[str, str], ...]:
 
     rows = csv.DictReader(load_issuer_universe_tsv().splitlines(), delimiter="\t")
     return tuple({key: value.strip() for key, value in row.items()} for row in rows)
+
+
+@lru_cache(maxsize=1)
+def load_issuer_universe_for_llm_tsv() -> str:
+    """전체 발행회사 행에서 entity 식별에 필요한 열만 TSV로 직렬화합니다."""
+
+    lines = ["\t".join(ISSUER_LLM_FIELDS)]
+    lines.extend(
+        "\t".join(row[field] for field in ISSUER_LLM_FIELDS)
+        for row in load_issuer_universe()
+    )
+    return "\n".join(lines)
 
 
 @lru_cache(maxsize=1)
@@ -217,6 +234,27 @@ def validate_question_analysis_issuers(
                 raise ValueError(
                     "ISSUER의 canonical_name과 corp_code는 함께 제공하거나 "
                     "함께 비워야 합니다."
+                )
+            if not has_name:
+                if entity.match_status not in {"OUT_OF_UNIVERSE", "AMBIGUOUS"}:
+                    raise ValueError(
+                        "ISSUER의 canonical_name과 corp_code를 선택하지 않았다면 "
+                        "match_status는 OUT_OF_UNIVERSE 또는 AMBIGUOUS여야 합니다. "
+                        f"반환값: mention={entity.mention!r}, "
+                        f"match_status={entity.match_status!r}"
+                    )
+                continue
+
+            subquestion_text = subquestion.question.casefold()
+            issuer_names = {
+                entity.mention.casefold(),
+                entity.canonical_name.casefold(),
+            }
+            if not any(name in subquestion_text for name in issuer_names):
+                raise ValueError(
+                    "SubQuestion은 연결된 모든 ISSUER를 question 본문에 명시해야 "
+                    f"합니다. 누락된 ISSUER: {entity.mention!r}; "
+                    f"question={subquestion.question!r}"
                 )
             if has_name:
                 if (entity.canonical_name, entity.corp_code) not in issuer_pairs:
@@ -1200,32 +1238,64 @@ def _section_scope_query(disclosure_ids: list[str]) -> CypherQuery:
 
 def _narrow_scope_human_message(
     *,
-    stage: str,
     subquestion: SubQuestion,
     hints: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
-    doc_groups: list[str] | None = None,
-    rcept_date_range: tuple[str, str] | None = None,
-    selected_disclosure_ids: list[str] | None = None,
+    candidate_kind: Literal["disclosure", "section"],
 ) -> HumanMessage:
-    """각 선택 단계에 SubQuestion, hint와 실제 Neo4j 후보를 명시합니다."""
+    """Scope 선택에 필요한 질문, hint와 후보 필드만 직렬화합니다."""
 
-    payload: dict[str, Any] = {
-        "stage": stage,
-        "subquestion": subquestion.model_dump(mode="json"),
-        "knowledge_hints": hints,
+    compact_subquestion = {
+        "question": subquestion.question,
+        "requested_facts": subquestion.requested_facts,
     }
-    if doc_groups is not None:
-        payload["searched_doc_groups"] = doc_groups
-        if rcept_date_range is not None:
-            payload["searched_rcept_date_range"] = {
-                "start": rcept_date_range[0],
-                "end": rcept_date_range[1],
+    if subquestion.events:
+        compact_subquestion["events"] = [
+            event.model_dump(mode="json", exclude_none=True)
+            for event in subquestion.events
+        ]
+    if subquestion.periods:
+        compact_subquestion["periods"] = [
+            period.model_dump(mode="json", exclude_none=True)
+            for period in subquestion.periods
+        ]
+
+    hint_fields = {
+        "knowledge_type",
+        "name",
+        "aliases",
+        "description",
+        "datasets",
+        "categories",
+    }
+    compact_hints = [
+        {key: value for key, value in hint.items() if key in hint_fields}
+        for hint in hints
+    ]
+    candidate_fields = (
+        {"disclosure_id", "corp_name", "report_name", "doc_group", "rcept_date"}
+        if candidate_kind == "disclosure"
+        else {
+            "disclosure_id",
+            "corp_name",
+            "report_name",
+            "section_id",
+            "section_title",
+            "section_path",
+        }
+    )
+    payload = {
+        "subquestion": compact_subquestion,
+        "knowledge_hints": compact_hints,
+        f"{candidate_kind}_candidates": [
+            {
+                key: value
+                for key, value in candidate.items()
+                if key in candidate_fields and value not in (None, "", [], {})
             }
-        payload["disclosure_candidates"] = candidates
-    else:
-        payload["selected_disclosure_ids"] = selected_disclosure_ids or []
-        payload["section_candidates"] = candidates
+            for candidate in candidates
+        ],
+    }
     return HumanMessage(content=json.dumps(
         payload,
         ensure_ascii=False,
@@ -1334,12 +1404,10 @@ def run_narrow_scope_agent(
         output_model=DisclosureSelection,
         system_prompt=sp.NARROW_SCOPE_DISCLOSURE_SELECTION_SYSTEM_PROMPT,
         human_message=_narrow_scope_human_message(
-            stage="DISCLOSURE_SELECTION",
             subquestion=subquestion,
             hints=hints,
             candidates=disclosure_candidates,
-            doc_groups=doc_groups,
-            rcept_date_range=rcept_date_range,
+            candidate_kind="disclosure",
         ),
         selected_field="selected_disclosure_ids",
         available_ids=available_disclosure_ids,
@@ -1392,11 +1460,10 @@ def run_narrow_scope_agent(
         output_model=SectionSelection,
         system_prompt=sp.NARROW_SCOPE_SECTION_SELECTION_SYSTEM_PROMPT,
         human_message=_narrow_scope_human_message(
-            stage="SECTION_SELECTION",
             subquestion=subquestion,
             hints=hints,
             candidates=section_candidates,
-            selected_disclosure_ids=selected_disclosure_ids,
+            candidate_kind="section",
         ),
         selected_field="selected_section_ids",
         available_ids=available_section_ids,
@@ -1551,30 +1618,31 @@ def _build_query_builder_human_message(
         HumanMessage(content='{"user_question": ..., "plan": ..., "previous_results": [...] }')
     """
 
-    return HumanMessage(
-        content=json.dumps(
-            {
-                "user_question": user_question,
-                "plan": plan.model_dump(
-                    mode="json",
-                    exclude={"dependencies", "scope_id"},
-                ),
-                "scope": scope.model_dump(mode="json") if scope else None,
-                "previous_results": [
-                    result.model_dump(mode="json")
-                    for result in dependencies
-                ],
-                # Retriever가 dependencies에 넣지 않았더라도 같은 source의 최근
-                # 실패는 반드시 보여준다. 같은 오류 쿼리를 반복 생성하는 것을 막는다.
-                "recent_failures": [
-                    result.model_dump(mode="json", exclude={"items"})
-                    for result in (recent_failures or [])
-                ],
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
+    payload: dict[str, Any] = {
+        "user_question": user_question,
+        "plan": {
+            "source": plan.source,
+            "query": plan.query,
+            "purpose": plan.purpose,
+        },
+    }
+    if scope is not None:
+        payload["scope"] = _compact_scope_for_llm(scope)
+    if dependencies:
+        payload["previous_results"] = [
+            _compact_retrieval_result_for_llm(result)
+            for result in dependencies
+        ]
+    if recent_failures:
+        payload["recent_failures"] = [
+            _compact_failed_result_for_llm(result)
+            for result in recent_failures
+        ]
+    return HumanMessage(content=json.dumps(
+        payload,
+        ensure_ascii=False,
+        indent=2,
+    ))
 
 
 def _qdrant_search_signature(
@@ -1848,7 +1916,7 @@ def _build_failed_retrieval_result(
         metadata={
             "failure_stage": stage,
             "error_type": type(root_error).__name__,
-            "error_message": str(root_error),
+            "error_message": format_output_error(root_error),
         },
     )
 
@@ -2535,6 +2603,141 @@ def _validate_finish_selection(
         )
 
 
+def _compact_subquestion_for_llm(subquestion: SubQuestion) -> dict[str, Any]:
+    """Retriever가 검색 결정을 내리는 데 필요한 SubQuestion 필드만 남깁니다."""
+
+    payload: dict[str, Any] = {
+        "subquestion_id": subquestion.subquestion_id,
+        "question": subquestion.question,
+        "intents": subquestion.intents,
+        "requested_facts": subquestion.requested_facts,
+    }
+    if subquestion.events:
+        payload["events"] = [
+            event.model_dump(mode="json", exclude_none=True)
+            for event in subquestion.events
+        ]
+    if subquestion.periods:
+        payload["periods"] = [
+            period.model_dump(mode="json", exclude_none=True)
+            for period in subquestion.periods
+        ]
+    return payload
+
+
+def _compact_scope_for_llm(scope: Scope) -> dict[str, Any]:
+    """Scope의 식별자, level과 실제 검색 제약만 남깁니다."""
+
+    payload: dict[str, Any] = {
+        "scope_id": scope.scope_id,
+        "subquestion_id": scope.subquestion_id,
+        "level": scope.level,
+    }
+    for field in ("corp_names", "corp_codes", "disclosure_ids", "section_ids"):
+        value = getattr(scope, field)
+        if value:
+            payload[field] = value
+    return payload
+
+
+def _compact_retrieval_item_for_llm(item: dict[str, Any]) -> dict[str, Any]:
+    """Retriever와 Builder에 불필요한 citation 및 내부 metadata를 제거합니다."""
+
+    payload = {
+        key: value
+        for key, value in item.items()
+        if key != "source_references"
+    }
+    metadata = payload.get("metadata")
+    if isinstance(metadata, dict):
+        useful_metadata_fields = {
+            "retrieval_context",
+            "rcept_date",
+            "disclosure_id",
+            "section_id",
+            "evidence_id",
+            "table_id",
+            "chunk_index",
+            "chunk_count",
+            "row_start_index",
+            "row_end_index",
+        }
+        compact_metadata = {
+            key: value
+            for key, value in metadata.items()
+            if key in useful_metadata_fields
+        }
+        if compact_metadata:
+            payload["metadata"] = compact_metadata
+        else:
+            payload.pop("metadata", None)
+    return payload
+
+
+def _compact_retrieval_result_for_llm(
+    result: RetrievalResult,
+) -> dict[str, Any]:
+    """RetrievalResult에서 다음 행동 판단에 필요한 데이터만 남깁니다."""
+
+    payload: dict[str, Any] = {
+        "result_id": result.result_id,
+        "source": result.source,
+        "status": result.status,
+        "query": result.query,
+    }
+    if result.items:
+        payload["items"] = [
+            _compact_retrieval_item_for_llm(item)
+            for item in result.items
+        ]
+    useful_metadata_fields = {
+        "purpose",
+        "plan_query",
+        "scope_id",
+        "dependencies",
+        "failure_stage",
+        "error_type",
+        "error_message",
+        "requested_limit",
+        "new_point_count",
+        "duplicate_point_count",
+        "has_more_candidates",
+        "exhaustive",
+        "result_kind",
+        "source_result_ids",
+    }
+    metadata = {
+        key: value
+        for key, value in result.metadata.items()
+        if key in useful_metadata_fields and value not in (None, "", [], {})
+    }
+    if metadata:
+        payload["metadata"] = metadata
+    return payload
+
+
+def _compact_failed_result_for_llm(result: RetrievalResult) -> dict[str, Any]:
+    """Builder가 동일 실패를 피하는 데 필요한 실패 정보만 남깁니다."""
+
+    payload: dict[str, Any] = {
+        "result_id": result.result_id,
+        "status": result.status,
+        "query": result.query,
+    }
+    for field in ("failure_stage", "error_type", "error_message"):
+        value = result.metadata.get(field)
+        if value not in (None, ""):
+            payload[field] = value
+    plan_context = {
+        field: result.metadata[field]
+        for field in ("plan_query", "scope_id", "dependencies")
+        if result.metadata.get(field) not in (None, "", [], {})
+    }
+    if plan_context:
+        payload["plan"] = plan_context
+    return payload
+
+
 # retriever llm에 현재 state를 전달하기 위해 HumanMessage를 생성하는 함수
 def build_retriever_human_message(state: AgentState) -> HumanMessage:
     """현재 retrieval state를 Retriever용 HumanMessage로 직렬화합니다."""
@@ -2547,21 +2750,26 @@ def build_retriever_human_message(state: AgentState) -> HumanMessage:
     )
     payload = {
         "user_question": state["question_text"],
-        "retrieval_search_count": state.get("retrieval_search_count", 0),
-        "max_retrieval_search_count": MAX_RETRIEVAL_SEARCH_COUNT,
+        "remaining_search_count": max(
+            MAX_RETRIEVAL_SEARCH_COUNT - state.get("retrieval_search_count", 0),
+            0,
+        ),
         "sub_questions": (
-            [SubQuestion.model_validate(sub_question).model_dump(mode="json") for sub_question in question_analysis.sub_questions]
+            [
+                _compact_subquestion_for_llm(subquestion)
+                for subquestion in question_analysis.sub_questions
+            ]
             if question_analysis is not None
-            else None
+            else []
         ),
         "scope_candidates": [
-            (
+            _compact_scope_for_llm(
                 scope if isinstance(scope, Scope) else Scope.model_validate(scope)
-            ).model_dump(mode="json")
+            )
             for scope in state.get("scope_candidates", [])
         ],
         "retrieval_results": [
-            result.model_dump(mode="json")
+            _compact_retrieval_result_for_llm(result)
             for result in state.get("retrieval_results", [])
         ]
     }
@@ -3067,38 +3275,21 @@ def build_answer_generator_human_message(state: AgentState) -> HumanMessage:
     """
 
     answer_result_map = build_answer_result_map(state)
-    payload = {
+    retrieval_results = [
+        value["payload"]
+        for value in answer_result_map.values()
+    ]
+    payload: dict[str, Any] = {
         "user_question": state["question_text"],
-        "retrieval_finish_reason": state.get("retrieval_finish_reason"),
-        "retrieval_results": [
-            value["payload"]
-            for value in answer_result_map.values()
-        ],
+        "retrieval_results": retrieval_results,
     }
-
-    json_dump = json.dumps(
+    if not retrieval_results and state.get("retrieval_finish_reason"):
+        payload["retrieval_finish_reason"] = state["retrieval_finish_reason"]
+    return HumanMessage(content=json.dumps(
         payload,
         ensure_ascii=False,
         indent=2,
-    )
-    return HumanMessage(
-        content=(
-            "아래 입력을 근거로 최종 answer와 used_result_ids를 생성하고\n\n"
-            "AnswerGeneratorOutput 형식으로 반환하세요.\n\n\n"
-            "[입력]\n\n"
-            f"{json_dump}\n\n\n"
-            "[출력]\n\n"
-            "입력으로 제공된 question과 retrieval_results만을 근거로 최종 답변을 생성하세요.\n\n"
-            "- answer에는 사용자의 질문에 직접 답하세요.\n"
-            "- retrieval_results에 없는 사실을 추측해서 추가하지 마세요.\n"
-            "- used_result_ids에는 retrieval_results에서 실제 답변 생성에 사용한 "
-            "항목의 result_id만 선택하세요.\n"
-            "- retrieval_results가 비어 있어도 반드시 AnswerGeneratorOutput 형식으로 "
-            "반환하세요.\n"
-            "- retrieval_results가 비어 있으면 answer에는 검색 결과만으로 확인할 수 "
-            "없다고 명시하고 used_result_ids는 빈 목록으로 반환하세요."
-        )
-    )
+    ))
 
 
 @lru_cache(maxsize=1)
@@ -3205,21 +3396,13 @@ def build_answer_validator_human_message(
             citation.model_dump(exclude_none=True)
             for citation in ai_answer.citation
         ],
-        "trusted_application_notes": [MARKET_CAP_AS_OF_NOTE],
-        "trusted_field_semantics": TRUSTED_FIELD_SEMANTICS,
         "retrieval_results": retrieval_results,
     }
-
-    json_dump = json.dumps(payload, ensure_ascii=False, indent=2)
-    return HumanMessage(
-        content=(
-            "아래 draft_answer를 retrieval_results와 대조하여 검증하고\n\n"
-            "AnswerValidatorOutput 형식으로 반환하세요.\n\n\n"
-            "[입력]\n\n"
-            f"{json_dump}\n\n\n"
-            "[출력]"
-        )
-    )
+    return HumanMessage(content=json.dumps(
+        payload,
+        ensure_ascii=False,
+        indent=2,
+    ))
 
 
 @lru_cache(maxsize=1)
@@ -3529,7 +3712,7 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
         _resolve_plan_scope(executable_plan, state)
         failed_result_ids = _failed_plan_result_ids(executable_plan, state)
         if len(failed_result_ids) >= MAX_FAILED_PLAN_ATTEMPTS:
-            raise ValueError(
+            raise RepeatedFailedPlanError(
                 "동일한 retrieval Plan이 이미 "
                 f"{len(failed_result_ids)}회 실패했습니다: {failed_result_ids}. "
                 "같은 retrieve_search를 반복하지 말고 query, scope, source 또는 "
@@ -4241,23 +4424,45 @@ def _resolve_combine_operand(
         result.result_id: result
         for result in state.get("retrieval_results", [])
     }
+    eligible_result_ids = [
+        result.result_id
+        for result in state.get("retrieval_results", [])
+        if (
+            result.source == "derived"
+            and result.status == "SUCCESS"
+            and result.metadata.get("result_kind") == RESULT_KIND_NUMERIC_SCALAR
+        )
+    ]
+    guidance = (
+        " combine_numeric_results에 사용할 수 있는 derived numeric_scalar "
+        f"결과 ID: {eligible_result_ids}."
+        if eligible_result_ids
+        else (
+            " 현재 combine_numeric_results에 사용할 수 있는 derived "
+            "numeric_scalar 결과가 없습니다. 단순 값 조회라면 원본 SUCCESS "
+            "결과로 finish하고, 실제 산술이 필요하면 먼저 각 표에 "
+            "calculate_table_statistic을 호출하세요."
+        )
+    )
     result = results_by_id.get(target.result_id)
     if result is None:
-        raise ValueError(f"RetrievalResult를 찾지 못했습니다: {target.result_id}")
+        raise ValueError(
+            f"RetrievalResult를 찾지 못했습니다: {target.result_id}.{guidance}"
+        )
     if result.source != "derived":
         raise ValueError(
             f"{target.result_id}는 derived 계산 결과가 아니어서 참조할 수 없습니다"
-            f"(source={result.source})."
+            f"(source={result.source}).{guidance}"
         )
     if result.status != "SUCCESS":
         raise ValueError(
             f"{target.result_id}의 status가 SUCCESS가 아니어서 참조할 수 없습니다"
-            f"(status={result.status})."
+            f"(status={result.status}).{guidance}"
         )
     if result.metadata.get("result_kind") != RESULT_KIND_NUMERIC_SCALAR:
         raise ValueError(
             f"{target.result_id}는 숫자 scalar 결과가 아니어서 참조할 수 없습니다"
-            f"(result_kind={result.metadata.get('result_kind')!r})."
+            f"(result_kind={result.metadata.get('result_kind')!r}).{guidance}"
         )
     if target.item_index >= len(result.items):
         raise ValueError(

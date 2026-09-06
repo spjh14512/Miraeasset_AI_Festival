@@ -87,6 +87,10 @@ def test_compactor_selects_kv_entry_indexes():
 
     assert compact_qdrant_point(point, _plan(), llm=llm) == [1]
     payload = json.loads(llm.messages[1].content)
+    assert payload["plan"] == {
+        "query": "최대주주인 특별관계자",
+        "purpose": "특별관계자 성명 확인",
+    }
     assert payload["items"] == [
         {"item_id": 0, "key": "유동자산", "value": "100"},
         {"item_id": 1, "key": "비유동자산", "value": "200"},

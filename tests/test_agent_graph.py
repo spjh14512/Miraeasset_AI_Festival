@@ -11,6 +11,7 @@ from agent_graph.state import (
     PlanDraft,
     QuestionAnalyzerOutput,
     QuestionAnalysis,
+    RetrievalResult,
     SubQuestion,
     ThinkTraceEvent,
     merge_think_trace_events,
@@ -222,9 +223,10 @@ def test_question_analyzer_returns_analysis_without_plans():
     assert payload["current_date"] == date.today().isoformat()
     assert payload["user_question"] == "삼성전자 시설 투자를 알려줘"
     assert payload["issuer_universe_tsv"].startswith(
-        "corp_code\tstock_code\tcorp_name"
+        "corp_code\tstock_code\tcorp_name\tlisted_name\tcorp_eng_name"
     )
     assert len(payload["issuer_universe_tsv"].splitlines()) == 71
+    assert "market_cap" not in payload["issuer_universe_tsv"].splitlines()[0]
 
 
 def test_question_analyzer_clarifies_financial_amount_without_issuer_or_period():
@@ -340,10 +342,45 @@ def test_retriever_human_message_contains_sub_questions():
     })
     payload = json.loads(message.content)
 
-    assert payload["sub_questions"] == [
-        subquestion.model_dump(mode="json")
-        for subquestion in analysis.sub_questions
-    ]
+    assert payload["sub_questions"] == [{
+        "subquestion_id": None,
+        "question": "삼성전자의 시설 투자 내용은 무엇인가?",
+        "intents": ["DETAIL"],
+        "requested_facts": ["시설 투자 내용"],
+        "events": [{
+            "event_type": "시설 투자",
+            "candidate_event_types": [],
+            "confidence": "HIGH",
+        }],
+    }]
     assert payload["scope_candidates"] == []
-    assert payload["retrieval_search_count"] == 0
-    assert payload["max_retrieval_search_count"] == 15
+    assert payload["remaining_search_count"] == 15
+
+
+def test_retriever_human_message_preserves_failed_plan_context():
+    result = RetrievalResult(
+        result_id="retrieval:plan_1",
+        source="neo4j",
+        status="INVALID_QUERY",
+        query="MATCH (d:Disclosure) RETURN d",
+        items=[],
+        result_count=0,
+        metadata={
+            "plan_query": "삼성전자 공시 조회",
+            "scope_id": "scope_1",
+            "dependencies": ["retrieval:plan_0"],
+            "plan_signature": "application-only",
+        },
+    )
+
+    payload = json.loads(build_retriever_human_message({
+        "question_id": "question-1",
+        "question_text": "삼성전자 공시를 알려줘",
+        "retrieval_results": [result],
+    }).content)
+
+    metadata = payload["retrieval_results"][0]["metadata"]
+    assert metadata["plan_query"] == "삼성전자 공시 조회"
+    assert metadata["scope_id"] == "scope_1"
+    assert metadata["dependencies"] == ["retrieval:plan_0"]
+    assert "plan_signature" not in metadata

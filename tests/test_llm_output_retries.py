@@ -104,7 +104,8 @@ def test_question_analyzer_retries_invalid_structured_output():
 
     assert update["question_analysis"].normalized_question == "삼성전자 정보"
     assert len(llm.calls) == 2
-    assert "application 검증" in llm.calls[1][-1].content
+    assert "검증 실패" in llm.calls[1][-1].content
+    assert "errors.pydantic.dev" not in llm.calls[1][-1].content
 
 
 def test_question_analyzer_retries_issuer_pair_outside_universe():

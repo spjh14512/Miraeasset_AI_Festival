@@ -17,9 +17,7 @@ from agent_graph.utils import (
 
 
 def _message_payload(state: dict) -> dict:
-    content = build_answer_generator_human_message(state).content
-    json_dump = content.split("[입력]\n\n", 1)[1].split("\n\n\n[출력]", 1)[0]
-    return json.loads(json_dump)
+    return json.loads(build_answer_generator_human_message(state).content)
 
 
 def _state(items: list[dict]):
@@ -87,7 +85,6 @@ def test_flattens_items_and_builds_llm_friendly_payloads():
 
     assert set(payload) == {
         "user_question",
-        "retrieval_finish_reason",
         "retrieval_results",
     }
     assert payload["retrieval_results"] == [
@@ -135,12 +132,10 @@ def test_answer_message_requires_output_when_retrieval_is_insufficient():
     state["retrieval_finish_reason"] = "유효한 추가 검색 전략이 없습니다."
     state["selected_result_ids"] = []
 
-    content = build_answer_generator_human_message(state).content
     payload = _message_payload(state)
 
-    assert "retrieval_results가 비어 있어도" in content
-    assert "used_result_ids는 빈 목록으로 반환하세요" in content
     assert payload["retrieval_results"] == []
+    assert payload["retrieval_finish_reason"] == "유효한 추가 검색 전략이 없습니다."
 
 
 def test_resolves_used_result_to_all_citations_in_its_original_item():

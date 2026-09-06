@@ -317,8 +317,12 @@ def test_narrow_scope_selects_disclosure_then_section(monkeypatch, capsys):
     assert output.count('"aliases": [') == 2
     assert '"description": "둘 이상의 기업이 하나로 결합하는 사건"' in output
     assert '"categories": [' in output
-    assert '"stage": "DISCLOSURE_SELECTION"' in output
-    assert '"stage": "SECTION_SELECTION"' in output
+    assert '"disclosure_candidates": [' in output
+    assert '"section_candidates": [' in output
+    assert '"stage"' not in output
+    assert '"corp_code"' not in output
+    assert '"order_in_doc"' not in output
+    assert '"score"' not in output
     assert "[narrow_scope] Knowledge Base 검색어:" not in output
     assert "[narrow_scope] LLM action:" not in output
     assert "[narrow_scope] Neo4j 검색" not in output

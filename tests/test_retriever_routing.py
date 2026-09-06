@@ -249,6 +249,48 @@ def test_retriever_rejects_plan_after_two_matching_failures():
     assert "동일한 retrieval Plan이 이미 2회 실패" in llm.calls[1][-1].content
 
 
+def test_retriever_finishes_insufficient_when_repeated_plan_exhausts_retries():
+    plan_args = {
+        "source": "neo4j",
+        "query": "AMD 기업 정보",
+        "purpose": "AMD의 기업 정보를 찾기 위함",
+        "dependencies": [],
+        "scope_id": "scope_1",
+    }
+    signature = utils._retrieval_plan_signature(Plan(
+        plan_id="plan_2",
+        **plan_args,
+    ))
+    state = _retrieval_state()
+    state["retrieval_results"] = [
+        RetrievalResult(
+            result_id=f"retrieval:plan_{index}",
+            source="neo4j",
+            status="INVALID_QUERY",
+            query="MATCH (c:Company) RETURN c",
+            items=[],
+            result_count=0,
+            metadata={"plan_signature": signature},
+        )
+        for index in (1, 2)
+    ]
+    repeated_call = [{
+        "name": "retrieve_search",
+        "args": {"plan": plan_args, "breadth": "initial"},
+    }]
+    llm = _RetryingRetrieverLlm([
+        repeated_call,
+        repeated_call,
+        repeated_call,
+    ])
+
+    update = graph_module.retriever(state, llm=llm)
+
+    assert update["retrieval_status"] == "INSUFFICIENT"
+    assert update["selected_result_ids"] == []
+    assert llm.invoke_count == graph_module.MAX_TOOL_CALL_RETRIES + 1
+
+
 def test_retriever_ignores_finish_when_another_tool_is_called(monkeypatch):
     llm = _RetryingRetrieverLlm([[
         {
@@ -307,13 +349,26 @@ def test_retriever_retries_unknown_finish_result_id():
     assert "RetrievalResult를 찾지 못했습니다" in llm.calls[1][-1].content
 
 
-def test_retriever_reports_invalid_tool_calls_after_retries():
+def test_retriever_finishes_insufficient_after_invalid_tool_call_retries():
     llm = _InvalidRetrieverLlm()
 
-    with pytest.raises(
-        ValueError,
-        match="재시도 후에도.*호출 개수: 0",
-    ):
-        graph_module.retriever(_retrieval_state(), llm=llm)
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
 
+    assert update["retrieval_status"] == "INSUFFICIENT"
+    assert update["selected_result_ids"] == []
+    assert "안전하게 검색을 종료" in update["retrieval_finish_reason"]
+    assert llm.invoke_count == graph_module.MAX_TOOL_CALL_RETRIES + 1
+
+
+def test_retriever_finishes_insufficient_when_no_scope_exists_after_retries():
+    state = _retrieval_state()
+    state["scope_candidates"] = []
+    state["retrieval_results"] = []
+    llm = _InvalidRetrieverLlm()
+
+    update = graph_module.retriever(state, llm=llm)
+
+    assert update["retrieval_status"] == "INSUFFICIENT"
+    assert update["selected_result_ids"] == []
+    assert "유효한 Scope" in update["retrieval_finish_reason"]
     assert llm.invoke_count == graph_module.MAX_TOOL_CALL_RETRIES + 1
