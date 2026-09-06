@@ -24,10 +24,10 @@ output_contract:
       vector: 의미 검색이 필요할 때 사용
       filter: 명시된 disclosure_id, section_id, evidence_id 또는 chunking.table_id로 조회할 때 사용
   query_text:
-    type: "string | null"
+    type: string
     rules:
       vector: 비어 있지 않은 자연어 검색문 필수
-      filter: 반드시 null
+      filter: 반드시 빈 문자열
   query_vector:
     llm_output: forbidden
     reason: application이 query_text에서 BGE-M3 dense+sparse vector를 생성
@@ -90,7 +90,7 @@ examples:
   - name: evidence_id 정확 조회
     output:
       mode: filter
-      query_text: null
+      query_text: ""
       filters:
         - key: evidence_id
           match: d20240306000686:src0:s27:e8

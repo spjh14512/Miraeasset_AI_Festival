@@ -12,8 +12,14 @@ from agent_graph.state import (
     QuestionAnalyzerOutput,
     QuestionAnalysis,
     SubQuestion,
+    ThinkTraceEvent,
+    merge_think_trace_events,
 )
-from agent_graph.utils import build_retriever_human_message
+from agent_graph.utils import (
+    build_retriever_human_message,
+    load_issuer_universe,
+    normalize_question_analysis_entities,
+)
 
 
 def _plan_draft() -> PlanDraft:
@@ -44,6 +50,21 @@ def _sub_question() -> SubQuestion:
         periods=[],
         requested_facts=["시설 투자 내용"],
     )
+
+
+def test_think_trace_events_preserve_execution_order():
+    first = ThinkTraceEvent(
+        type="node",
+        name="question_analyzer",
+        message="질문을 분석했습니다.",
+    )
+    second = ThinkTraceEvent(
+        type="tool",
+        name="retrieve_search",
+        message="근거를 검색했습니다.",
+    )
+
+    assert merge_think_trace_events([first], [second]) == [first, second]
 
 
 def test_retrieve_decision_does_not_create_a_plan():
@@ -191,12 +212,70 @@ def test_question_analyzer_returns_analysis_without_plans():
     assert update["retrieval_status"] == "CONTINUE"
     assert update["question_analysis"].normalized_question == expected_analysis.normalized_question
     assert update["question_analysis"].sub_questions[0].subquestion_id == "subquestion_1"
+    trace = update["think_trace_events"][0]
+    assert trace.name == "question_analyzer"
+    assert trace.message == "공시 Evidence가 필요합니다."
+    assert trace.details["decision"] == "retrieve"
     assert llm.schema["title"] == "QuestionAnalyzerOutput"
     assert llm.method == "json_schema"
-    assert json.loads(llm.structured.messages[-1].content) == {
-        "current_date": date.today().isoformat(),
-        "user_question": "삼성전자 시설 투자를 알려줘",
-    }
+    payload = json.loads(llm.structured.messages[-1].content)
+    assert payload["current_date"] == date.today().isoformat()
+    assert payload["user_question"] == "삼성전자 시설 투자를 알려줘"
+    assert payload["issuer_universe_tsv"].startswith(
+        "corp_code\tstock_code\tcorp_name"
+    )
+    assert len(payload["issuer_universe_tsv"].splitlines()) == 71
+
+
+def test_entity_normalization_uses_registry_for_issuer():
+    analysis = QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="삼성전자 정보를 알려줘",
+        decision_reason="검색이 필요합니다.",
+        sub_questions=[SubQuestion(
+            question="삼성전자 정보를 알려줘",
+            entities=[{
+                "mention": "삼성전자",
+                "roles": ["ISSUER"],
+                "canonical_name": "Samsung Electronics Co., Ltd.",
+                "match_status": "MATCHED",
+            }],
+            intents=["DETAIL"],
+            requested_facts=["삼성전자 정보"],
+        )],
+    )
+
+    normalized = normalize_question_analysis_entities(analysis)
+    entity = normalized.sub_questions[0].entities[0]
+
+    assert entity.canonical_name == "삼성전자"
+    assert entity.match_status == "MATCHED"
+    assert len(load_issuer_universe()) == 70
+
+
+def test_entity_normalization_marks_only_unknown_issuer_out_of_universe():
+    analysis = QuestionAnalysis(
+        decision="retrieve",
+        normalized_question="OpenAI와 삼성전자의 계약",
+        decision_reason="검색이 필요합니다.",
+        sub_questions=[SubQuestion(
+            question="OpenAI와 삼성전자의 계약을 알려줘",
+            entities=[
+                {"mention": "OpenAI", "roles": ["ISSUER"]},
+                {"mention": "Arm", "roles": ["TARGET"]},
+            ],
+            intents=["DETAIL"],
+            requested_facts=["계약 내용"],
+        )],
+    )
+
+    normalized = normalize_question_analysis_entities(analysis)
+    issuer, target = normalized.sub_questions[0].entities
+
+    assert issuer.match_status == "OUT_OF_UNIVERSE"
+    assert issuer.canonical_name is None
+    assert target.match_status == "UNKNOWN"
+    assert target.canonical_name is None
 
 
 def test_question_analyzer_rejects_an_empty_question():
@@ -247,3 +326,5 @@ def test_retriever_human_message_contains_sub_questions():
         for subquestion in analysis.sub_questions
     ]
     assert payload["scope_candidates"] == []
+    assert payload["retrieval_search_count"] == 0
+    assert payload["max_retrieval_search_count"] == 15

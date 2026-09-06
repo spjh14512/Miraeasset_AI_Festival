@@ -509,6 +509,7 @@ def test_retrieve_search_preserves_plan_purpose(monkeypatch):
     }
     assert update["retrieved_qdrant_point_ids"] == []
     assert update["retrieval_results"][0].status == "NO_RESULTS"
+    assert update["retrieval_search_count"] == 1
 
 
 def test_retrieve_search_marks_duplicate_only_result(monkeypatch):

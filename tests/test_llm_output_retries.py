@@ -248,5 +248,8 @@ def test_answer_generator_retries_unknown_answer_result_id():
 
     assert update["ai_answer"].answer == "수정된 답변"
     assert len(update["ai_answer"].citation) == 1
+    trace = update["think_trace_events"][0]
+    assert trace.name == "answer_generator"
+    assert trace.details["used_result_ids"] == ["answer_result_1"]
     assert len(llm.calls) == 2
     assert "허용되지 않은 answer result ID" in llm.calls[1][-1].content

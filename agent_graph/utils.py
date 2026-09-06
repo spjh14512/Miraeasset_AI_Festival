@@ -1,7 +1,10 @@
+import csv
 import json
 import re
 import statistics
-from datetime import datetime
+import unicodedata
+from calendar import monthrange
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from pathlib import Path
@@ -56,6 +59,7 @@ from .state import (
     Scope,
     ScopeDraft,
     SubQuestion,
+    ThinkTraceEvent,
 )
 
 
@@ -63,6 +67,7 @@ NEO4J_SCHEMA_PATH = (
     Path(__file__).resolve().parents[1] / "knowledge_graph" / "neo4j_schema.yaml"
 )
 QDRANT_QUERY_SCHEMA_PATH = Path(__file__).with_name("qdrant_query_schema.yaml")
+ISSUER_UNIVERSE_PATH = Path(__file__).resolve().parents[1] / "DOCS" / "universe.tsv"
 DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
 DOCUMENT_MANIFEST_PATH = DATA_ROOT / "manifest.jsonl"
 CITATION_CONTEXT_QUERY = """
@@ -122,6 +127,7 @@ QDRANT_KNOWLEDGE_SPARSE_VECTOR_NAME = "knowledge_sparse"
 SCOPE_KNOWLEDGE_LIMIT = 5
 SCOPE_DISCLOSURE_RESULT_LIMIT = 50
 SCOPE_SECTION_RESULT_LIMIT = 500
+MAX_RETRIEVAL_SEARCH_COUNT = 15
 SCOPE_DOC_GROUPS = ("periodic", "major", "exchange", "holding")
 SCOPE_KNOWLEDGE_HINT_FIELDS = (
     "knowledge_type",
@@ -131,6 +137,93 @@ SCOPE_KNOWLEDGE_HINT_FIELDS = (
     "datasets",
     "categories",
 )
+
+
+@lru_cache(maxsize=1)
+def load_issuer_universe_tsv() -> str:
+    """Question Analyzer에 제공할 70개 발행회사 TSV 원문을 한 번만 읽습니다."""
+
+    return ISSUER_UNIVERSE_PATH.read_text(encoding="utf-8-sig").strip()
+
+
+@lru_cache(maxsize=1)
+def load_issuer_universe() -> tuple[dict[str, str], ...]:
+    """발행회사 TSV를 application 검증용 row 목록으로 파싱합니다."""
+
+    rows = csv.DictReader(load_issuer_universe_tsv().splitlines(), delimiter="\t")
+    return tuple({key: value.strip() for key, value in row.items()} for row in rows)
+
+
+def _normalize_company_identifier(value: str) -> str:
+    """회사 식별 문자열을 exact comparison용으로만 보수적으로 정규화합니다."""
+
+    normalized = unicodedata.normalize("NFKC", value).casefold().strip()
+    return re.sub(r"[\s.,()㈜\-_/]", "", normalized)
+
+
+def _issuer_universe_matches(mention: str) -> list[dict[str, str]]:
+    """한 entity mention과 정확히 일치하는 issuer registry row를 반환합니다."""
+
+    normalized_mention = _normalize_company_identifier(mention)
+    if not normalized_mention:
+        return []
+    match_fields = (
+        "corp_code",
+        "stock_code",
+        "corp_name",
+        "listed_name",
+        "corp_eng_name",
+    )
+    return [
+        row
+        for row in load_issuer_universe()
+        if normalized_mention in {
+            _normalize_company_identifier(row.get(field, ""))
+            for field in match_fields
+            if row.get(field)
+        }
+    ]
+
+
+def normalize_question_analysis_entities(
+    analysis: QuestionAnalysis,
+) -> QuestionAnalysis:
+    """Question Analyzer의 entity 출력을 issuer universe와 role별로 대조합니다."""
+
+    normalized_subquestions = []
+    for subquestion in analysis.sub_questions:
+        normalized_entities = []
+        for entity in subquestion.entities:
+            matches = _issuer_universe_matches(entity.mention)
+            if len(matches) == 1:
+                canonical_name = matches[0]["corp_name"]
+                match_status = "MATCHED"
+            elif len(matches) > 1:
+                canonical_name = None
+                match_status = "AMBIGUOUS"
+            elif "ISSUER" in entity.roles:
+                canonical_name = None
+                match_status = "OUT_OF_UNIVERSE"
+            else:
+                canonical_name = None
+                match_status = "UNKNOWN"
+            normalized_entities.append(entity.model_copy(update={
+                "canonical_name": canonical_name,
+                "match_status": match_status,
+            }))
+        normalized_subquestions.append(subquestion.model_copy(update={
+            "entities": normalized_entities,
+        }))
+    return analysis.model_copy(update={"sub_questions": normalized_subquestions})
+
+
+def subquestion_has_out_of_universe_issuer(subquestion: SubQuestion) -> bool:
+    """지원 universe 밖의 ISSUER가 SubQuestion에 포함됐는지 확인합니다."""
+
+    return any(
+        "ISSUER" in entity.roles and entity.match_status == "OUT_OF_UNIVERSE"
+        for entity in subquestion.entities
+    )
 
 class CypherQuery(BaseModel):
     """실행 가능한 read-only Cypher와 parameter를 분리한 요청입니다."""
@@ -807,7 +900,7 @@ def _scope_issuer_names(subquestion: SubQuestion) -> list[str]:
         (entity.canonical_name or entity.mention).strip()
         for entity in subquestion.entities
         if "ISSUER" in entity.roles
-        and entity.match_status != "NOT_FOUND"
+        and entity.match_status not in {"NOT_FOUND", "OUT_OF_UNIVERSE"}
         and (entity.canonical_name or entity.mention).strip()
     ]
     return list(dict.fromkeys(names))
@@ -845,26 +938,90 @@ def _scope_candidate_records(items: list[dict[str, Any]]) -> list[dict[str, Any]
 def _disclosure_scope_query(
     corp_names: list[str],
     doc_groups: list[str],
+    rcept_date_range: tuple[str, str] | None = None,
 ) -> CypherQuery:
     """기업과 doc_group으로 최신 Disclosure 후보 목록을 조회합니다."""
 
+    date_condition = (
+        "AND d.rcept_date >= date($start_date) "
+        "AND d.rcept_date <= date($end_date) "
+        if rcept_date_range is not None
+        else ""
+    )
+    parameters: dict[str, Any] = {
+        "corp_names": corp_names,
+        "doc_groups": doc_groups,
+        "limit": SCOPE_DISCLOSURE_RESULT_LIMIT,
+    }
+    if rcept_date_range is not None:
+        parameters.update({
+            "start_date": rcept_date_range[0],
+            "end_date": rcept_date_range[1],
+        })
     return CypherQuery(
         cypher=(
             "MATCH (c:Company)-[:PUBLISHES]->(d:Disclosure) "
             "WHERE c.corp_name IN $corp_names "
             "AND d.doc_group IN $doc_groups "
             "AND d.is_latest_version = true "
+            f"{date_condition}"
             "RETURN c.corp_name AS corp_name, c.corp_code AS corp_code, "
             "d.id AS disclosure_id, d.report_name AS report_name, "
             "d.doc_group AS doc_group, d.rcept_date AS rcept_date "
             "ORDER BY d.rcept_date DESC LIMIT $limit"
         ),
-        parameters={
-            "corp_names": corp_names,
-            "doc_groups": doc_groups,
-            "limit": SCOPE_DISCLOSURE_RESULT_LIMIT,
-        },
+        parameters=parameters,
     )
+
+
+def _shift_month(value: date, months: int) -> date:
+    """날짜를 달력 기준 월 단위로 이동하고 존재하지 않는 일자는 말일로 맞춥니다."""
+
+    month_index = value.year * 12 + value.month - 1 + months
+    year, zero_based_month = divmod(month_index, 12)
+    month = zero_based_month + 1
+    day = min(value.day, monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _normalized_period_bounds(period: Any) -> tuple[date, date] | None:
+    """정규화된 PeriodAnalysis를 포함 범위의 시작일과 종료일로 변환합니다."""
+
+    value = (period.normalized_value or "").strip()
+    try:
+        if period.granularity == "YEAR" and re.fullmatch(r"\d{4}", value):
+            year = int(value)
+            return date(year, 1, 1), date(year, 12, 31)
+        if period.granularity == "MONTH" and re.fullmatch(r"\d{4}-\d{2}", value):
+            year, month = map(int, value.split("-"))
+            return date(year, month, 1), date(year, month, monthrange(year, month)[1])
+        if period.granularity == "DATE" and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            parsed = date.fromisoformat(value)
+            return parsed, parsed
+        if period.granularity == "RANGE":
+            values = re.findall(r"\d{4}-\d{2}-\d{2}", value)
+            if len(values) == 2:
+                start, end = map(date.fromisoformat, values)
+                return (start, end) if start <= end else None
+    except ValueError:
+        return None
+    return None
+
+
+def _scope_rcept_date_range(subquestion: SubQuestion) -> tuple[str, str] | None:
+    """접수일 탐색에 쓸 수 있는 질문 기간을 최소 한 달 확장한 ISO 범위로 만듭니다."""
+
+    bounds = [
+        parsed
+        for period in subquestion.periods
+        if period.kind in {"FILING_DATE", "EVENT_DATE", "AS_OF"}
+        and (parsed := _normalized_period_bounds(period)) is not None
+    ]
+    if not bounds:
+        return None
+    start = _shift_month(min(bound[0] for bound in bounds), -1)
+    end = _shift_month(max(bound[1] for bound in bounds), 1)
+    return start.isoformat(), end.isoformat()
 
 
 def _section_scope_query(disclosure_ids: list[str]) -> CypherQuery:
@@ -896,6 +1053,7 @@ def _narrow_scope_human_message(
     hints: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
     doc_groups: list[str] | None = None,
+    rcept_date_range: tuple[str, str] | None = None,
     selected_disclosure_ids: list[str] | None = None,
 ) -> HumanMessage:
     """각 선택 단계에 SubQuestion, hint와 실제 Neo4j 후보를 명시합니다."""
@@ -907,6 +1065,11 @@ def _narrow_scope_human_message(
     }
     if doc_groups is not None:
         payload["searched_doc_groups"] = doc_groups
+        if rcept_date_range is not None:
+            payload["searched_rcept_date_range"] = {
+                "start": rcept_date_range[0],
+                "end": rcept_date_range[1],
+            }
         payload["disclosure_candidates"] = candidates
     else:
         payload["selected_disclosure_ids"] = selected_disclosure_ids or []
@@ -990,8 +1153,9 @@ def run_narrow_scope_agent(
         )
 
     doc_groups = _scope_doc_groups(hints)
+    rcept_date_range = _scope_rcept_date_range(subquestion)
     disclosure_items = _execute_scope_cypher(
-        _disclosure_scope_query(corp_names, doc_groups),
+        _disclosure_scope_query(corp_names, doc_groups, rcept_date_range),
         stage="disclosures",
     )
     disclosure_candidates = _scope_candidate_records(disclosure_items)
@@ -1023,6 +1187,7 @@ def run_narrow_scope_agent(
             hints=hints,
             candidates=disclosure_candidates,
             doc_groups=doc_groups,
+            rcept_date_range=rcept_date_range,
         ),
         selected_field="selected_disclosure_ids",
         available_ids=available_disclosure_ids,
@@ -1837,6 +2002,8 @@ def build_retriever_human_message(state: AgentState) -> HumanMessage:
     )
     payload = {
         "user_question": state["question_text"],
+        "retrieval_search_count": state.get("retrieval_search_count", 0),
+        "max_retrieval_search_count": MAX_RETRIEVAL_SEARCH_COUNT,
         "sub_questions": (
             [SubQuestion.model_validate(sub_question).model_dump(mode="json") for sub_question in question_analysis.sub_questions]
             if question_analysis is not None
@@ -2348,6 +2515,12 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
     name = tool_call.get("name")
     args = tool_call.get("args", {})
     if name == "retrieve_search":
+        current_count = state.get("retrieval_search_count", 0)
+        if current_count >= MAX_RETRIEVAL_SEARCH_COUNT:
+            raise ValueError(
+                f"retrieve_search 최대 호출 횟수({MAX_RETRIEVAL_SEARCH_COUNT}회)에 "
+                "도달했습니다. 기존 결과로 계산을 수행하거나 finish를 호출하세요."
+            )
         validated = retrieve_search.tool_call_schema.model_validate(args)
         executable_plan = Plan.from_plan_draft(
             validated.plan,
@@ -2410,8 +2583,69 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
     raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 
 
+def _tool_trace_event(tool_call: dict, update: dict) -> ThinkTraceEvent:
+    """기존 tool argument와 실행 결과로 공개 가능한 trace event를 만듭니다."""
+
+    name = str(tool_call["name"])
+    args = tool_call.get("args") or {}
+    details: dict[str, Any] = {}
+
+    if name == "finish":
+        message = str(args.get("reason") or "Retrieval을 종료했습니다.")
+        details = {
+            "status": args.get("status"),
+            "selected_result_ids": args.get("selected_result_ids", []),
+        }
+    else:
+        raw_results = update.get("retrieval_results") or []
+        result = None
+        if raw_results:
+            raw_result = raw_results[-1]
+            result = (
+                raw_result
+                if isinstance(raw_result, RetrievalResult)
+                else RetrievalResult.model_validate(raw_result)
+            )
+
+        plan = args.get("plan") or {}
+        if hasattr(plan, "model_dump"):
+            plan = plan.model_dump(mode="json")
+        purpose = plan.get("purpose") if isinstance(plan, dict) else None
+        metadata = result.metadata if result is not None else {}
+        message = str(
+            metadata.get("reason")
+            or metadata.get("error_message")
+            or metadata.get("plan_purpose")
+            or purpose
+            or args.get("variable_name")
+            or "Tool 실행을 완료했습니다."
+        )
+
+        if result is not None:
+            details.update({
+                "result_id": result.result_id,
+                "source": result.source,
+                "status": result.status,
+                "result_count": result.result_count,
+                "query": result.query,
+            })
+            if metadata.get("failure_stage") is not None:
+                details["failure_stage"] = metadata["failure_stage"]
+        if isinstance(plan, dict):
+            for key in ("scope_id", "dependencies"):
+                if key in plan:
+                    details[key] = plan[key]
+
+    return ThinkTraceEvent(
+        type="tool",
+        name=name,
+        message=message,
+        details=details,
+    )
+
+
 def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
-    """검증된 Retriever tool call을 실제 LangChain tool에 전달합니다."""
+    """검증된 Retriever tool을 실행하고 실행 요약을 state에 누적합니다."""
 
     # tools가 utils를 import하므로 실행 시점에 불러와 순환 import를 피합니다.
     from .tools import (
@@ -2425,22 +2659,25 @@ def execute_tool_call(state: AgentState, tool_call: dict) -> dict:
     name = tool_call["name"]
     args = tool_call["args"]
 
-    if name == "retrieve_search":
-        return retrieve_search.invoke({**args, "state": state})
-    if name == "retrieve_correction_history":
-        return retrieve_correction_history.invoke({**args, "state": state})
-    if name == "calculate_table_statistic":
-        return calculate_table_statistic.invoke({**args, "state": state})
-    if name == "combine_numeric_results":
-        return combine_numeric_results.invoke({**args, "state": state})
-    if name == "finish":
-        return finish.invoke({**args, "state": state})
-    if name == "calculate_table_statistic":
-        return calculate_table_statistic.invoke({**args, "state": state})
-    if name == "combine_numeric_results":
-        return combine_numeric_results.invoke({**args, "state": state})
+    tools_by_name = {
+        "retrieve_search": retrieve_search,
+        "retrieve_correction_history": retrieve_correction_history,
+        "calculate_table_statistic": calculate_table_statistic,
+        "combine_numeric_results": combine_numeric_results,
+        "finish": finish,
+    }
+    selected_tool = tools_by_name.get(name)
+    if selected_tool is None:
+        raise ValueError(f"지원하지 않는 tool call입니다: {name}")
 
-    raise ValueError(f"지원하지 않는 tool call입니다: {name}")
+    update = selected_tool.invoke({**args, "state": state})
+    return {
+        **update,
+        "think_trace_events": [
+            *update.get("think_trace_events", []),
+            _tool_trace_event(tool_call, update),
+        ],
+    }
 
 
 # section_id 를 이용해 element_path를 찾아 해당 공시 원문을 가져오는 함수

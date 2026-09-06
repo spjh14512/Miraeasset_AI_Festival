@@ -98,6 +98,11 @@ def test_retriever_can_finish_with_tool_interface():
 
     assert update["retrieval_status"] == "COMPLETE"
     assert update["selected_result_ids"] == ["retrieval:plan_1"]
+    assert [event.name for event in update["think_trace_events"]] == [
+        "retriever",
+        "finish",
+    ]
+    assert update["think_trace_events"][1].message == "필요한 근거를 확보했습니다."
     assert {tool.name for tool in llm.bound_tools} == {
         "retrieve_search",
         "retrieve_correction_history",
@@ -162,6 +167,70 @@ def test_retriever_retries_retrieve_search_without_scope_id():
     assert update["retrieval_status"] == "COMPLETE"
     assert llm.invoke_count == 2
     assert "scope_id" in llm.calls[1][-1].content
+
+
+def test_retriever_retries_retrieve_search_after_maximum_count():
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "retrieve_search",
+            "args": {
+                "plan": {
+                    "source": "qdrant",
+                    "query": "삼성전자 판매전략",
+                    "purpose": "판매전략 근거 확인",
+                    "dependencies": [],
+                    "scope_id": "scope_1",
+                },
+                "limit": 5,
+            },
+        }
+    ]])
+    state = {**_retrieval_state(), "retrieval_search_count": 15}
+
+    update = graph_module.retriever(state, llm=llm)
+
+    assert update["retrieval_status"] == "COMPLETE"
+    assert llm.invoke_count == 2
+    assert "최대 호출 횟수(15회)" in llm.calls[1][-1].content
+
+
+def test_retriever_ignores_finish_when_another_tool_is_called(monkeypatch):
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "finish",
+            "args": {
+                "status": "INSUFFICIENT",
+                "reason": "검색을 종료합니다.",
+                "selected_result_ids": [],
+            },
+        },
+        {
+            "name": "retrieve_search",
+            "args": {
+                "plan": {
+                    "source": "qdrant",
+                    "query": "삼성전자 판매전략",
+                    "purpose": "판매전략 근거 확인",
+                    "dependencies": [],
+                    "scope_id": "scope_1",
+                },
+                "limit": 5,
+            },
+        },
+    ]])
+    selected_calls = []
+
+    def execute(_state, tool_call):
+        selected_calls.append(tool_call)
+        return {"retrieval_status": "CONTINUE"}
+
+    monkeypatch.setattr(graph_module, "execute_tool_call", execute)
+
+    update = graph_module.retriever(_retrieval_state(), llm=llm)
+
+    assert llm.invoke_count == 1
+    assert selected_calls[0]["name"] == "retrieve_search"
+    assert update["retrieval_status"] == "CONTINUE"
 
 
 def test_retriever_retries_unknown_finish_result_id():

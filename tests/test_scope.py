@@ -169,6 +169,35 @@ def test_knowledge_query_combines_required_subquestion_fields():
         assert value in query
 
 
+def test_scope_event_date_expands_disclosure_rcept_date_by_one_month():
+    rcept_date_range = utils._scope_rcept_date_range(_subquestion())
+    query = utils._disclosure_scope_query(
+        ["삼성전자"],
+        ["major"],
+        rcept_date_range,
+    )
+
+    assert rcept_date_range == ("2024-12-01", "2026-01-31")
+    assert "d.rcept_date >= date($start_date)" in query.cypher
+    assert "d.rcept_date <= date($end_date)" in query.cypher
+    assert query.parameters["start_date"] == "2024-12-01"
+    assert query.parameters["end_date"] == "2026-01-31"
+
+
+def test_scope_reporting_period_does_not_filter_rcept_date():
+    subquestion = SubQuestion.model_validate({
+        **_subquestion().model_dump(mode="json"),
+        "periods": [{
+            "expression": "2023년",
+            "kind": "REPORTING_PERIOD",
+            "normalized_value": "2023",
+            "granularity": "YEAR",
+        }],
+    })
+
+    assert utils._scope_rcept_date_range(subquestion) is None
+
+
 def test_scope_knowledge_search_keeps_llm_fields_and_omits_empty_values(monkeypatch):
     points = [
         SimpleNamespace(
@@ -305,7 +334,12 @@ def test_scope_resolver_adds_application_assigned_scope(monkeypatch):
 
     update = graph_module.scope_resolver(_state())
 
-    assert update == {"scope_candidates": [expected]}
+    assert update["scope_candidates"] == [expected]
+    trace = update["think_trace_events"][0]
+    assert trace.name == "scope_resolver"
+    assert trace.message == expected.reason
+    assert trace.details["scope_id"] == expected.scope_id
+    assert trace.details["level"] == "SECTION"
 
 
 def test_scope_resolver_processes_every_subquestion_in_order(monkeypatch):
@@ -354,6 +388,34 @@ def test_scope_resolver_falls_back_to_global_scope(monkeypatch, capsys):
     assert scope.level == "GLOBAL"
     assert "RuntimeError: Neo4j unavailable" in scope.reason
     assert "GLOBAL Scope로 대체" in capsys.readouterr().out
+
+
+def test_scope_resolver_skips_out_of_universe_issuer(monkeypatch, capsys):
+    state = _state()
+    subquestion = state["question_analysis"].sub_questions[0]
+    unsupported_entity = subquestion.entities[0].model_copy(update={
+        "canonical_name": None,
+        "match_status": "OUT_OF_UNIVERSE",
+    })
+    unsupported_subquestion = subquestion.model_copy(update={
+        "entities": [unsupported_entity],
+    })
+    state["question_analysis"] = state["question_analysis"].model_copy(update={
+        "sub_questions": [unsupported_subquestion],
+    })
+    calls = []
+    monkeypatch.setattr(
+        graph_module,
+        "run_narrow_scope_agent",
+        lambda subquestion_id, _state: calls.append(subquestion_id),
+    )
+
+    update = graph_module.scope_resolver(state)
+
+    assert update["scope_candidates"] == []
+    assert update["think_trace_events"] == []
+    assert calls == []
+    assert "지원 universe에 없어 Scope 생성을 건너뜁니다" in capsys.readouterr().out
 
 
 def test_scope_selection_rejects_ids_not_returned_by_neo4j():

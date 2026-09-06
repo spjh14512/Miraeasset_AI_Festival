@@ -24,7 +24,13 @@ EntityRole = Literal[
     "SHAREHOLDER",
     "OTHER",
 ]
-EntityMatchStatus = Literal["MATCHED", "AMBIGUOUS", "NOT_FOUND", "UNKNOWN"]
+EntityMatchStatus = Literal[
+    "MATCHED",
+    "AMBIGUOUS",
+    "NOT_FOUND",
+    "OUT_OF_UNIVERSE",
+    "UNKNOWN",
+]
 EventConfidence = Literal["HIGH", "MEDIUM", "LOW"]
 QuestionIntent = Literal[
     "DECISION",
@@ -51,6 +57,7 @@ PeriodKind = Literal[
 ]
 PeriodGranularity = Literal["DATE", "MONTH", "YEAR", "RANGE", "UNKNOWN"]
 ScopeLevel = Literal["GLOBAL", "COMPANY", "DISCLOSURE", "SECTION"]
+ThinkTraceEventType = Literal["node", "tool"]
 
 
 class PlanDraft(BaseModel):
@@ -355,6 +362,37 @@ def merge_results(
     return sorted(merged.values(), key=lambda result: result.result_id)
 
 
+class ThinkTraceEvent(BaseModel):
+    """최종 think_trace에 노출할 구조화된 실행 요약입니다."""
+
+    type: ThinkTraceEventType
+    name: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("name", "message")
+    @classmethod
+    def normalize_trace_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("ThinkTraceEvent 문자열은 비어 있을 수 없습니다.")
+        return normalized
+
+
+def merge_think_trace_events(
+    left: list[ThinkTraceEvent],
+    right: list[ThinkTraceEvent],
+) -> list[ThinkTraceEvent]:
+    """LangGraph 실행 순서대로 think trace event를 누적합니다."""
+
+    return [
+        event
+        if isinstance(event, ThinkTraceEvent)
+        else ThinkTraceEvent.model_validate(event)
+        for event in [*left, *right]
+    ]
+
+
 
 class Citation(BaseModel):
     """
@@ -414,6 +452,7 @@ class AgentState(TypedDict, total=False):
     retrieval_results: NotRequired[
         Annotated[list[RetrievalResult], merge_results]
     ]
+    retrieval_search_count: NotRequired[int]
     retrieved_qdrant_point_ids: NotRequired[list[str]]
     retrieval_status: NotRequired[RetrievalStatus]
     retrieval_finish_reason: NotRequired[str]
@@ -423,5 +462,8 @@ class AgentState(TypedDict, total=False):
     ai_answer: AiAnswer
 
     # Observability / recovery
+    think_trace_events: NotRequired[
+        Annotated[list[ThinkTraceEvent], merge_think_trace_events]
+    ]
     errors: NotRequired[list[str]]
     retry_counts: NotRequired[dict[str, int]]

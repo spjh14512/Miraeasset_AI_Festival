@@ -95,6 +95,14 @@ def test_finish_allows_empty_selection_for_insufficient():
     )
 
     assert update["selected_result_ids"] == []
+    trace = update["think_trace_events"][0]
+    assert trace.type == "tool"
+    assert trace.name == "finish"
+    assert trace.message == "근거를 찾지 못했습니다."
+    assert trace.details == {
+        "status": "INSUFFICIENT",
+        "selected_result_ids": [],
+    }
 
 
 def test_finish_rejects_unknown_result():

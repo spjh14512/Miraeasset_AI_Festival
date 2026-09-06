@@ -5,10 +5,11 @@ from typing import Any
 
 from fastapi import FastAPI, Query
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from agent_graph.graph import graph
-from agent_graph.state import AgentState, Citation
+from agent_graph.state import AgentState, Citation, ThinkTraceEvent
 from agent_graph.utils import format_citations
 
 
@@ -23,6 +24,17 @@ class AnswerResponse(BaseModel):
 
 
 app = FastAPI(title="DART Disclosure Analyst API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 
 def _as_json_string(value: Any) -> str:
@@ -56,18 +68,33 @@ def _build_retrieved_context(output_state: dict[str, Any]) -> str:
 def _build_think_trace(output_state: dict[str, Any]) -> str:
     """Return an execution summary without exposing private chain-of-thought."""
 
-    analysis = output_state.get("question_analysis")
-    analysis_payload = _model_dump(analysis) if analysis is not None else {}
-    decision_reason = (
-        analysis_payload.get("decision_reason", "")
-        if isinstance(analysis_payload, dict)
-        else ""
-    )
+    events = [
+        event
+        if isinstance(event, ThinkTraceEvent)
+        else ThinkTraceEvent.model_validate(event)
+        for event in output_state.get("think_trace_events", [])
+    ]
+    if not events:
+        analysis = output_state.get("question_analysis")
+        analysis_payload = _model_dump(analysis) if analysis is not None else {}
+        decision_reason = (
+            analysis_payload.get("decision_reason", "")
+            if isinstance(analysis_payload, dict)
+            else ""
+        )
+        fallback_reason = str(
+            output_state.get("retrieval_finish_reason") or decision_reason
+        ).strip()
+        if fallback_reason:
+            events.append(ThinkTraceEvent(
+                type="node",
+                name="graph",
+                message=fallback_reason,
+            ))
+
     trace = {
         "query_text": str(output_state.get("question_text", "")),
-        "reason": str(
-            output_state.get("retrieval_finish_reason") or decision_reason
-        ),
+        "steps": [event.model_dump(mode="json") for event in events],
     }
     return _as_json_string(trace)
 

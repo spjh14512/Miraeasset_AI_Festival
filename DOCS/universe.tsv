@@ -1,4 +1,4 @@
-고유번호	종목코드	법인명	거래소통용종목명	영문법인명	시장구분	업종	섹터	상장일	2026-07-24기준시가총액
+corp_code	stock_code	corp_name	listed_name	corp_eng_name	market	industry	sector	listing_date	market_cap(2026-07-24기준)
 00126380	005930	삼성전자	삼성전자	SAMSUNG ELECTRONICS CO,.LTD	KOSPI	IT	반도체·전자부품	1975-06-11	14586465억원
 00164779	000660	SK하이닉스	SK하이닉스	SK hynix Inc.	KOSPI	IT	반도체·전자부품	1996-12-26	12536435억원
 00126371	009150	삼성전기	삼성전기	SAMSUNG ELECTRO-MECHANICS CO.,LTD	KOSPI	IT	반도체·전자부품	1979-02-27	990438억원

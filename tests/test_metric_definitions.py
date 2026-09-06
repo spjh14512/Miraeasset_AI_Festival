@@ -58,7 +58,7 @@ def test_metric_definition_rows_reject_invalid_required_metrics():
         )
 
 
-def test_schema_declares_metric_definition_and_relations():
+def test_schema_declares_metric_definition_without_observation_model():
     schema = load_schema(Path("knowledge_graph/neo4j_schema.yaml"))
 
     assert set(schema["entities"]["MetricDefinition"]["properties"]) == {
@@ -70,10 +70,9 @@ def test_schema_declares_metric_definition_and_relations():
         "formula_version",
         "required_metrics",
     }
-    assert schema["relations"]["INSTANCE_OF"]["endpoints"] == {
-        "source": ["MetricObservation"],
-        "target": ["MetricDefinition"],
-    }
+    assert "MetricObservation" not in schema["entities"]
+    for relation in ("HAS_METRIC", "INSTANCE_OF", "SUPPORTED_BY", "DERIVED_FROM"):
+        assert relation not in schema["relations"]
 
 
 class _Result:

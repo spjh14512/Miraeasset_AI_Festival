@@ -12,6 +12,7 @@ from .utils import (
     CalculationOperation,
     CombineOperation,
     FinishStatus,
+    MAX_RETRIEVAL_SEARCH_COUNT,
     NumericResultTarget,
     OrderingDirection,
     RepeatedNoResultsFilterError,
@@ -56,6 +57,12 @@ def retrieve_search(
         dict: 자동 할당된 plan_id와 검색 결과를 포함한 state update
     """
 
+    retrieval_search_count = state.get("retrieval_search_count", 0)
+    if retrieval_search_count >= MAX_RETRIEVAL_SEARCH_COUNT:
+        raise ValueError(
+            f"retrieve_search 최대 호출 횟수({MAX_RETRIEVAL_SEARCH_COUNT}회)에 "
+            "도달했습니다."
+        )
     next_plan_seq = state.get("next_plan_seq", 1)
     executable_plan = Plan.from_plan_draft(plan, next_plan_seq)
     dependencies = _resolve_plan_dependencies(executable_plan, state)
@@ -98,6 +105,7 @@ def retrieve_search(
 
     update = {
         "next_plan_seq": next_plan_seq + 1,
+        "retrieval_search_count": retrieval_search_count + 1,
         "retrieval_results": [retrieval_result],
     }
     if executable_plan.source == "qdrant":

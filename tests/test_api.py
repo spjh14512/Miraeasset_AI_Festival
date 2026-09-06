@@ -1,7 +1,15 @@
+import json
+
 from fastapi.testclient import TestClient
 
 import main
-from agent_graph.state import AiAnswer, Citation, QuestionAnalysis, RetrievalResult
+from agent_graph.state import (
+    AiAnswer,
+    Citation,
+    QuestionAnalysis,
+    RetrievalResult,
+    ThinkTraceEvent,
+)
 
 
 class _FakeGraph:
@@ -18,6 +26,20 @@ class _FakeGraph:
             "retrieval_status": "COMPLETE",
             "retrieval_finish_reason": "관련 근거를 찾았습니다.",
             "selected_result_ids": ["retrieval:plan_1"],
+            "think_trace_events": [
+                ThinkTraceEvent(
+                    type="node",
+                    name="question_analyzer",
+                    message="공시 근거 검색이 필요합니다.",
+                    details={"decision": "retrieve"},
+                ),
+                ThinkTraceEvent(
+                    type="tool",
+                    name="finish",
+                    message="관련 근거를 찾았습니다.",
+                    details={"status": "COMPLETE"},
+                ),
+            ],
             "retrieval_results": [RetrievalResult(
                 result_id="retrieval:plan_1",
                 plan_id="plan_1",
@@ -67,10 +89,23 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
         "[사업보고서 (2023.12)(20240306000686) > "
         "IV. 이사의 경영진단 및 분석의견 > 가. 연결 재무상태]"
     )
-    assert payload["think_trace"] == (
-        '{"query_text": "삼성전자의 설비 투자를 알려줘", '
-        '"reason": "관련 근거를 찾았습니다."}'
-    )
+    assert json.loads(payload["think_trace"]) == {
+        "query_text": "삼성전자의 설비 투자를 알려줘",
+        "steps": [
+            {
+                "type": "node",
+                "name": "question_analyzer",
+                "message": "공시 근거 검색이 필요합니다.",
+                "details": {"decision": "retrieve"},
+            },
+            {
+                "type": "tool",
+                "name": "finish",
+                "message": "관련 근거를 찾았습니다.",
+                "details": {"status": "COMPLETE"},
+            },
+        ],
+    }
     assert all(isinstance(value, str) for value in payload.values())
 
 
