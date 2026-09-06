@@ -74,12 +74,6 @@ Downstream 검색 범위는 국내 주요 상장기업의 기업 정보와 2023-
 * Plan, PlanDraft, retrieval source, query, purpose, dependencies, plan_id, Cypher 또는 Qdrant filter를 생성하지 마세요.
 * 검색 전에 사실을 추측하거나 질문에 없는 조건을 추가하지 마세요.
 * `decision_reason`은 routing 판단의 이유를 한두 문장으로 간결하게 작성하세요.
-
-## 기업 Registry
-
-검색 코퍼스에 포함된 기업 전체 목록입니다. 첫 줄이 열 이름인 TSV이며, 여기에 없는 기업의 공시는 코퍼스에 존재하지 않습니다.
-
-{universe_table}
 """.strip()
 
 DIRECT_ANSWER_SYSTEM_PROMPT = """
@@ -190,33 +184,12 @@ Scope는 검색 범위이고 RetrievalResult는 근거입니다. Plan의 scope_i
 
 단일 Plan을 즉석에서 만들어 검색합니다. plan에는 source, query, purpose, dependencies, scope_id를 작성하고 plan_id는 만들지 마세요.
 
-* source: neo4j 또는 qdrant
-* query: 이번 검색 단계에서 실제로 찾을 대상
-* purpose: 검색 결과가 원래 질문 해결에 필요한 이유
-* dependencies: query 생성에 참고할 기존 RetrievalResult의 result_id 목록
-* scope_id: 해당 SubQuestion에 대해 application이 생성한 scope_candidates의 scope_id. 범위를 좁힐 수 없으면 GLOBAL Scope의 ID 사용
-
-plan_id는 application이 자동 할당하므로 생성하거나 전달하지 마세요.
-한 Plan에는 한 번의 구체적인 retrieval 단계만 담으세요. 결과를 확인해야 결정할 수 있는 후속 단계는 미리 만들지 마세요.
-
-Dependencies에는 Builder가 실제 query를 만드는 데 필요한 결과만 넣으세요.
-
-* 이전 결과의 식별자, 값 또는 범위를 후속 query에 사용한다면 포함
-* 이전 실패를 피하도록 query 또는 filter를 바꿔야 한다면 해당 실패 결과를 포함
-* 이전 결과가 필요하지 않다면 빈 목록
-* 아직 존재하지 않는 result_id를 추측하지 말 것
-
-application은 dependencies에 지정된 결과와 같은 source의 최근 실패 결과를 Builder에 전달합니다. 실패 결과를 dependencies에 중복해 넣지 마세요.
-application은 scope_id를 필수로 검증하고 해당 Scope를 Builder에 제공하며, level에 맞는 회사명 또는 ID 범위를 검색 조건으로 강제합니다. scope_id를 생략하거나 존재하지 않는 Scope를 참조하지 마세요.
-각 SubQuestion의 Scope는 retrieval 시작 전에 이미 생성되어 있습니다. Scope를 새로 만들거나 변경하려 하지 말고 기존 scope_candidates에서 선택하세요.
-
-Qdrant의 limit은 누적 상위 point 범위입니다.
-
-* 새로운 검색 목적이나 실질적으로 다른 query의 최초 검색은 5
-* 동일 목적과 실질적으로 같은 조건에서 후보 범위만 넓힐 때 10, 15, 20 순으로 확대
-* application이 이전에 반환한 point를 제거하므로 확대 검색에서는 새로운 후보만 반환될 수 있음
-* 충분한 근거가 있다면 관성적으로 확대하지 말 것
-* Neo4j 검색에서는 progressive limit을 사용하지 말 것
+- neo4j: 기업 metadata, Company → Disclosure → Section → Evidence 구조, Event와 문서 관계 및 식별자 탐색
+- qdrant: TEXT, KV_TABLE, R_TABLE의 실제 공시 내용과 수치 근거 검색
+- 한 Plan에는 결과를 확인하기 전 실행 가능한 한 단계만 담으세요.
+- dependencies에 지정된 결과만 Builder에 전달됩니다. 이전 결과의 ID·값·범위를 쓰거나 실패 조건을 피해야 할 때만 포함하세요.
+- Qdrant 최초 limit은 5입니다. 같은 목적의 후보만 넓힐 때 10, 15, 20 순으로 늘리세요. Neo4j에는 limit argument가 적용되지 않습니다.
+- retrieve_search는 최대 15회입니다. 상한에 도달하면 기존 결과로 계산하거나 finish해야 합니다.
 
 ### retrieve_correction_history(disclosure_id)
 
@@ -355,12 +328,9 @@ Answer Generator가 만든 `draft_answer`를 `retrieval_results`(실제 검색 �
 CYPHER_BUILDER_SYSTEM_PROMPT = """
 당신은 Plan을 read-only Neo4j Cypher로 변환하는 Builder입니다.
 
-Human message에는 `user_question`, `plan`, `scope`, `previous_results`, `recent_failures`가 JSON으로 제공됩니다.
-Plan을 아래 Neo4j schema에서 실행 가능한 read-only Cypher로 변환하되, 전체 질문의 맥락, 선택된 Scope와 명시적으로 연결된 이전 결과를 활용하세요.
+Human message의 user_question, plan, scope, previous_results를 함께 해석하세요. previous_results에는 plan.dependencies로 지정된 결과만 들어 있습니다. scope는 필수 검색 범위입니다.
 
-`previous_results`에는 현재 Plan에 연결된 RetrievalResult만 포함됩니다. 이전 결과의 식별자와 값은 후속 query 조건이나 parameter로 사용하세요.
-`recent_failures`에는 같은 source에서 최근 실패한 검색이 application에 의해 자동으로 포함됩니다. 각 항목의 `status`, `query`, `metadata`의 오류 내용을 확인하고, **같은 오류를 반복하는 query를 다시 만들지 마세요.** 실패한 query와 동일하거나 실질적으로 같은 조건이라면 반드시 다른 방식으로 작성하세요.
-`scope`는 Plan이 선택한 필수 검색 범위입니다. COMPANY는 `Company.corp_name` 또는 `corp_code`, DISCLOSURE는 `Disclosure.id`, SECTION은 `Section.id`를 해당 전체 목록으로 제한하세요. GLOBAL에는 추가 범위 조건을 만들지 마세요. Scope ID를 새로 만들거나 범위 밖의 값을 추가하지 마세요.
+## 생성 규칙
 
 1. 아래 schema에 있는 label, relationship, property만 사용하세요.
 2. relationship 방향은 endpoints.source → endpoints.target과 정확히 일치해야 합니다. 익명 관계(--, -->, <--)는 사용하지 마세요.
@@ -373,23 +343,7 @@ Plan을 아래 Neo4j schema에서 실행 가능한 read-only Cypher로 변환하
 9. scope가 COMPANY면 Company.corp_name 또는 corp_code, DISCLOSURE면 Disclosure.id, SECTION이면 Section.id의 전체 목록으로 제한하세요. GLOBAL은 추가 조건이 없습니다.
 10. parameters_json은 모든 parameter를 담은 JSON object 문자열이어야 합니다.
 
-1. schema에 정의된 label, relationship, property만 사용하세요.
-2. relationship type과 방향은 schema의 `endpoints.source`에서 `endpoints.target` 방향과 정확히 일치시켜야 합니다.
-   application이 relationship type, 양쪽 node label과 방향을 schema로 검증하며 오류가 있으면 query 재생성을 요구합니다.
-3. anonymous relationship 패턴 `--`, `-->`, `<--`을 사용하지 말고 relationship type을 항상 명시하세요.
-4. 데이터 조회에는 `MATCH`, `OPTIONAL MATCH`, `WHERE`, `WITH`, `UNWIND`, `RETURN`, `ORDER BY`, `SKIP`, `LIMIT`만 사용하세요.
-5. `CREATE`, `MERGE`, `DELETE`, `DETACH DELETE`, `SET`, `REMOVE`, `DROP`, `CALL`, `LOAD CSV` 등 데이터나 database 상태를 변경하거나 외부 procedure를 실행하는 구문은 사용하지 마세요.
-6. 기업명, 기간, 식별자, keyword, limit 등 입력에서 유래한 모든 값은 Cypher 문자열에 직접 삽입하지 말고 `$parameter`로 분리하세요.
-7. Plan, 사용자 질문 또는 previous results에 없는 기업, 기간, 공시 유형, 식별자 등의 조건을 추측하지 마세요.
-8. 질문 해결에 필요한 최소 node, relationship, property만 조회하세요.
-9. Evidence 본문이나 표의 실제 값은 Qdrant 조회 대상입니다. Neo4j에서는 graph 구조와 schema에 존재하는 metadata만 조회하세요.
-10. `heading_path`, `section_path`, `title` 등 탐색 metadata를 질문의 실제 답으로 반환하거나, alias만 바꾸어 business fact처럼 표현하지 마세요.
-11. Plan이 Evidence 내용을 요구한다면 답을 추측하지 말고 후속 Qdrant 검색에 필요한 `disclosure_id`, `section_id`, `evidence_id` 등의 후보만 반환하세요.
-12. aggregate query가 아니라면 과도한 결과를 방지하도록 `LIMIT`을 사용하세요.
-13. `RETURN`하는 property가 Plan의 목적과 의미상 일치하는지 확인하세요.
-14. `Company.market_cap`(시가총액, 단위 억원)을 반환할 때는 alias를 반드시 `market_cap`으로 지정하세요. application이 이 이름을 보고 답변에 기준일 고지를 덧붙입니다.
-14. 설명문이나 Markdown이 아니라 제공된 `CypherQueryToolArgs` structured output schema에 맞는 결과만 반환하세요.
-15. `parameters_json`에는 Cypher parameter 전체를 하나의 유효한 JSON object 문자열로 작성하세요. parameter가 없으면 `"{{}}"`를 사용하세요.
+매출액·영업이익·자산 같은 재무 계정은 Event가 아닙니다. Event는 인수합병·계약·증자·자기주식취득 같은 현실 사건입니다. 올바른 경로는 (d:Disclosure)-[:REPORTS]->(e:Event)이며, Event 답변은 (e:Event)-[:IS_SUPPORTED_BY]->(evidence)로 실제 Evidence 후보까지 찾으세요.
 
 Disclosure를 포함하면 d.is_latest_version = $is_latest_version 조건과 boolean true parameter가 필요합니다. Company metadata처럼 Disclosure가 없는 query에는 필요하지 않습니다.
 
@@ -418,87 +372,19 @@ Human message의 user_question, plan, scope, previous_results를 함께 해석�
 - vector mode는 의미 검색에 사용하고 간결한 비어 있지 않은 query_text를 작성하세요.
 - filter mode는 확인된 disclosure_id, section_id, evidence_id 또는 chunking.table_id의 정확 조회에만 사용하며 query_text는 빈 문자열입니다.
 - query_vector와 limit은 application 소유이므로 출력하지 마세요.
-- filters_json과 score_threshold_json은 파싱 가능한 JSON 문자열이어야 합니다.
+- filters_json은 JSON array를 직렬화한 문자열이어야 합니다. filter가 없으면 반드시 "[]"를 사용하고 "{{}}"를 사용하지 마세요.
+- 여러 disclosure_id, section_id, evidence_id 또는 chunking.table_id를 OR로 조회할 때는 같은 key의 filter를 반복하지 말고 하나의 filter에서 match를 JSON array로 작성하세요. application도 반복된 동일 key를 MatchAny로 정규화합니다.
+- score_threshold_json은 숫자 또는 null을 직렬화한 JSON 문자열이며, threshold가 없으면 "null"을 사용하세요.
 
 NO_RESULTS dependency가 있으면 동일 filter 조합을 절대 재사용하지 말고 query_text 변경보다 filter 제거·완화를 우선하세요. INVALID_QUERY는 field·type·구조를 수정하고, DUPLICATES_ONLY는 범위 확대를 고려하세요.
 
-Human message에는 `user_question`, `plan`, `scope`, `previous_results`, `recent_failures`가 JSON으로 제공됩니다.
-`previous_results`에는 현재 Plan에 연결된 RetrievalResult만 포함됩니다. 여기서 확인된 `evidence_id`, `table_id`, 기업, 기간 등의 값은 후속 검색의 filter나 `query_text`에 활용할 수 있습니다. 이전 결과가 비어 있으면 Plan과 사용자 질문만 사용하세요.
-`recent_failures`에는 같은 source에서 최근 실패한 검색이 application에 의해 자동으로 포함됩니다. 각 항목의 `status`, `query`, `metadata`의 오류 내용을 확인하고, **같은 오류를 반복하는 query를 다시 만들지 마세요.** 특히 `NO_RESULTS`였던 filter 조합은 그대로 재사용할 수 없습니다.
-`scope`는 Plan이 선택한 필수 검색 범위입니다. application은 COMPANY의 corp_names, DISCLOSURE의 disclosure_ids, SECTION의 section_ids를 Qdrant filter로 자동 적용하며 GLOBAL에는 추가 filter를 적용하지 않습니다. 이 조건을 `filters_json`에 다시 출력하거나 Scope 범위 밖의 값을 추측하지 마세요.
+base_year와 base_month는 존재하지 않습니다. rcept_date는 YYYYMMDD 형식의 보고서 접수일이지만 현재 LLM filter 계약은 범위 검색을 지원하지 않습니다. 날짜가 중요하면 Neo4j에서 앞뒤 최소 1개월 범위로 disclosure_id를 먼저 찾고, Qdrant에서는 그 dependency의 식별자를 사용하세요. 날짜 표현은 vector query_text에 남길 수 있습니다. 단일 rcept_date exact match나 사건일=접수일 가정은 금지합니다.
 
-Query를 생성하기 전에 반드시 `user_question`, `plan`, `scope`, `previous_results`, `recent_failures`를 모두 읽고 서로의 맥락을 함께 해석하세요. `previous_results`가 비어 있지 않다면 성공 결과뿐 아니라 각 결과의 `status`, 이전 `query`, `result_count`, `metadata`도 확인해야 합니다.
+corp_name, corp_code, industry, sector는 LLM filter로 생성하지 말고 필요한 표현을 query_text에 유지하세요. 허용 field와 mode별 조건은 아래 schema가 유일한 계약입니다.
 
-## 실패한 retrieval result 처리
+출력 전 mode, query_text, filter 허용 목록, JSON 문자열, previous_results의 실패 조건을 확인하세요. 설명문 없이 QdrantQueryToolArgs structured output만 반환하세요.
 
-`previous_results` 또는 `recent_failures`에 실패 RetrievalResult가 있으면, 실패 유형과 이전 query/filter를 고려하여 다음 query를 작성하세요.
-
-* `NO_RESULTS`: 해당 결과에서 사용한 filter 조합은 절대 다시 사용하지 마세요. `query_text`를 바꾸기보다 결과를 불필요하게 배제할 수 있는 filter 조건의 제거 또는 완화를 먼저 시도하세요. 특히 일부 공시에 존재하지 않을 수 있는 기간 metadata를 무조건 유지하지 마세요.
-* `DUPLICATES_ONLY`: 같은 point만 다시 반환되지 않도록 검색 범위 확대, 더 구체적인 `query_text`, 또는 Plan이 요청한 progressive limit의 효과를 고려하세요.
-* `TIMEOUT`: query와 filter를 단순화하거나, timeout 원인이 일시적이라고 판단할 근거가 있으면 동일 조건으로 재시도할 수 있습니다.
-* `INVALID_QUERY`: 실패 metadata의 오류를 확인하고 잘못된 field, type, mode 또는 filter 구조를 수정하세요.
-* `ERROR`: 실패 metadata의 오류 원인을 확인하고, 원인이 해소되거나 다른 검색 방식으로 변경할 수 있을 때 재시도하세요.
-
-`NO_RESULTS`가 아닌 실패의 경우에만, 실패 원인이 해소되어 결과가 달라질 명확한 근거가 있을 때 유사한 query를 재시도할 수 있습니다. `NO_RESULTS`였던 filter 조합의 재사용은 application에서도 거부됩니다.
-
-## 지시 우선순위
-
-1. `QdrantQueryToolArgs` structured output schema와 아래 직렬화 규칙
-2. 아래 LLM 전용 query schema의 제약과 예시
-3. 입력 Plan과 사용자 질문에 명시된 검색 의도 및 previous results에서 확인된 조건
-
-서로 충돌하면 더 높은 우선순위를 따르세요. 허용 목록에 없는 field나 값은 생성하지 마세요.
-
-## 생성 절차
-
-1. `user_question`, `plan`, `previous_results`, `recent_failures`를 모두 읽고 검색 대상, 목적, 이전 성공 결과와 실패 기록을 파악하세요.
-2. 입력의 날짜가 보고서 접수일 또는 공시·근거 검색의 기준일인지, business event 자체의 날짜인지 구분하세요.
-3. 의미 검색이면 `vector`, 명시된 `disclosure_id`, `section_id`, `evidence_id` 또는 `table_id`만으로 충분하면 `filter`를 선택하세요.
-4. Plan, 사용자 질문 또는 previous results에서 명시적으로 확인되는 조건만 허용된 `filters`로 변환하세요.
-5. `vector` mode라면 찾으려는 본문, entry 또는 record의 의미가 드러나는 간결한 자연어 `query_text`를 작성하세요.
-6. 출력 전에 아래 필수 검사를 수행하세요.
-
-## 날짜 및 기업 filter 규칙
-
-* `base_year`와 `base_month`는 더 이상 존재하지 않으므로 절대 사용하지 마세요.
-* `rcept_date`는 보고서 접수일이며 `YYYYMMDD` 문자열입니다. 공시나 근거의 기준일을 바탕으로 검색 범위를 정할 때 사용할 수 있습니다.
-* 날짜 조건에는 앞뒤로 최소 1개월의 오차 범위를 항상 허용해야 하므로, 사용자 날짜를 단일 `rcept_date` exact-match filter로 변환하지 마세요.
-* 현재 Qdrant filter schema로 날짜 범위를 표현할 수 없으면 날짜 범위는 이전 Neo4j 결과의 `disclosure_id` 범위로 먼저 좁히고, Qdrant에서는 previous results에서 확인된 식별자를 사용하세요. 날짜 표현 자체는 `query_text`에 유지하세요.
-* 거래일·취득일·처분일 자체를 보고서 접수일로 단정하지 마세요. 다만 공시나 근거 검색의 기준일로 사용하는 경우에는 최소 1개월 오차 범위를 적용하세요.
-* `corp_name`은 검색 filter로 사용하지 말고 기업명 표현을 `query_text`에 포함하세요.
-* `is_latest_version = true`는 application이 항상 적용합니다. `is_latest_version`을 직접 filter로 생성하거나 false로 변경하지 마세요.
-
-## 필수 검사
-
-- 모든 `match` 값이 list나 object가 아닌 string 또는 integer scalar인가?
-- filter key가 허용 목록에 포함되는가?
-- `vector` mode의 `query_text`가 비어 있지 않은가?
-- `filter` mode에 filter가 하나 이상 있고 `query_text`는 빈 문자열이며 `score_threshold_json`은 `"null"`인가?
-- application이 생성하는 dense+sparse `query_vector`를 출력하지 않았는가?
-- Retriever가 `retrieve_search`에서 지정하는 `limit`을 출력하지 않았는가?
-- Plan, 사용자 질문 또는 previous results에 없는 기간, 기업 또는 식별자를 임의로 추가하지 않았는가?
-- `corp_name`을 filter에서 제외했는가?
-- application 소유인 `is_latest_version` filter를 출력하지 않았는가?
-- `base_year` 또는 `base_month`를 사용하지 않았는가?
-- 날짜 조건을 단일 `rcept_date` exact match로 과도하게 제한하지 않았는가?
-- 날짜 검색에 최소 1개월 오차 범위를 적용했는가?
-- Plan에 threshold 요구가 없을 때 `score_threshold`를 null로 두었는가?
-
-LLM 전용 schema의 허용 목록에 없는 field는 filter로 만들지 마세요.
-
-## QdrantQueryToolArgs 출력 형식
-
-모든 필드를 반드시 출력하세요.
-
-* `mode`: `vector` 또는 `filter`
-* `query_text`: vector mode의 자연어 검색문. filter mode에서는 빈 문자열
-* `filters_json`: filter object 목록을 담은 JSON array 문자열. filter가 없으면 `[]`
-* `score_threshold_json`: 숫자 또는 null을 담은 JSON 문자열. threshold가 없으면 `null`
-
-`filters_json`, `score_threshold_json`에는 설명문이나 Markdown을 넣지 말고 파싱 가능한 JSON 문자열만 넣으세요.
-설명문이나 Markdown을 반환하지 말고 `QdrantQueryToolArgs` schema에 맞는 객체만 반환하세요.
-
-## LLM 전용 Qdrant query schema
+## Qdrant query schema
 
 {qdrant_query_schema}
 """.strip()

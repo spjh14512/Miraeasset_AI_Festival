@@ -5,6 +5,12 @@ purpose: >-
   Qdrant의 물리 payload 전체 구조가 아니라 LLM이 생성할 수 있는 출력만 정의합니다.
 
 output_contract:
+  structured_output_encoding:
+    filters_json: >-
+      filters 목록을 직렬화한 JSON array 문자열입니다. 필터가 없으면 반드시 "[]"이며
+      "{}"를 사용하지 않습니다.
+    score_threshold_json: >-
+      score_threshold 값을 직렬화한 JSON 문자열입니다. 값이 없으면 "null"입니다.
   automatic_filters:
     is_latest_version:
       value: true
@@ -39,11 +45,11 @@ output_contract:
     semantics: 모든 항목을 AND 조건으로 결합
     allowed_keys:
       disclosure_id:
-        match_type: string
+        match_type: "string | non-empty list[string]"
       section_id:
-        match_type: string
+        match_type: "string | non-empty list[string]"
       evidence_id:
-        match_type: string
+        match_type: "string | non-empty list[string]"
       rcept_date:
         match_type: string
         format: YYYYMMDD
@@ -52,15 +58,16 @@ output_contract:
           필요하므로 단일 날짜 exact match로 사용하지 않고, Neo4j에서 기간 범위를
           먼저 좁힌 dependency의 식별자를 사용하는 것을 우선합니다.
       chunking.table_id:
-        match_type: string
+        match_type: "string | non-empty list[string]"
         availability: 여러 Point로 청킹된 R_TABLE에만 존재
     condition_rules:
       - is_latest_version=true는 application이 자동 적용하므로 LLM이 생성하지 않음
       - 선택된 Scope의 ID filter는 application이 자동 적용하므로 LLM이 중복 생성하지 않음
       - 하나의 filter에는 match만 사용하고 range는 사용하지 않음
-      - match 값은 string scalar만 허용
-      - match에 list, array, object를 사용하지 않음
-      - 동일한 key의 filter를 여러 개 만들어 OR를 표현하지 않음
+      - disclosure_id, section_id, evidence_id, chunking.table_id의 match는 string scalar 또는 non-empty string list를 허용
+      - 복수 identifier의 OR 조건은 동일 key를 반복하지 않고 하나의 match list로 표현
+      - rcept_date의 match는 string scalar만 허용
+      - application은 반복 생성된 동일 identifier key를 하나의 MatchAny 조건으로 병합
       - Plan에 명시된 조건만 filter로 변환
       - base_year와 base_month는 존재하지 않으므로 사용하지 않음
       - 날짜 조건을 단일 rcept_date exact match로 변환하지 않음
@@ -79,27 +86,30 @@ examples:
     output:
       mode: vector
       query_text: 삼성전자 특별관계자 명단 및 관계
-      filters: []
-      score_threshold: null
+      filters_json: "[]"
+      score_threshold_json: "null"
   - name: 공시 기준일을 포함한 의미 검색
     output:
       mode: vector
       query_text: 2024년 3월 전후 LG유플러스 사업보고서 연결 기준 유동자산 총액
-      filters: []
-      score_threshold: null
+      filters_json: "[]"
+      score_threshold_json: "null"
   - name: evidence_id 정확 조회
     output:
       mode: filter
       query_text: ""
-      filters:
-        - key: evidence_id
-          match: d20240306000686:src0:s27:e8
-      score_threshold: null
+      filters_json: '[{"key":"evidence_id","match":"d20240306000686:src0:s27:e8"}]'
+      score_threshold_json: "null"
+  - name: 여러 section_id OR 조회
+    output:
+      mode: filter
+      query_text: ""
+      filters_json: '[{"key":"section_id","match":["section-1","section-2"]}]'
+      score_threshold_json: "null"
 
 invalid_example:
   output:
-    filters:
-      - key: corp_name
-        match: 삼성전자
+    filters_json: '{"key":"corp_name","match":"삼성전자"}'
   violations:
+    - filters_json은 JSON object가 아니라 JSON array 문자열이어야 함
     - corp_name은 허용된 filter key가 아님

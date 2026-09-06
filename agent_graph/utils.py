@@ -56,10 +56,8 @@ from .state import (
     AnswerGeneratorOutput,
     AnswerValidatorOutput,
     Citation,
-    EntityMatchStatus,
     Plan,
     QuestionAnalysis,
-    QuestionAnalyzerOutput,
     RetrievalResult,
     Scope,
     ScopeDraft,
@@ -75,10 +73,6 @@ QDRANT_QUERY_SCHEMA_PATH = Path(__file__).with_name("qdrant_query_schema.yaml")
 ISSUER_UNIVERSE_PATH = Path(__file__).resolve().parents[1] / "DOCS" / "universe.tsv"
 DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
 DOCUMENT_MANIFEST_PATH = DATA_ROOT / "manifest.jsonl"
-# data/는 git에 포함되지 않으므로 저장소에 추적되는 DOCS/ 사본을 읽습니다.
-UNIVERSE_TABLE_PATH = (
-    Path(__file__).resolve().parents[1] / "DOCS" / "universe.tsv"
-)
 # 시가총액을 사용한 답변에는 기준일 고지를 반드시 덧붙입니다.
 MARKET_CAP_FIELD = "market_cap"
 MARKET_CAP_AS_OF_DATE = "2026-07-24"
@@ -91,14 +85,6 @@ TRUSTED_FIELD_SEMANTICS = {
         "근거 payload에도 이미 단위와 기준일이 붙은 형태로 제공됩니다."
     ),
 }
-UNIVERSE_TABLE_COLUMNS = (
-    "법인명",
-    "거래소통용종목명",
-    "영문법인명",
-    "종목코드",
-    "업종",
-    "섹터",
-)
 CITATION_CONTEXT_QUERY = """
 UNWIND $citations AS citation
 MATCH (d:Disclosure {id: citation.disclosure_id})
@@ -351,6 +337,12 @@ QDRANT_STRING_FILTER_FIELDS = {
     "rcept_date",
     "chunking.table_id",
 }
+QDRANT_MULTI_MATCH_FILTER_FIELDS = {
+    "disclosure_id",
+    "section_id",
+    "evidence_id",
+    "chunking.table_id",
+}
 QDRANT_INTEGER_FILTER_FIELDS: set[str] = set()
 
 
@@ -364,9 +356,9 @@ class QdrantFilter(BaseModel):
     key: QdrantFilterField = Field(
         description="허용 목록에 포함된 indexed payload 경로",
     )
-    match: str | int | None = Field(
+    match: str | int | list[str | int] | None = Field(
         default=None,
-        description="정확 일치시킬 string 또는 integer scalar 값. list는 허용하지 않음",
+        description="정확 일치시킬 scalar 값 또는 OR로 결합할 값 목록",
     )
     gt: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
     gte: int | None = Field(default=None, description="현재 payload schema에서는 사용하지 않음")
@@ -389,7 +381,13 @@ class QdrantFilter(BaseModel):
             raise ValueError("Qdrant filter에는 match 또는 range 중 하나가 필요합니다.")
 
         if has_match and self.key in QDRANT_STRING_FILTER_FIELDS:
-            if not isinstance(self.match, str):
+            if isinstance(self.match, list):
+                if self.key not in QDRANT_MULTI_MATCH_FILTER_FIELDS:
+                    raise ValueError(f"{self.key}의 match에는 list를 사용할 수 없습니다.")
+                if not self.match or any(not isinstance(item, str) for item in self.match):
+                    raise ValueError(f"{self.key}의 match list는 string 목록이어야 합니다.")
+                self.match = list(dict.fromkeys(self.match))
+            elif not isinstance(self.match, str):
                 raise ValueError(f"{self.key}의 match는 string이어야 합니다.")
         if has_match and self.key in QDRANT_INTEGER_FILTER_FIELDS:
             if not isinstance(self.match, int) or isinstance(self.match, bool):
@@ -410,6 +408,42 @@ class QdrantFilter(BaseModel):
             ):
                 raise ValueError("range filter의 하한은 상한보다 작아야 합니다.")
         return self
+
+
+def _merge_duplicate_qdrant_filters(
+    filters: list[QdrantFilter],
+) -> list[QdrantFilter]:
+    """같은 identifier key의 match 조건을 하나의 MatchAny 조건으로 합칩니다."""
+
+    merged: list[QdrantFilter] = []
+    positions: dict[str, int] = {}
+    for condition in filters:
+        position = positions.get(condition.key)
+        if position is None:
+            positions[condition.key] = len(merged)
+            merged.append(condition)
+            continue
+
+        previous = merged[position]
+        if previous == condition:
+            continue
+        if (
+            condition.key not in QDRANT_MULTI_MATCH_FILTER_FIELDS
+            or previous.match is None
+            or condition.match is None
+        ):
+            raise ValueError("동일한 key의 filter를 여러 번 사용할 수 없습니다.")
+
+        previous_values = (
+            previous.match if isinstance(previous.match, list) else [previous.match]
+        )
+        current_values = (
+            condition.match if isinstance(condition.match, list) else [condition.match]
+        )
+        merged[position] = previous.model_copy(update={
+            "match": list(dict.fromkeys([*previous_values, *current_values])),
+        })
+    return merged
 
 
 class QdrantQuery(BaseModel):
@@ -493,6 +527,8 @@ class QdrantQueryToolArgs(BaseModel):
             parsed = json.loads(value)
         except json.JSONDecodeError as error:
             raise ValueError("filters_json은 유효한 JSON이어야 합니다.") from error
+        if parsed == {}:
+            return "[]"
         if not isinstance(parsed, list):
             raise ValueError("filters_json은 JSON array여야 합니다.")
         return value
@@ -517,10 +553,14 @@ class QdrantQueryToolArgs(BaseModel):
     def to_qdrant_query(self) -> QdrantQuery:
         """LLM 출력 schema를 실행 가능한 QdrantQuery로 변환합니다."""
 
+        filters = _merge_duplicate_qdrant_filters([
+            QdrantFilter.model_validate(item)
+            for item in json.loads(self.filters_json)
+        ])
         return QdrantQuery(
             mode=self.mode,
             query_text=self.query_text.strip() or None,
-            filters=json.loads(self.filters_json),
+            filters=filters,
             score_threshold=json.loads(self.score_threshold_json),
         )
 
@@ -551,197 +591,6 @@ def _load_qdrant_query_schema() -> str:
     """Qdrant query schema 문서를 한 번 읽어 캐시합니다."""
 
     return QDRANT_QUERY_SCHEMA_PATH.read_text(encoding="utf-8")
-
-
-@lru_cache(maxsize=1)
-def _load_universe_rows() -> tuple[dict[str, str], ...]:
-    """기업 마스터 TSV를 entity 대조에 쓸 구조화된 행 목록으로 캐시합니다."""
-
-    source = UNIVERSE_TABLE_PATH.read_text(encoding="utf-8").splitlines()
-    return tuple(csv.DictReader(source, delimiter="\t"))
-
-
-@lru_cache(maxsize=1)
-def load_universe_table() -> str:
-    """기업 마스터 TSV에서 entity 식별에 필요한 열만 남겨 캐시합니다."""
-
-    lines = ["\t".join(UNIVERSE_TABLE_COLUMNS)]
-    lines.extend(
-        "\t".join(row[column] for column in UNIVERSE_TABLE_COLUMNS)
-        for row in _load_universe_rows()
-    )
-    return "\n".join(lines)
-
-
-# 기업 mention을 판정할 때 정확히 일치하는지 확인하는 열입니다.
-COMPANY_MATCH_FIELDS = ("법인명", "거래소통용종목명", "영문법인명", "종목코드")
-
-
-def resolve_company_mention(
-    mention: str,
-    rows: tuple[dict[str, str], ...] | None = None,
-) -> tuple[EntityMatchStatus, str | None, list[str]]:
-    """기업 mention을 기업 Registry와 대조해 결정론적으로 판정합니다.
-
-    LLM의 판단에 기대지 않고 코드로 직접 대조합니다. 정확히 일치하는
-    후보를 먼저 찾고, 없으면 접두어(약칭) 일치 후보를 찾습니다.
-    부분/포함(substring) 일치는 쓰지 않습니다 — "전자"처럼 흔한 단어가
-    여러 기업명에 우연히 포함돼 있다는 이유만으로 AMBIGUOUS 처리되는
-    것을 막기 위함입니다.
-
-    반환값은 (match_status, canonical_name, candidates)입니다.
-    candidates는 AMBIGUOUS일 때만 채워지는 실제 후보 법인명 목록입니다.
-
-    입력 예시:
-        resolve_company_mention("현대")
-
-    출력 예시:
-        ("AMBIGUOUS", None, ["현대건설", "현대글로비스", ...])
-    """
-
-    mention = mention.strip()
-    if not mention:
-        return "NOT_FOUND", None, []
-    if rows is None:
-        rows = _load_universe_rows()
-
-    exact_matches = {
-        row["법인명"]
-        for row in rows
-        if any(row[field] == mention for field in COMPANY_MATCH_FIELDS)
-    }
-    if len(exact_matches) == 1:
-        return "MATCHED", next(iter(exact_matches)), []
-    if len(exact_matches) > 1:
-        return "AMBIGUOUS", None, sorted(exact_matches)
-
-    prefix_matches = {
-        row["법인명"]
-        for row in rows
-        if row["법인명"].startswith(mention)
-        or row["거래소통용종목명"].startswith(mention)
-    }
-    if len(prefix_matches) == 1:
-        return "MATCHED", next(iter(prefix_matches)), []
-    if len(prefix_matches) > 1:
-        return "AMBIGUOUS", None, sorted(prefix_matches)
-
-    return "NOT_FOUND", None, []
-
-
-def apply_deterministic_entity_resolution(
-    question_analysis: QuestionAnalysis,
-) -> QuestionAnalysis:
-    """모든 entity mention의 판정을 Registry 대조 결과로 덮어씁니다.
-
-    LLM 자신의 match_status 판단은 신뢰하지 않고 항상 재계산합니다.
-    LLM이 실제 기업 mention을 잘못 UNKNOWN으로 남기는 경우가 실제
-    HyperCLOVA X 응답에서 확인됐으므로("두산", "현대자동차"가 UNKNOWN으로
-    나온 사례), UNKNOWN이라는 LLM 판단 자체를 신뢰해 건너뛰면 그 오류를
-    그대로 통과시키게 된다. Registry에 없는 mention은 어차피 NOT_FOUND로
-    떨어지므로, 기업이 아닌 entity(사람, 사건명 등)를 재계산해도 안전하다.
-    """
-
-    rows = _load_universe_rows()
-    updated_sub_questions = []
-    for sub_question in question_analysis.sub_questions:
-        updated_entities = []
-        for entity in sub_question.entities:
-            match_status, canonical_name, _ = resolve_company_mention(
-                entity.mention, rows
-            )
-            updated_entities.append(entity.model_copy(update={
-                "match_status": match_status,
-                "canonical_name": canonical_name,
-            }))
-        updated_sub_questions.append(
-            sub_question.model_copy(update={"entities": updated_entities})
-        )
-    return question_analysis.model_copy(
-        update={"sub_questions": updated_sub_questions}
-    )
-
-
-def _find_ambiguous_issuer_conflict(
-    question_analysis: QuestionAnalysis,
-) -> tuple[str, list[str]] | None:
-    """decision과 모순되는 AMBIGUOUS ISSUER entity를 찾아 (mention, candidates)를 반환합니다.
-
-    질문의 핵심 대상(ISSUER)이 되묻지 않고서는 특정할 수 없는데도
-    decision이 clarify가 아니면, 이후 검색이 임의의 기업을 골라
-    조용히 틀린 답을 낼 위험이 있습니다.
-    """
-
-    if question_analysis.decision == "clarify":
-        return None
-    rows = _load_universe_rows()
-    for sub_question in question_analysis.sub_questions:
-        for entity in sub_question.entities:
-            if entity.match_status != "AMBIGUOUS" or "ISSUER" not in entity.roles:
-                continue
-            _, _, candidates = resolve_company_mention(entity.mention, rows)
-            return entity.mention, candidates
-    return None
-
-
-class AmbiguousEntityConflict(ValueError):
-    """decision과 모순되는 AMBIGUOUS ISSUER entity가 있을 때 발생합니다.
-
-    일반 ValueError로도 잡히므로 기존 구조적 오류 재시도 loop와
-    호환되면서, 호출자가 원하면 이 타입만 따로 구분해 재시도 소진 시
-    안전한 fallback을 만들 수 있습니다.
-    """
-
-    def __init__(self, mention: str, candidates: list[str]):
-        self.mention = mention
-        self.candidates = candidates
-        candidate_text = ", ".join(candidates)
-        super().__init__(
-            f"'{mention}'은(는) Registry에서 {candidate_text}로 특정할 수 없어 "
-            "decision을 clarify로 해야 합니다. clarification_question에 "
-            "위 후보 기업명을 제시하여 어느 기업인지 되물으세요."
-        )
-
-
-def resolve_question_analyzer_output(
-    analyzer_output: QuestionAnalyzerOutput,
-) -> QuestionAnalyzerOutput:
-    """entity 판정을 Registry로 보정하고, decision과의 모순을 검증합니다.
-
-    모순이 있으면 실제 후보 목록을 담은 AmbiguousEntityConflict를
-    발생시켜, 호출자의 LLM 재시도 loop가 그 목록으로 정확한 clarify
-    질문을 다시 생성하게 합니다.
-    """
-
-    corrected = apply_deterministic_entity_resolution(
-        analyzer_output.question_analysis
-    )
-    conflict = _find_ambiguous_issuer_conflict(corrected)
-    if conflict is not None:
-        mention, candidates = conflict
-        raise AmbiguousEntityConflict(mention, candidates)
-    return QuestionAnalyzerOutput(question_analysis=corrected)
-
-
-def build_fallback_clarification(mention: str, candidates: list[str]) -> QuestionAnalysis:
-    """LLM 재시도가 모두 실패했을 때 코드가 직접 만드는 안전한 clarify 응답입니다.
-
-    모델 호출 없이 실제 Registry 후보로 되묻기 질문을 구성하므로
-    결정론적이며, 재시도 소진 시 500 대신 이 응답을 반환할 수 있습니다.
-    """
-
-    candidate_text = ", ".join(candidates)
-    return QuestionAnalysis(
-        decision="clarify",
-        normalized_question=mention,
-        decision_reason=(
-            f"'{mention}'이(가) Registry의 여러 기업({candidate_text})과 "
-            "일치해 대상을 특정할 수 없습니다."
-        ),
-        clarification_question=(
-            f"'{mention}' 중 어느 기업을 말씀하시나요? 후보: {candidate_text}"
-        ),
-    )
 
 
 @lru_cache(maxsize=1)
@@ -2146,9 +1995,14 @@ def query_executor(
         ))
     for condition in qdrant_query.filters:
         if condition.match is not None:
+            match = (
+                models.MatchAny(any=condition.match)
+                if isinstance(condition.match, list)
+                else models.MatchValue(value=condition.match)
+            )
             must.append(models.FieldCondition(
                 key=condition.key,
-                match=models.MatchValue(value=condition.match)
+                match=match,
             ))
         else:
             must.append(models.FieldCondition(
@@ -2848,7 +2702,8 @@ def generate_answer(
     *,
     extra_guidance: str | None = None,
     llm: Any | None = None,
-) -> AiAnswer:
+    include_output: bool = False,
+) -> AiAnswer | tuple[AiAnswer, AnswerGeneratorOutput]:
     """근거를 바탕으로 답변 초안을 생성합니다.
 
     answer_generator 노드와 answer_validator의 재작성 시도가 이 함수를
@@ -2883,7 +2738,10 @@ def generate_answer(
                 if isinstance(response, AnswerGeneratorOutput)
                 else AnswerGeneratorOutput.model_validate(response)
             )
-            return resolve_answer_draft(state, answer_generator_output)
+            ai_answer = resolve_answer_draft(state, answer_generator_output)
+            if include_output:
+                return ai_answer, answer_generator_output
+            return ai_answer
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
@@ -3342,7 +3200,7 @@ def _tool_trace_event(tool_call: dict, update: dict) -> ThinkTraceEvent:
         message = str(
             metadata.get("reason")
             or metadata.get("error_message")
-            or metadata.get("plan_purpose")
+            or metadata.get("purpose")
             or purpose
             or args.get("variable_name")
             or "Tool 실행을 완료했습니다."

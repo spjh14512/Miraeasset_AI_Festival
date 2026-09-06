@@ -224,6 +224,26 @@ def test_query_executor_adds_latest_version_filter_to_vector_query(monkeypatch):
         assert prefetch.filter.must[0].match.value is True
 
 
+def test_query_executor_uses_match_any_for_multiple_filter_values(monkeypatch):
+    client = _QdrantClient(QueryResponse(points=[]))
+    monkeypatch.setattr(tools, "qdrant_client", client)
+    query = QdrantQuery(
+        mode="vector",
+        query_text="삼성전자 자산총계",
+        query_vector=_hybrid(),
+        filters=[{
+            "key": "section_id",
+            "match": ["section-1", "section-2"],
+        }],
+    )
+
+    tools.query_executor(query)
+
+    condition = client.query_call["prefetch"][0].filter.must[1]
+    assert condition.key == "section_id"
+    assert condition.match.any == ["section-1", "section-2"]
+
+
 def test_query_executor_uses_scroll_and_returns_raw_result(monkeypatch):
     raw_result = ([_r_table_point()], None)
     client = _QdrantClient(raw_result)
@@ -334,6 +354,60 @@ def test_qdrant_query_tool_args_convert_to_validated_query():
     assert query.mode == "filter"
     assert query.query_text is None
     assert query.filters[0].key == "evidence_id"
+
+
+def test_qdrant_query_tool_args_normalizes_empty_object_to_empty_filter_list():
+    tool_args = QdrantQueryToolArgs(
+        mode="vector",
+        query_text="삼성전자 자산총계",
+        filters_json="{}",
+        score_threshold_json="null",
+    )
+
+    assert tool_args.filters_json == "[]"
+    assert tool_args.to_qdrant_query().filters == []
+
+
+def test_qdrant_query_tool_args_rejects_non_empty_filter_object():
+    with pytest.raises(ValueError, match="JSON array"):
+        QdrantQueryToolArgs(
+            mode="vector",
+            query_text="삼성전자 자산총계",
+            filters_json='{"key":"evidence_id","match":"evidence-1"}',
+            score_threshold_json="null",
+        )
+
+
+def test_qdrant_query_tool_args_merges_repeated_identifier_filters():
+    query = QdrantQueryToolArgs(
+        mode="filter",
+        query_text="",
+        filters_json=(
+            '[{"key":"section_id","match":"section-1"},'
+            '{"key":"section_id","match":"section-2"},'
+            '{"key":"section_id","match":"section-1"}]'
+        ),
+        score_threshold_json="null",
+    ).to_qdrant_query()
+
+    assert len(query.filters) == 1
+    assert query.filters[0].key == "section_id"
+    assert query.filters[0].match == ["section-1", "section-2"]
+
+
+def test_qdrant_query_tool_args_rejects_repeated_rcept_date_filters():
+    tool_args = QdrantQueryToolArgs(
+        mode="filter",
+        query_text="",
+        filters_json=(
+            '[{"key":"rcept_date","match":"20240301"},'
+            '{"key":"rcept_date","match":"20240401"}]'
+        ),
+        score_threshold_json="null",
+    )
+
+    with pytest.raises(ValueError, match="동일한 key"):
+        tool_args.to_qdrant_query()
 
 
 @pytest.mark.parametrize("field", [
@@ -548,7 +622,7 @@ def test_retrieve_search_records_repeated_filter_as_invalid_query(monkeypatch):
     assert result.metadata["failure_stage"] == "query_builder"
 
 
-def test_retrieve_search_metadata_excludes_plan_information(monkeypatch):
+def test_retrieve_search_metadata_preserves_purpose(monkeypatch):
     plan = Plan(
         plan_id="plan_4",
         source="qdrant",
@@ -588,6 +662,7 @@ def test_retrieve_search_metadata_excludes_plan_information(monkeypatch):
         "duplicate_point_count": 0,
         "returned_point_count": 0,
         "r_table_detail": "records",
+        "purpose": "특별관계자 명단 확인",
     }
     assert update["retrieved_qdrant_point_ids"] == []
     assert update["retrieval_results"][0].status == "NO_RESULTS"

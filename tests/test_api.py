@@ -65,7 +65,9 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
         main,
         "format_citations",
         lambda citations, *, style: [
-            "[근거: 사업보고서 (2023.12), 2024-03-06]"
+            "삼성전자가 2024년 3월 6일에 발행한 「사업보고서 (2023.12)」"
+            "(접수번호 20240306000686)의 「IV. 이사의 경영진단 및 분석의견」 "
+            "섹션 중 「가. 연결 재무상태」를 근거로 사용했습니다."
         ],
     )
     client = TestClient(main.app)
@@ -83,28 +85,18 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
     payload = response.json()
     assert payload["question_id"] == "Q-001"
     assert payload["question"] == "삼성전자의 설비 투자를 알려줘"
-    assert payload["answer"] == "최종 답변"
-    assert payload["retrieved_context"] == (
-        "[사업보고서 (2023.12)(20240306000686) > "
-        "IV. 이사의 경영진단 및 분석의견 > 가. 연결 재무상태]"
+    citation = (
+        "삼성전자가 2024년 3월 6일에 발행한 「사업보고서 (2023.12)」"
+        "(접수번호 20240306000686)의 「IV. 이사의 경영진단 및 분석의견」 "
+        "섹션 중 「가. 연결 재무상태」를 근거로 사용했습니다."
     )
-    assert json.loads(payload["think_trace"]) == {
-        "query_text": "삼성전자의 설비 투자를 알려줘",
-        "steps": [
-            {
-                "type": "node",
-                "name": "question_analyzer",
-                "message": "공시 근거 검색이 필요합니다.",
-                "details": {"decision": "retrieve"},
-            },
-            {
-                "type": "tool",
-                "name": "finish",
-                "message": "관련 근거를 찾았습니다.",
-                "details": {"status": "COMPLETE"},
-            },
-        ],
-    }
+    assert payload["answer"] == f"최종 답변\n\n{citation}"
+    retrieved_context = json.loads(payload["retrieved_context"])
+    assert retrieved_context["citations"] == [citation]
+    assert retrieved_context["results"][0]["result_id"] == "answer_result_1"
+    trace = json.loads(payload["think_trace"])
+    assert trace["query_text"] == "삼성전자의 설비 투자를 알려줘"
+    assert trace["answer_validation"]["status"] == "PASSED"
     assert all(isinstance(value, str) for value in payload.values())
 
 

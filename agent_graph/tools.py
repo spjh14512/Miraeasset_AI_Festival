@@ -96,6 +96,13 @@ def retrieve_search(
         )
         new_point_ids = []
 
+    retrieval_result = retrieval_result.model_copy(update={
+        "metadata": {
+            **retrieval_result.metadata,
+            "purpose": executable_plan.purpose,
+        }
+    })
+
     update = {
         "next_plan_seq": next_plan_seq + 1,
         "retrieval_search_count": retrieval_search_count + 1,
@@ -142,6 +149,12 @@ def retrieve_correction_history(
                 "requested_disclosure_id": disclosure_id,
             },
         )
+    retrieval_result = retrieval_result.model_copy(update={
+        "metadata": {
+            **retrieval_result.metadata,
+            "purpose": "공시 정정이력 확인",
+        }
+    })
     return {
         "next_plan_seq": next_plan_seq + 1,
         "retrieval_results": [retrieval_result],

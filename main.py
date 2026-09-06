@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from agent_graph.graph import graph
 from agent_graph.state import AgentState, Citation, ThinkTraceEvent
-from agent_graph.utils import format_citations
+from agent_graph.utils import build_answer_result_map, format_citations
 
 
 class AnswerResponse(BaseModel):
@@ -157,9 +157,6 @@ def _build_think_trace(output_state: dict[str, Any]) -> str:
                 message=fallback_reason,
             ))
 
-    trace = {
-        "query_text": str(output_state.get("question_text", "")),
-        "steps": [event.model_dump(mode="json") for event in events],
     analysis = output_state.get("question_analysis")
     analysis_payload = _model_dump(analysis) if analysis is not None else {}
     if not isinstance(analysis_payload, dict):
@@ -297,7 +294,7 @@ async def answer(
         citation_labels = await run_in_threadpool(
             format_citations,
             citations,
-            style="label",
+            style="sentence",
         )
         retrieved_context = await run_in_threadpool(
             _build_retrieved_context,

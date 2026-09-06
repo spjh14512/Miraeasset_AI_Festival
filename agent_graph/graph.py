@@ -34,13 +34,9 @@ from .tools import (
     retrieve_search,
 )
 from .utils import (
-    AmbiguousEntityConflict,
     assign_subquestion_ids,
-    build_fallback_clarification,
     build_retriever_human_message,
     generate_answer,
-    load_universe_table,
-    resolve_question_analyzer_output,
     execute_tool_call,
     load_issuer_universe_tsv,
     normalize_question_analysis_entities,
@@ -53,9 +49,6 @@ from .utils import (
 
 
 graph_builder = StateGraph(AgentState)
-
-# DB retrieval 최대 반복 횟수
-MAX_RETRIEVAL_COUNT = 5
 
 # 검증 실패를 답변 실패로 번지게 하지 않을 예외들. 외부 요인(LLM 응답,
 # 네트워크)에서 오는 것만 포함하며, 코드 결함은 일부러 제외한다.
@@ -99,25 +92,7 @@ def _build_retriever_llm() -> Any:
     return get_llm(
         RETRIEVER_MAX_TOKENS,
         output_token_parameter="max_tokens",
-    ).bind_tools(
-        [
-            retrieve_search,
-            retrieve_correction_history,
-            calculate_table_statistic,
-            combine_numeric_results,
-            finish,
-        ],
-    )
-
-
-@lru_cache(maxsize=1)
-def _build_answer_generator_llm() -> Any:
-    """공용 LLM에 answer generator structured output을 한 번 binding한다."""
-
-    return bind_structured_output(
-        get_llm(ANSWER_GENERATOR_MAX_COMPLETION_TOKENS),
-        AnswerGeneratorOutput,
-    )
+    ).bind_tools(RETRIEVER_TOOLS)
 
 
 # Actual Node
@@ -142,14 +117,12 @@ def question_analyzer(
         else bind_structured_output(llm, QuestionAnalyzerOutput)
     )
     messages = [
-        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT.format(
-            universe_table=load_universe_table(),
-        )),
+        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT),
         HumanMessage(content=json.dumps(
             {
                 "current_date": date.today().isoformat(),
-                "user_question": question,
                 "issuer_universe_tsv": load_issuer_universe_tsv(),
+                "user_question": question,
             },
             ensure_ascii=False,
             indent=2,
@@ -163,25 +136,7 @@ def question_analyzer(
                 if isinstance(response, QuestionAnalyzerOutput)
                 else QuestionAnalyzerOutput.model_validate(response)
             )
-            # LLM의 기업명 판정과 routing 결정을 신뢰하지 않고 Registry로
-            # 재검증합니다. 모순되면 AmbiguousEntityConflict가 발생해
-            # 아래에서 재시도하거나(소진 시) 결정론적 fallback으로 대체됩니다.
-            analyzer_output = resolve_question_analyzer_output(analyzer_output)
             break
-        except AmbiguousEntityConflict as error:
-            if attempt == MAX_LLM_RETRIES:
-                # 모델이 끝까지 스스로 고치지 못해도 500을 반환하지 않고,
-                # 실제 Registry 후보로 만든 안전한 clarify 응답을 냅니다.
-                analyzer_output = QuestionAnalyzerOutput(
-                    question_analysis=build_fallback_clarification(
-                        error.mention, error.candidates
-                    )
-                )
-                break
-            messages.append(HumanMessage(content=build_output_retry_message(
-                "QuestionAnalyzerOutput",
-                error,
-            )))
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
@@ -340,39 +295,11 @@ def answer_generator(
 ) -> dict:
     print("-- answer_genartor 노드 호출 --")
 
-    answer_generator_human_message = build_answer_generator_human_message(state)
-    print(f"[retriever human message]:\n{answer_generator_human_message.content.replace("\\n", "\n")}\n\n")
-
-    answer_generator_llm = (
-        _build_answer_generator_llm()
-        if llm is None
-        else bind_structured_output(llm, AnswerGeneratorOutput)
+    ai_answer, answer_generator_output = generate_answer(
+        state,
+        llm=llm,
+        include_output=True,
     )
-
-    messages = [
-        SystemMessage(content=sp.ANSWER_GENERATOR_SYSTEM_PROMPT),
-        answer_generator_human_message,
-    ]
-    for attempt in range(MAX_LLM_RETRIES + 1):
-        try:
-            response = invoke_with_rate_limit_retry(
-                answer_generator_llm,
-                messages,
-            )
-            answer_generator_output = (
-                response
-                if isinstance(response, AnswerGeneratorOutput)
-                else AnswerGeneratorOutput.model_validate(response)
-            )
-            ai_answer = resolve_answer_draft(state, answer_generator_output)
-            break
-        except (ValidationError, ValueError, TypeError, AttributeError) as error:
-            if attempt == MAX_LLM_RETRIES:
-                raise
-            messages.append(HumanMessage(content=build_output_retry_message(
-                "AnswerGeneratorOutput",
-                error,
-            )))
 
     return {
         "ai_answer": ai_answer,

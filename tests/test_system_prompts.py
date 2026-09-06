@@ -82,17 +82,16 @@ def test_builder_prompts_use_current_names():
     assert qdrant
     assert not hasattr(sp, "CYPHER_SYSTEM_PROMPT")
     assert not hasattr(sp, "QDRANT_QUERY_SYSTEM_PROMPT")
-    assert "`limit`을 출력하지 않았는가" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
-    assert "`previous_results`" in sp.CYPHER_BUILDER_SYSTEM_PROMPT
-    assert "`previous_results`" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
-    assert "`scope`" in sp.CYPHER_BUILDER_SYSTEM_PROMPT
-    assert "`scope`" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
+    assert "query_vector와 limit은 application 소유" in qdrant
+    assert "previous_results" in cypher
+    assert "previous_results" in qdrant
+    assert "scope" in cypher
+    assert "scope" in qdrant
     assert "dependency_results" not in sp.CYPHER_BUILDER_SYSTEM_PROMPT
     assert "dependency_results" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "point_kinds" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
-    assert "같은 source의 최근 실패 결과를 Builder에 전달" in sp.RETRIEVER_SYSTEM_PROMPT
-    assert "filter 조합은 절대 다시 사용하지 마세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
-    assert "filter 조건의 제거 또는 완화를 먼저 시도하세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
+    assert "동일 filter 조합을 절대 재사용" in qdrant
+    assert "query_text 변경보다 filter 제거·완화" in sp.RETRIEVER_SYSTEM_PROMPT
 
 
 def test_narrow_scope_prompt_matches_internal_agent_contract():
