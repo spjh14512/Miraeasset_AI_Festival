@@ -45,8 +45,7 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
         main,
         "format_citations",
         lambda citations, *, style: [
-            "[사업보고서 (2023.12)(20240306000686) > "
-            "IV. 이사의 경영진단 및 분석의견 > 가. 연결 재무상태]"
+            "[근거: 사업보고서 (2023.12), 2024-03-06]"
         ],
     )
     client = TestClient(main.app)
@@ -64,11 +63,16 @@ def test_answer_endpoint_returns_evaluation_contract(monkeypatch):
     payload = response.json()
     assert payload["question_id"] == "Q-001"
     assert payload["question"] == "삼성전자의 설비 투자를 알려줘"
-    assert payload["answer"] == "최종 답변"
-    assert payload["retrieved_context"] == (
-        "[사업보고서 (2023.12)(20240306000686) > "
-        "IV. 이사의 경영진단 및 분석의견 > 가. 연결 재무상태]"
+    assert payload["answer"] == (
+        "최종 답변\n\n[근거: 사업보고서 (2023.12), 2024-03-06]"
     )
+    retrieved_context = json.loads(payload["retrieved_context"])
+    assert retrieved_context["citations"] == [
+        "[근거: 사업보고서 (2023.12), 2024-03-06]"
+    ]
+    assert retrieved_context["results"][0]["content"] == {
+        "text": "검색 문서 본문",
+    }
     trace = json.loads(payload["think_trace"])
     assert trace["query_text"] == "삼성전자의 설비 투자를 알려줘"
     assert trace["question_analysis"]["decision"] == "retrieve"
@@ -146,6 +150,10 @@ def test_answer_endpoint_returns_200_for_direct_decision(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["answer"] == "안녕하세요! 무엇을 도와드릴까요?"
+    assert json.loads(response.json()["retrieved_context"]) == {
+        "citations": [],
+        "results": [],
+    }
 
 
 def test_answer_endpoint_requires_both_query_parameters():
@@ -154,3 +162,33 @@ def test_answer_endpoint_requires_both_query_parameters():
     response = client.get("/answer", params={"question_id": "Q-001"})
 
     assert response.status_code == 422
+
+
+def test_answer_endpoint_preserves_contract_when_graph_fails(monkeypatch):
+    class FailingGraph:
+        def invoke(self, _state):
+            raise ConnectionError("secret upstream detail")
+
+    monkeypatch.setattr(main, "graph", FailingGraph())
+    client = TestClient(main.app)
+
+    response = client.get(
+        "/answer",
+        params={"question_id": "Q-ERR", "question": "오류 상황 질문"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload) == {
+        "question_id", "question", "retrieved_context", "think_trace", "answer",
+    }
+    assert payload["question_id"] == "Q-ERR"
+    assert payload["question"] == "오류 상황 질문"
+    assert "확인할 수 없습니다" in payload["answer"]
+    assert "secret upstream detail" not in payload["think_trace"]
+    assert json.loads(payload["retrieved_context"]) == {
+        "citations": [], "results": [],
+    }
+    trace = json.loads(payload["think_trace"])
+    assert trace["final_basis"]["retrieval_status"] == "ERROR"
+    assert trace["warnings"]["type"] == "ConnectionError"

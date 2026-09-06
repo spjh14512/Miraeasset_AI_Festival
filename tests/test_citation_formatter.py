@@ -136,6 +136,44 @@ def test_formats_citation_as_user_visible_path(tmp_path):
     ]
 
 
+def test_formats_citation_as_answer_source_label(tmp_path):
+    document_manifest_path, driver = _paths(tmp_path)
+
+    assert format_citations(
+        [Citation(
+            disclosure_id="d20240306000686",
+            section_id="d20240306000686:src0:s27",
+            evidence_id="d20240306000686:src0:s27:e8",
+        )],
+        document_manifest_path=document_manifest_path,
+        driver=driver,
+        style="label",
+    ) == ["[근거: 사업보고서 (2023.12), 2024-03-06]"]
+    assert driver.opened_session.call is None
+
+
+def test_answer_source_labels_are_deduplicated_by_disclosure(tmp_path):
+    document_manifest_path, driver = _paths(tmp_path)
+
+    assert format_citations(
+        [
+            Citation(
+                disclosure_id="d20240306000686",
+                section_id="d20240306000686:src0:s27",
+                evidence_id="d20240306000686:src0:s27:e8",
+            ),
+            Citation(
+                disclosure_id="d20240306000686",
+                section_id="d20240306000686:src0:s27",
+                evidence_id="d20240306000686:src0:s27:e9",
+            ),
+        ],
+        document_manifest_path=document_manifest_path,
+        driver=driver,
+        style="label",
+    ) == ["[근거: 사업보고서 (2023.12), 2024-03-06]"]
+
+
 def test_formats_disclosure_level_citation_without_section(tmp_path):
     document_manifest_path, driver = _paths(tmp_path)
 

@@ -2215,6 +2215,10 @@ def _build_answer_context(item: dict[str, Any]) -> str:
         context_source,
         {"report_name", "report_nm"},
     )
+    rcept_date = _find_first_named_value(
+        context_source,
+        {"rcept_date", "rcept_dt"},
+    )
     section_path = _find_first_named_value(context_source, {"section_path"})
     heading_path = _find_first_named_value(context_source, {"heading_path"})
 
@@ -2223,6 +2227,14 @@ def _build_answer_context(item: dict[str, Any]) -> str:
         for value in (corp_name, report_name)
         if isinstance(value, str) and value.strip()
     ]
+    if isinstance(rcept_date, str) and rcept_date.strip():
+        normalized_date = rcept_date.strip()
+        if re.fullmatch(r"\d{8}", normalized_date):
+            normalized_date = (
+                f"{normalized_date[:4]}-{normalized_date[4:6]}-"
+                f"{normalized_date[6:]}"
+            )
+        context_parts.append(f"공시일자 {normalized_date}")
     for path in (section_path, heading_path):
         if isinstance(path, str) and path.strip():
             path = [path]
@@ -2427,7 +2439,7 @@ def format_citations(
     *,
     document_manifest_path: Path = DOCUMENT_MANIFEST_PATH,
     driver: Any | None = None,
-    style: Literal["sentence", "path"] = "sentence",
+    style: Literal["sentence", "path", "label"] = "sentence",
 ) -> list[str]:
     """Citation을 사용자에게 보여줄 문서·섹션 단위 문장으로 변환합니다.
 
@@ -2445,8 +2457,10 @@ def format_citations(
          "근거로 사용했습니다."]
     """
 
-    if style not in {"sentence", "path"}:
+    if style not in {"sentence", "path", "label"}:
         raise ValueError(f"지원하지 않는 citation 표시 형식입니다: {style}")
+    if not citations:
+        return []
 
     document_manifest_path = Path(document_manifest_path).resolve()
     documents = _load_jsonl_index(document_manifest_path, "rcept_no")
@@ -2474,7 +2488,7 @@ def format_citations(
         tuple[str, str, str | None],
         tuple[list[str], list[str] | None],
     ] = {}
-    if citation_requests:
+    if citation_requests and style != "label":
         citation_driver = neo4j_driver if driver is None else driver
         try:
             with citation_driver.session() as session:
@@ -2537,7 +2551,7 @@ def format_citations(
         rcept_no = disclosure_id[1:]
         section_path: list[str] | None = None
         heading_path: list[str] | None = None
-        if citation.section_id is not None:
+        if citation.section_id is not None and style != "label":
             context = citation_contexts.get((
                 citation.disclosure_id,
                 citation.section_id,
@@ -2550,9 +2564,13 @@ def format_citations(
                 )
             section_path, heading_path = context
         key = (
-            rcept_no,
-            tuple(section_path) if section_path is not None else None,
-            tuple(heading_path) if heading_path is not None else None,
+            (rcept_no, None, None)
+            if style == "label"
+            else (
+                rcept_no,
+                tuple(section_path) if section_path is not None else None,
+                tuple(heading_path) if heading_path is not None else None,
+            )
         )
         if key in seen:
             continue
@@ -2580,6 +2598,12 @@ def format_citations(
             published_at = datetime.strptime(rcept_date, "%Y%m%d")
         except ValueError as error:
             raise ValueError(f"잘못된 rcept_dt 형식입니다: {rcept_date}") from error
+
+        if style == "label":
+            formatted.append(
+                f"[근거: {report_name}, {published_at:%Y-%m-%d}]"
+            )
+            continue
 
         sentence = (
             f"{corp_name}가 {published_at.year}년 {published_at.month}월 "

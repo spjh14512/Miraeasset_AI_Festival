@@ -101,6 +101,10 @@ def test_answer_generator_prompt_matches_compacted_qdrant_output():
     assert "`table_info.omitted_record_count`" in prompt
     assert "`table_info.scope.kind`가 `row_group`" in prompt
     assert "일부만 제공된 표로 전체 목록" in prompt
+    assert "사전학습 지식" in prompt
+    assert "제공된 공시 데이터에서 확인되지 않는 내용입니다" in prompt
+    assert "[근거: 공시명, 공시일자]" in prompt
+    assert "정정·해지 이력" in prompt
 
 
 def test_builder_prompts_use_current_names():
@@ -116,7 +120,7 @@ def test_builder_prompts_use_current_names():
     assert "dependency_results" not in sp.CYPHER_BUILDER_SYSTEM_PROMPT
     assert "dependency_results" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "point_kinds" not in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
-    assert "실패 결과를 자동으로 추가하지 않습니다" in sp.RETRIEVER_SYSTEM_PROMPT
+    assert "같은 source의 최근 실패 결과를 Builder에 전달" in sp.RETRIEVER_SYSTEM_PROMPT
     assert "filter 조합은 절대 다시 사용하지 마세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
     assert "filter 조건의 제거 또는 완화를 먼저 시도하세요" in sp.QDRANT_QUERY_BUILDER_SYSTEM_PROMPT
 
