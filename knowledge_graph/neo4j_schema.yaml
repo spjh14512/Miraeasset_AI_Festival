@@ -27,12 +27,45 @@ entities:
         description: 회사 영문명
       market:
         type: string?
+        values:
+          - KOSPI
+          - KOSDAQ
         description: 상장 시장
       industry:
         type: string?
+        values:
+          - IT
+          - 건강관리
+          - 경기관련소비재
+          - 금융
+          - 산업재
+          - 소재
+          - 커뮤니케이션서비스
+          - 필수소비재
         description: 산업 분류
       sector:
         type: string?
+        values:
+          - 2차전지
+          - AI소프트웨어·플랫폼
+          - 건설
+          - 게임
+          - 금융·보험
+          - 로봇
+          - 바이오·제약
+          - 반도체·전자부품
+          - 방산·항공우주
+          - 비철금속
+          - 소비재·유통
+          - 신재생에너지
+          - 엔터테인먼트
+          - 운송·물류
+          - 원전
+          - 자동차·모빌리티
+          - 전력기기
+          - 조선
+          - 철강
+          - 통신
         description: 세부 업종
       listing_date:
         type: date?

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import yaml
 
 from agent_graph.state import QuestionAnalysis, SubQuestion
 from agent_graph.utils import (
@@ -45,6 +48,18 @@ def test_issuer_universe_uses_english_headers():
     assert "corp_name" in row
     assert "listed_name" in row
     assert "corp_eng_name" in row
+
+
+def test_company_category_schema_domains_match_issuer_universe():
+    schema = yaml.safe_load(
+        Path("knowledge_graph/neo4j_schema.yaml").read_text(encoding="utf-8")
+    )
+    properties = schema["entities"]["Company"]["properties"]
+    universe = load_issuer_universe()
+
+    for property_name in ("market", "industry", "sector"):
+        expected = {row[property_name] for row in universe if row[property_name]}
+        assert set(properties[property_name]["values"]) == expected
 
 
 def test_validator_accepts_llm_selected_issuer_from_one_universe_row():

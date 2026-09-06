@@ -32,6 +32,7 @@ from .utils import (
     _merge_derived_source_references,
     _next_derived_ids,
     _resolve_plan_dependencies,
+    _retrieval_plan_signature,
     _select_labeled_records,
     _validate_calculate_call,
     _validate_combine_call,
@@ -76,7 +77,12 @@ def retrieve_search(
             dependencies=dependencies,
             breadth=breadth,
         )
-    except (ValidationError, RepeatedNoResultsFilterError) as error:
+    except (
+        ValidationError,
+        RepeatedNoResultsFilterError,
+        ValueError,
+        TypeError,
+    ) as error:
         retrieval_result = _build_failed_retrieval_result(
             executable_plan,
             status="INVALID_QUERY",
@@ -102,6 +108,10 @@ def retrieve_search(
         "metadata": {
             **retrieval_result.metadata,
             "purpose": executable_plan.purpose,
+            "plan_signature": _retrieval_plan_signature(executable_plan),
+            "plan_query": executable_plan.query,
+            "scope_id": executable_plan.scope_id,
+            "dependencies": executable_plan.dependencies,
         }
     })
 

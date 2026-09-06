@@ -152,6 +152,7 @@ SCOPE_KNOWLEDGE_LIMIT = 5
 SCOPE_DISCLOSURE_RESULT_LIMIT = 50
 SCOPE_SECTION_RESULT_LIMIT = 500
 MAX_RETRIEVAL_SEARCH_COUNT = 15
+MAX_FAILED_PLAN_ATTEMPTS = 2
 SCOPE_DOC_GROUPS = ("periodic", "major", "exchange", "holding")
 SCOPE_KNOWLEDGE_HINT_FIELDS = (
     "knowledge_type",
@@ -176,6 +177,21 @@ def load_issuer_universe() -> tuple[dict[str, str], ...]:
 
     rows = csv.DictReader(load_issuer_universe_tsv().splitlines(), delimiter="\t")
     return tuple({key: value.strip() for key, value in row.items()} for row in rows)
+
+
+@lru_cache(maxsize=1)
+def _company_property_domains() -> dict[str, frozenset[str]]:
+    """Universe에서 Company의 폐쇄형 category property domain을 만듭니다."""
+
+    universe = load_issuer_universe()
+    return {
+        property_name: frozenset(
+            row[property_name]
+            for row in universe
+            if row[property_name]
+        )
+        for property_name in ("market", "industry", "sector")
+    }
 
 
 def validate_question_analysis_issuers(
@@ -1489,6 +1505,34 @@ def collect_recent_failures(
     return failures[-MAX_AUTO_FAILURE_CONTEXT:]
 
 
+def _retrieval_plan_signature(plan: Plan) -> str:
+    """Plan 실행 의도의 source·scope·query·dependency signature를 만듭니다."""
+
+    payload = {
+        "source": plan.source,
+        "scope_id": plan.scope_id,
+        "query": " ".join(plan.query.split()).casefold(),
+        "dependencies": sorted(plan.dependencies),
+    }
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+
+
+def _failed_plan_result_ids(
+    plan: Plan,
+    state: AgentState,
+) -> list[str]:
+    """동일 Plan signature로 이미 실패한 RetrievalResult ID를 반환합니다."""
+
+    signature = _retrieval_plan_signature(plan)
+    return [
+        result.result_id
+        for result in state.get("retrieval_results", [])
+        if result.status != "SUCCESS"
+        and result.metadata.get("plan_signature") == signature
+    ]
+
+
 def _build_query_builder_human_message(
     plan: Plan,
     user_question: str,
@@ -1772,6 +1816,7 @@ def _classify_execution_error(error: BaseException) -> str:
             "syntax" in name
             or "clienterror" in name
             or "validation" in name
+            or "syntax error" in message
             or "invalid query" in message
             or "bad request" in message
         ):
@@ -1789,6 +1834,10 @@ def _build_failed_retrieval_result(
 ) -> RetrievalResult:
     """검색 실패 정보를 빈 RetrievalResult로 변환합니다."""
 
+    root_error = error
+    while root_error.__cause__ is not None:
+        root_error = root_error.__cause__
+
     return RetrievalResult(
         result_id=f"retrieval:{plan.plan_id}",
         source=plan.source,
@@ -1798,10 +1847,137 @@ def _build_failed_retrieval_result(
         result_count=0,
         metadata={
             "failure_stage": stage,
-            "error_type": type(error).__name__,
-            "error_message": str(error),
+            "error_type": type(root_error).__name__,
+            "error_message": str(root_error),
         },
     )
+
+
+def _normalize_simple_cypher_aliases(query: CypherQuery) -> CypherQuery:
+    """AS 뒤의 단순 double-quoted alias를 실행 가능한 식별자로 정규화합니다."""
+
+    cypher = re.sub(
+        r'\bAS\s+"([A-Za-z_][A-Za-z0-9_]*)"',
+        r"AS \1",
+        query.cypher,
+        flags=re.IGNORECASE,
+    )
+    return query.model_copy(update={"cypher": cypher})
+
+
+def _validate_company_domain_parameter(
+    query: CypherQuery,
+    *,
+    property_name: str,
+    operator: str,
+    parameter_name: str,
+    allowed_values: frozenset[str],
+) -> None:
+    """Company category 조건의 parameter type과 domain을 검증합니다."""
+
+    if parameter_name not in query.parameters:
+        raise ValueError(f"Cypher parameter가 없습니다: ${parameter_name}")
+    value = query.parameters[parameter_name]
+    if operator.upper() == "IN":
+        if not isinstance(value, list) or not value or not all(
+            isinstance(item, str) for item in value
+        ):
+            raise ValueError(
+                f"Company.{property_name} IN 조건의 ${parameter_name}는 "
+                "비어 있지 않은 string list여야 합니다."
+            )
+        values = value
+    else:
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Company.{property_name} = 조건의 ${parameter_name}는 "
+                "string이어야 합니다."
+            )
+        values = [value]
+    invalid_values = sorted(set(values) - allowed_values)
+    if invalid_values:
+        raise ValueError(
+            f"Company.{property_name} domain에 없는 값입니다: {invalid_values}. "
+            f"허용값: {sorted(allowed_values)}. 유사어나 상위·하위 category를 "
+            "임의로 추가하지 마세요."
+        )
+
+
+def _validate_cypher_company_domains(query: CypherQuery) -> None:
+    """Company의 market·industry·sector 조건을 실제 universe domain으로 검증합니다."""
+
+    labels_by_alias = _cypher_node_labels_by_alias(query.cypher)
+    company_aliases = [
+        alias
+        for alias, labels in labels_by_alias.items()
+        if "Company" in labels
+    ]
+    for alias in company_aliases:
+        for property_name, allowed_values in _company_property_domains().items():
+            property_ref = (
+                rf"\b{re.escape(alias)}\s*\.\s*{re.escape(property_name)}\b"
+            )
+            inline_values = [
+                match.group(2)
+                for match in re.finditer(
+                    property_ref + r"\s*=\s*(['\"])(.*?)\1",
+                    query.cypher,
+                    flags=re.IGNORECASE,
+                )
+            ]
+            has_inline_list = re.search(
+                property_ref + r"\s+IN\s*\[",
+                query.cypher,
+                flags=re.IGNORECASE,
+            ) is not None
+            has_inline_map = re.search(
+                rf"\(\s*{re.escape(alias)}\s*:\s*Company\b[^)]*"
+                rf"\b{re.escape(property_name)}\s*:\s*['\"]",
+                query.cypher,
+                flags=re.IGNORECASE,
+            ) is not None
+            if inline_values or has_inline_list or has_inline_map:
+                invalid_values = sorted(set(inline_values) - allowed_values)
+                invalid_detail = (
+                    f" domain에 없는 값: {invalid_values}."
+                    if invalid_values
+                    else ""
+                )
+                raise ValueError(
+                    f"Company.{property_name} 조건에 inline literal을 사용하지 "
+                    f"마세요.{invalid_detail} 허용값: {sorted(allowed_values)}. "
+                    "입력값은 parameter로 분리하고 유사 category를 임의로 "
+                    "추가하지 마세요."
+                )
+
+            for match in re.finditer(
+                property_ref
+                + r"\s*(?P<operator>=|IN\b)\s*\$(?P<parameter>[A-Za-z_][A-Za-z0-9_]*)",
+                query.cypher,
+                flags=re.IGNORECASE,
+            ):
+                _validate_company_domain_parameter(
+                    query,
+                    property_name=property_name,
+                    operator=match.group("operator"),
+                    parameter_name=match.group("parameter"),
+                    allowed_values=allowed_values,
+                )
+
+            for match in re.finditer(
+                rf"\(\s*{re.escape(alias)}\s*:\s*Company\b[^)]*"
+                rf"\b{re.escape(property_name)}\s*:\s*"
+                r"\$(?P<parameter>[A-Za-z_][A-Za-z0-9_]*)",
+                query.cypher,
+                flags=re.IGNORECASE,
+            ):
+                _validate_company_domain_parameter(
+                    query,
+                    property_name=property_name,
+                    operator="=",
+                    parameter_name=match.group("parameter"),
+                    allowed_values=allowed_values,
+                )
 
 def cypher_builder(
     plan: Plan,
@@ -1845,7 +2021,11 @@ def cypher_builder(
                 if isinstance(result, CypherQueryToolArgs)
                 else CypherQueryToolArgs.model_validate(result)
             )
-            query = tool_args.to_cypher_query()
+            query = _normalize_simple_cypher_aliases(
+                tool_args.to_cypher_query()
+            )
+            query = _normalize_latest_disclosure_filter(query)
+            _validate_cypher_company_domains(query)
             _validate_latest_disclosure_filter(query)
             _validate_cypher_relationships(query)
             _validate_cypher_scope_filter(query, scope)
@@ -1857,6 +2037,46 @@ def cypher_builder(
                 "CypherQuery",
                 error,
             )))
+
+
+def _normalize_latest_disclosure_filter(query: CypherQuery) -> CypherQuery:
+    """누락된 Disclosure 최신 버전 조건을 node property로 자동 추가합니다."""
+
+    cypher = query.cypher
+    aliases = set(re.findall(
+        r"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*Disclosure\b",
+        cypher,
+        flags=re.IGNORECASE,
+    ))
+    for alias in aliases:
+        latest_property = (
+            rf"\b{re.escape(alias)}\s*\.\s*is_latest_version\b"
+            rf"|\(\s*{re.escape(alias)}\s*:\s*Disclosure\b[^)]*"
+            r"\bis_latest_version\s*:"
+        )
+        if re.search(latest_property, cypher, flags=re.IGNORECASE):
+            continue
+
+        node_pattern = re.compile(
+            rf"\(\s*{re.escape(alias)}\s*:\s*Disclosure\b[^()]*\)",
+            flags=re.IGNORECASE,
+        )
+        match = node_pattern.search(cypher)
+        if match is None:
+            continue
+
+        node = match.group(0)
+        if "{" in node:
+            normalized_node = node.replace(
+                "{",
+                "{is_latest_version: true, ",
+                1,
+            )
+        else:
+            normalized_node = node[:-1].rstrip() + " {is_latest_version: true})"
+        cypher = cypher[:match.start()] + normalized_node + cypher[match.end():]
+
+    return query.model_copy(update={"cypher": cypher})
 
 
 def _validate_latest_disclosure_filter(query: CypherQuery) -> None:
@@ -2116,7 +2336,10 @@ def cypher_executor(cypher_query: CypherQuery, plan_id: str) -> RetrievalResult:
                 cypher_query.parameters
             ))
     except Exception as error:
-        raise RuntimeError("Neo4j Cypher 쿼리 실행 중 오류 발생!") from error
+        raise RuntimeError(
+            "Neo4j Cypher 쿼리 실행 중 오류 발생: "
+            f"{type(error).__name__}: {error}"
+        ) from error
 
     return parse_neo4j_response(
         result,
@@ -3304,6 +3527,14 @@ def validate_retriever_tool_call(state: AgentState, tool_call: dict) -> None:
         )
         _resolve_plan_dependencies(executable_plan, state)
         _resolve_plan_scope(executable_plan, state)
+        failed_result_ids = _failed_plan_result_ids(executable_plan, state)
+        if len(failed_result_ids) >= MAX_FAILED_PLAN_ATTEMPTS:
+            raise ValueError(
+                "동일한 retrieval Plan이 이미 "
+                f"{len(failed_result_ids)}회 실패했습니다: {failed_result_ids}. "
+                "같은 retrieve_search를 반복하지 말고 query, scope, source 또는 "
+                "dependencies를 변경하거나 finish를 호출하세요."
+            )
         return
     if name == "calculate_table_statistic":
         validated = calculate_table_statistic.tool_call_schema.model_validate(args)

@@ -167,7 +167,99 @@ def test_cypher_builder_retries_invalid_parameters_json():
     assert "parameters_json" in llm.calls[1][-1].content
 
 
-def test_cypher_builder_retries_missing_latest_disclosure_filter():
+def test_cypher_builder_normalizes_double_quoted_simple_aliases():
+    llm = _SequenceLlm([{
+        "cypher": (
+            "MATCH (c:Company) "
+            'RETURN c.corp_code AS "corp_code", '
+            'c.stock_code AS "stock_code" LIMIT 10'
+        ),
+        "parameters_json": "{}",
+    }])
+
+    query = tools.cypher_builder(
+        _plan("neo4j"),
+        user_question="기업 정보를 알려줘",
+        dependencies=[],
+        neo4j_schema="schema",
+        llm=llm,
+    )
+
+    assert query.cypher.endswith(
+        "RETURN c.corp_code AS corp_code, c.stock_code AS stock_code LIMIT 10"
+    )
+
+
+def test_cypher_builder_retries_inline_and_out_of_domain_company_values():
+    llm = _SequenceLlm([
+        {
+            "cypher": (
+                "MATCH (c:Company) "
+                "WHERE c.industry = 'IT' OR c.industry = '소프트웨어' "
+                "OR c.industry = '정보통신' RETURN c LIMIT 100"
+            ),
+            "parameters_json": "{}",
+        },
+        {
+            "cypher": (
+                "MATCH (c:Company) WHERE c.industry IN $industries "
+                "RETURN c LIMIT $limit"
+            ),
+            "parameters_json": '{"industries":["IT"],"limit":100}',
+        },
+    ])
+
+    query = tools.cypher_builder(
+        _plan("neo4j"),
+        user_question="IT 기업들의 목록을 알려줘",
+        dependencies=[],
+        neo4j_schema="schema",
+        llm=llm,
+    )
+
+    assert query.parameters["industries"] == ["IT"]
+    assert len(llm.calls) == 2
+    retry_message = llm.calls[1][-1].content
+    assert "inline literal" in retry_message
+    assert "소프트웨어" in retry_message
+    assert "정보통신" in retry_message
+    assert "허용값" in retry_message
+
+
+def test_cypher_builder_retries_parameterized_out_of_domain_company_value():
+    llm = _SequenceLlm([
+        {
+            "cypher": (
+                "MATCH (c:Company) WHERE c.sector IN $sectors "
+                "RETURN c LIMIT $limit"
+            ),
+            "parameters_json": '{"sectors":["소프트웨어"],"limit":100}',
+        },
+        {
+            "cypher": (
+                "MATCH (c:Company) WHERE c.sector IN $sectors "
+                "RETURN c LIMIT $limit"
+            ),
+            "parameters_json": (
+                '{"sectors":["AI소프트웨어·플랫폼"],"limit":100}'
+            ),
+        },
+    ])
+
+    query = tools.cypher_builder(
+        _plan("neo4j"),
+        user_question="AI 소프트웨어 기업들의 목록을 알려줘",
+        dependencies=[],
+        neo4j_schema="schema",
+        llm=llm,
+    )
+
+    assert query.parameters["sectors"] == ["AI소프트웨어·플랫폼"]
+    assert len(llm.calls) == 2
+    assert "Company.sector domain에 없는 값" in llm.calls[1][-1].content
+
+
+def test_cypher_builder_adds_missing_latest_disclosure_filter():
     llm = _SequenceLlm([
         {
             "cypher": "MATCH (d:Disclosure) RETURN d.id AS disclosure_id",
@@ -191,9 +283,8 @@ def test_cypher_builder_retries_missing_latest_disclosure_filter():
         llm=llm,
     )
 
-    assert query.parameters["is_latest_version"] is True
-    assert len(llm.calls) == 2
-    assert "Disclosure 조회에는 최신 공시 조건" in llm.calls[1][-1].content
+    assert "(d:Disclosure {is_latest_version: true})" in query.cypher
+    assert len(llm.calls) == 1
 
 
 def test_cypher_builder_retries_invalid_relationship_direction():

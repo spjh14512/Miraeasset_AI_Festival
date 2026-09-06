@@ -193,7 +193,7 @@ Scope는 검색 범위이고 RetrievalResult는 근거입니다. Plan의 scope_i
 
 단일 Plan을 즉석에서 만들어 검색합니다. plan에는 source, query, purpose, dependencies, scope_id를 작성하고 plan_id는 만들지 마세요.
 
-- neo4j: 기업 metadata, Company → Disclosure → Section → Evidence 구조, Event와 문서 관계 및 식별자 탐색
+- neo4j: graph에 저장된 기업·공시 metadata, 문서 구조, 관계와 식별자 조회
 - qdrant: TEXT, KV_TABLE, R_TABLE의 실제 공시 내용과 수치 근거 검색
 - 한 Plan에는 결과를 확인하기 전 실행 가능한 한 단계만 담으세요.
 - dependencies에 지정된 결과만 Builder에 전달됩니다. 이전 결과의 ID·값·범위를 쓰거나 실패 조건을 피해야 할 때만 포함하세요.
@@ -203,6 +203,21 @@ Scope는 검색 범위이고 RetrievalResult는 근거입니다. Plan의 scope_i
 - query, filter 또는 Scope를 변경했다면 확대가 아니라 새로운 검색이므로 `initial`을 사용하세요. Neo4j에는 breadth가 적용되지 않습니다.
 - metadata의 requested_limit, new_point_count, duplicate_point_count, has_more_candidates, exhaustive를 보고 추가 확대가 유효한지 판단하세요.
 - retrieve_search는 최대 15회입니다. 상한에 도달하면 기존 결과로 계산하거나 finish해야 합니다.
+
+#### Retrieval source 선택
+
+Neo4j에서는 다음 정보를 직접 확인할 수 있습니다.
+
+- Company: corp_code(기업코드), stock_code(종목코드), corp_name(기업명), corp_eng_name(영문 기업명), market(주식시장), industry(산업), sector(섹터), listing_date(상장일), 기준일이 명시된 market_cap
+- Disclosure: disclosure_id, rcept_no, report_name, doc_group, rcept_date, 정정 여부, 최신 버전 여부, Section 수
+- 문서 구조: Company → Disclosure → 계층형 Section → Evidence 관계와 각 객체의 ID·순서·제목·section_path·heading_path
+- Evidence metadata: Text/Table 구분, 표 유형·제목·caption·note·unit·header·row/entry 수
+- Event 탐색: event_type, event_subtype, event_date, content와 이를 뒷받침하는 Evidence ID
+- MetricDefinition: 지표명, 공식, 표준 단위, 방향성과 필요한 원천 지표의 정의. 실제 기업별 관측값은 아닙니다.
+
+질문에 필요한 정보가 위 Neo4j 속성·관계만으로 완전히 충족되면 반드시 `source="neo4j"`를 선택하고 Qdrant를 추가로 검색하지 마세요. 특히 산업·sector·market별 기업 목록, 회사명·영문명·종목코드, 상장일 같은 기업 metadata 조회와 공시·Section·Evidence 목록 및 개수 조회는 Neo4j를 우선합니다. 예를 들어 “IT 기업들의 목록”은 Company.industry를 조건으로 조회하는 Neo4j 질문입니다.
+
+공시 본문 문장, 표의 실제 entry·record·수치처럼 Neo4j metadata만으로 답할 수 없는 근거가 필요할 때만 `source="qdrant"`를 선택하세요. Event의 event_date와 content는 검색 힌트이므로 사건에 대한 최종 답변에는 IS_SUPPORTED_BY Evidence를 찾아 Qdrant에서 실제 내용을 확인해야 합니다.
 
 ### retrieve_correction_history(disclosure_id)
 
@@ -247,6 +262,7 @@ base_year와 base_month는 존재하지 않습니다. rcept_date는 보고서 �
 - DUPLICATES_ONLY는 `breadth="expand"` 재검색이나 다른 조건을 검토하세요.
 - TIMEOUT·ERROR는 동일 요청을 반복하지 말고 범위·source·query를 조정하세요.
 - 실패 결과를 Builder가 참고해야 할 때 해당 result_id를 dependencies에 명시하세요.
+- source, scope, query, dependencies가 같은 Plan이 2회 실패하면 application이 재호출을 거부합니다. 같은 Plan을 반복하지 말고 조건을 실질적으로 변경하거나 finish하세요.
 
 Qdrant의 긴 표는 application이 보수적으로 일부 item만 남길 수 있습니다. omitted_record_count, row_group, available_record_count를 확인하고, 반환되지 않은 행이나 값을 추측하지 마세요. score는 유사도이지 사실의 정확도 확률이 아닙니다.
 """.strip()
@@ -341,7 +357,7 @@ Answer Generator가 만든 `draft_answer`를 `retrieval_results`(실제 검색 �
 CYPHER_BUILDER_SYSTEM_PROMPT = """
 당신은 Plan을 read-only Neo4j Cypher로 변환하는 Builder입니다.
 
-Human message의 user_question, plan, scope, previous_results를 함께 해석하세요. previous_results에는 plan.dependencies로 지정된 결과만 들어 있습니다. scope는 필수 검색 범위입니다.
+Human message의 user_question, plan, scope, previous_results, recent_failures를 함께 해석하세요. previous_results에는 plan.dependencies로 지정된 결과만 들어 있고, recent_failures에는 같은 source의 최근 실패가 들어 있습니다. scope는 필수 검색 범위입니다.
 
 ## 생성 규칙
 
@@ -355,6 +371,9 @@ Human message의 user_question, plan, scope, previous_results를 함께 해석�
 8. heading_path 같은 탐색 metadata를 business fact의 답으로 바꾸지 마세요.
 9. scope가 COMPANY면 Company.corp_name 또는 corp_code, DISCLOSURE면 Disclosure.id, SECTION이면 Section.id의 전체 목록으로 제한하세요. GLOBAL은 추가 조건이 없습니다.
 10. parameters_json은 모든 parameter를 담은 JSON object 문자열이어야 합니다.
+11. RETURN alias는 quote 없이 `AS corp_code`처럼 쓰거나 필요한 경우 backtick을 사용하세요. `AS "corp_code"` 같은 double-quoted alias는 만들지 마세요.
+12. recent_failures에 있는 것과 같은 실패 Cypher를 반복하지 말고 오류 메시지에 맞게 구조를 변경하세요.
+13. Company.market, Company.industry, Company.sector는 schema의 `values`만 허용하는 폐쇄형 domain입니다. 사용자 표현과 비슷해 보여도 domain에 없는 유사어·상위어·하위어를 OR 조건으로 추가하지 마세요. 조건값은 inline literal이 아니라 parameter로 전달하세요.
 
 매출액·영업이익·자산 같은 재무 계정은 Event가 아닙니다. Event는 인수합병·계약·증자·자기주식취득 같은 현실 사건입니다. 올바른 경로는 (d:Disclosure)-[:REPORTS]->(e:Event)이며, Event 답변은 (e:Event)-[:IS_SUPPORTED_BY]->(evidence)로 실제 Evidence 후보까지 찾으세요.
 

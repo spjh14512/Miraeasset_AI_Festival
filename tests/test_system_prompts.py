@@ -59,6 +59,12 @@ def test_retriever_prompt_matches_current_state_and_qdrant_items():
     assert "최대 20개" in prompt
     assert "Answer Generator는 계산하지 않고" in prompt
     assert "계산이 필요한 질문에서 원시 숫자만 선택한 채 finish하지 마세요" in prompt
+    assert "같은 Plan이 2회 실패" in prompt
+    assert "Company.industry" in prompt
+    assert "IT 기업들의 목록" in prompt
+    assert 'source="neo4j"' in prompt
+    assert "Neo4j 속성·관계만으로 완전히 충족" in prompt
+    assert "공시 본문 문장" in prompt
     assert "OUT_OF_UNIVERSE" in prompt
     assert "GLOBAL 검색으로 바꾸거나" in prompt
     assert "create_plan" not in prompt
@@ -88,6 +94,11 @@ def test_builder_prompts_use_current_names():
     assert not hasattr(sp, "QDRANT_QUERY_SYSTEM_PROMPT")
     assert "query_vector와 limit은 application 소유" in qdrant
     assert "previous_results" in cypher
+    assert "recent_failures" in cypher
+    assert 'AS "corp_code"' in cypher
+    assert "폐쇄형 domain" in cypher
+    assert "유사어·상위어·하위어" in cypher
+    assert "inline literal" in cypher
     assert "previous_results" in qdrant
     assert "scope" in cypher
     assert "scope" in qdrant

@@ -5,7 +5,8 @@ from types import SimpleNamespace
 import pytest
 
 from agent_graph import graph as graph_module
-from agent_graph.state import QuestionAnalysis, RetrievalResult, Scope
+from agent_graph.state import Plan, QuestionAnalysis, RetrievalResult, Scope
+from agent_graph import utils
 
 
 class _FakeRetrieverLlm:
@@ -207,6 +208,45 @@ def test_retriever_retries_retrieve_search_after_maximum_count():
     assert update["retrieval_status"] == "COMPLETE"
     assert llm.invoke_count == 2
     assert "최대 호출 횟수(15회)" in llm.calls[1][-1].content
+
+
+def test_retriever_rejects_plan_after_two_matching_failures():
+    plan_args = {
+        "source": "neo4j",
+        "query": "AMD 기업 정보",
+        "purpose": "AMD의 기업 정보를 찾기 위함",
+        "dependencies": [],
+        "scope_id": "scope_1",
+    }
+    signature = utils._retrieval_plan_signature(Plan(
+        plan_id="plan_2",
+        **plan_args,
+    ))
+    state = _retrieval_state()
+    state["retrieval_results"].extend([
+        RetrievalResult(
+            result_id=f"retrieval:plan_{index}",
+            source="neo4j",
+            status="INVALID_QUERY",
+            query='MATCH (c:Company) RETURN c.corp_code AS "corp_code"',
+            items=[],
+            result_count=0,
+            metadata={"plan_signature": signature},
+        )
+        for index in (2, 3)
+    ])
+    llm = _RetryingRetrieverLlm([[
+        {
+            "name": "retrieve_search",
+            "args": {"plan": plan_args, "breadth": "initial"},
+        }
+    ]])
+
+    update = graph_module.retriever(state, llm=llm)
+
+    assert update["retrieval_status"] == "COMPLETE"
+    assert llm.invoke_count == 2
+    assert "동일한 retrieval Plan이 이미 2회 실패" in llm.calls[1][-1].content
 
 
 def test_retriever_ignores_finish_when_another_tool_is_called(monkeypatch):

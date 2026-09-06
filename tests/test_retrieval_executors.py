@@ -69,6 +69,20 @@ class _Neo4jDriver:
         return self.opened_session
 
 
+class _FailingNeo4jSession(_Neo4jSession):
+    def run(self, cypher, parameters):
+        self.call = (cypher, parameters)
+        raise ValueError('Invalid input \'"corp_code"\'')
+
+
+class _FailingNeo4jDriver:
+    def __init__(self):
+        self.opened_session = _FailingNeo4jSession()
+
+    def session(self):
+        return self.opened_session
+
+
 class _QdrantClient:
     def __init__(self, response):
         self.response = response
@@ -163,6 +177,23 @@ def test_cypher_executor_returns_one_retrieval_result(monkeypatch):
     assert result.source == "neo4j"
     assert result.items[0]["fields"]["company_count"] == 3
     assert driver.opened_session.call == (query.cypher, {})
+
+
+def test_cypher_executor_preserves_neo4j_error_details(monkeypatch):
+    driver = _FailingNeo4jDriver()
+    monkeypatch.setattr(tools, "neo4j_driver", driver)
+    query = CypherQuery(
+        cypher='MATCH (c:Company) RETURN c.corp_code AS "corp_code"',
+        parameters={},
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        tools.cypher_executor(query, "plan_1")
+
+    message = str(exc_info.value)
+    assert "ValueError" in message
+    assert 'Invalid input \'"corp_code"\'' in message
+    assert isinstance(exc_info.value.__cause__, ValueError)
 
 
 def test_query_executor_runs_vector_query(monkeypatch):
@@ -668,9 +699,55 @@ def test_retrieve_search_metadata_preserves_purpose(monkeypatch):
     assert metadata["returned_point_count"] == 0
     assert metadata["r_table_detail"] == "records"
     assert metadata["purpose"] == "특별관계자 명단 확인"
+    assert len(metadata["plan_signature"]) == 16
+    assert metadata["plan_query"] == "삼성전자 특별관계자"
+    assert metadata["scope_id"] == "scope_1"
+    assert metadata["dependencies"] == []
     assert update["retrieved_qdrant_point_ids"] == []
     assert update["retrieval_results"][0].status == "NO_RESULTS"
     assert update["retrieval_search_count"] == 1
+
+
+def test_retrieve_search_preserves_root_neo4j_execution_error(monkeypatch):
+    plan = Plan(
+        plan_id="plan_4",
+        source="neo4j",
+        query="AMD 기업 정보",
+        purpose="Neo4j 오류 확인",
+        dependencies=[],
+        scope_id="scope_1",
+    )
+    query = CypherQuery(
+        cypher='MATCH (c:Company) RETURN c.corp_code AS "corp_code"',
+        parameters={},
+    )
+    monkeypatch.setattr(tools, "cypher_builder", lambda *_, **__: query)
+
+    def raise_syntax_error(*_args, **_kwargs):
+        try:
+            raise ValueError('syntax error: Invalid input \'"corp_code"\'')
+        except ValueError as error:
+            raise RuntimeError("Neo4j Cypher 쿼리 실행 중 오류 발생") from error
+
+    monkeypatch.setattr(tools, "cypher_executor", raise_syntax_error)
+
+    update = retrieve_search.invoke({
+        "plan": plan,
+        "state": {
+            "question_id": "question-1",
+            "question_text": "AMD의 기업 정보를 알려줘",
+            "scope_candidates": [_global_scope()],
+            "retrieval_results": [],
+            "next_plan_seq": 4,
+        },
+    })
+
+    result = update["retrieval_results"][0]
+    assert result.status == "INVALID_QUERY"
+    assert result.metadata["error_type"] == "ValueError"
+    assert result.metadata["error_message"] == (
+        'syntax error: Invalid input \'"corp_code"\''
+    )
 
 
 def test_retrieve_search_marks_duplicate_only_result(monkeypatch):
