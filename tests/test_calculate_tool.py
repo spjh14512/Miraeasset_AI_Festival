@@ -147,7 +147,6 @@ def _retrieval_result(
 ) -> RetrievalResult:
     return RetrievalResult(
         result_id=result_id,
-        plan_id=result_id.removeprefix("retrieval:"),
         source="qdrant",
         status=status,
         query="검색 쿼리",
@@ -758,7 +757,6 @@ def test_next_plan_seq_uses_state_counter_not_plan_from_plan_draft():
     )
 
     result = update["retrieval_results"][0]
-    assert result.plan_id == "plan_7"
     assert result.result_id == "derived:plan_7"
     assert update["next_plan_seq"] == 8
 

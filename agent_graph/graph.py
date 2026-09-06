@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from . import system_prompts as sp
 from .llm import (
-    ANSWER_GENERATOR_MAX_COMPLETION_TOKENS,
     MAX_LLM_RETRIES,
     QUESTION_ANALYZER_MAX_COMPLETION_TOKENS,
     RETRIEVER_MAX_TOKENS,
@@ -20,7 +19,7 @@ from .llm import (
 )
 from .state import (
     AgentState,
-    AnswerGeneratorOutput,
+    AiAnswer,
     QuestionAnalyzerOutput,
     QuestionAnalysis,
     Scope,
@@ -35,14 +34,19 @@ from .tools import (
     retrieve_search,
 )
 from .utils import (
+    AmbiguousEntityConflict,
     assign_subquestion_ids,
+    build_fallback_clarification,
     build_retriever_human_message,
-    build_answer_generator_human_message,
-    resolve_answer_draft,
+    generate_answer,
+    load_universe_table,
+    resolve_question_analyzer_output,
     execute_tool_call,
     load_issuer_universe_tsv,
     normalize_question_analysis_entities,
     run_narrow_scope_agent,
+    UNSUPPORTED_ANSWER_FALLBACK,
+    validate_and_repair_answer,
     subquestion_has_out_of_universe_issuer,
     validate_retriever_tool_call,
 )
@@ -50,6 +54,18 @@ from .utils import (
 
 graph_builder = StateGraph(AgentState)
 
+# DB retrieval 최대 반복 횟수
+MAX_RETRIEVAL_COUNT = 5
+
+# 검증 실패를 답변 실패로 번지게 하지 않을 예외들. 외부 요인(LLM 응답,
+# 네트워크)에서 오는 것만 포함하며, 코드 결함은 일부러 제외한다.
+ANSWER_VALIDATION_FAILURES = (
+    ValidationError,
+    ValueError,
+    TimeoutError,
+    ConnectionError,
+    OSError,
+)
 MAX_TOOL_CALL_RETRIES = MAX_LLM_RETRIES
 
 
@@ -61,6 +77,19 @@ def _build_question_analyzer_llm() -> Any:
         get_llm(QUESTION_ANALYZER_MAX_COMPLETION_TOKENS),
         QuestionAnalyzerOutput,
     )
+
+
+# retriever가 LLM에 제시하는 tool 목록의 유일한 정의입니다. 이 목록과
+# retriever() 노드 내부 tool 목록이 어긋나면, 캐시된 LLM 경로(운영)와
+# llm 인자를 넘기는 경로(테스트)의 동작이 갈라져 테스트가 놓치는 운영
+# 결함이 생깁니다.
+RETRIEVER_TOOLS = [
+    retrieve_search,
+    retrieve_correction_history,
+    calculate_table_statistic,
+    combine_numeric_results,
+    finish,
+]
 
 
 @lru_cache(maxsize=1)
@@ -113,7 +142,9 @@ def question_analyzer(
         else bind_structured_output(llm, QuestionAnalyzerOutput)
     )
     messages = [
-        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT),
+        SystemMessage(content=sp.QUESTION_ANALYZER_SYSTEM_PROMPT.format(
+            universe_table=load_universe_table(),
+        )),
         HumanMessage(content=json.dumps(
             {
                 "current_date": date.today().isoformat(),
@@ -132,7 +163,25 @@ def question_analyzer(
                 if isinstance(response, QuestionAnalyzerOutput)
                 else QuestionAnalyzerOutput.model_validate(response)
             )
+            # LLM의 기업명 판정과 routing 결정을 신뢰하지 않고 Registry로
+            # 재검증합니다. 모순되면 AmbiguousEntityConflict가 발생해
+            # 아래에서 재시도하거나(소진 시) 결정론적 fallback으로 대체됩니다.
+            analyzer_output = resolve_question_analyzer_output(analyzer_output)
             break
+        except AmbiguousEntityConflict as error:
+            if attempt == MAX_LLM_RETRIES:
+                # 모델이 끝까지 스스로 고치지 못해도 500을 반환하지 않고,
+                # 실제 Registry 후보로 만든 안전한 clarify 응답을 냅니다.
+                analyzer_output = QuestionAnalyzerOutput(
+                    question_analysis=build_fallback_clarification(
+                        error.mention, error.candidates
+                    )
+                )
+                break
+            messages.append(HumanMessage(content=build_output_retry_message(
+                "QuestionAnalyzerOutput",
+                error,
+            )))
         except (ValidationError, ValueError, TypeError, AttributeError) as error:
             if attempt == MAX_LLM_RETRIES:
                 raise
@@ -220,18 +269,10 @@ def retriever(
 ) -> dict:
     print("retriever 노드 호출")
 
-    tools = [
-        retrieve_search,
-        retrieve_correction_history,
-        calculate_table_statistic,
-        combine_numeric_results,
-        finish,
-    ]
-
     retriever_llm = (
         _build_retriever_llm()
         if llm is None
-        else llm.bind_tools(tools)
+        else llm.bind_tools(RETRIEVER_TOOLS)
     )
 
     retriever_human_message = build_retriever_human_message(state)
@@ -351,41 +392,101 @@ def answer_validator(
         *,
         llm: Any | None = None
 ) -> dict:
+    """answer_generator의 초안을 근거·요구사항과 대조해 검증하고 필요하면 고친다.
+
+    검증 자체가 외부 요인으로 실패하면(LLM timeout, 연결 오류, 구조적
+    출력 재시도 소진 등) 예외를 밖으로 던지지 않고 검증 전 답변을 그대로
+    반환한다. 이 노드는 검색 기반 답변의 필수 종료 경로이므로, 여기서
+    예외가 나가면 이미 정상적으로 생성된 답변까지 API 500이 된다.
+
+    반대로 KeyError처럼 코드 결함에서 오는 예외는 잡지 않는다. 모두
+    잡아버리면 계약 위반이 "검증 생략"으로 조용히 묻혀 테스트에서도
+    드러나지 않는다.
     """
-    answer_generator가 생성한 answer와 출처가 된 공시 원문을 직접 비교하여 답변의 신뢰도를 검증한다.
-    """
-    print ("-- answer_genartor 노드 호출 --")
 
-    ai_answer = state.get("ai_answer").answer
-    citation = state.get("ai_answer").citation
+    print("-- answer_validator 노드 호출 --")
 
-    
+    ai_answer = state.get("ai_answer")
+    if ai_answer is None:
+        raise ValueError("ai_answer가 생성되지 않았습니다.")
+    if not isinstance(ai_answer, AiAnswer):
+        ai_answer = AiAnswer.model_validate(ai_answer)
 
+    try:
+        validated = validate_and_repair_answer(state, ai_answer, llm=llm)
+    except ANSWER_VALIDATION_FAILURES as error:
+        print(f"answer_validator 실패, 검증 전 답변을 그대로 사용합니다: {error}")
+        errors = list(state.get("errors", []))
+        errors.append(f"answer_validator 실패: {type(error).__name__}: {error}")
+        return {
+            "ai_answer": ai_answer,
+            "answer_validation_status": "SKIPPED",
+            "errors": errors,
+        }
 
-
-def answer_directly(state: AgentState) -> dict:
-    print("answer_directly 노드 호출")
+    if validated.answer.startswith(UNSUPPORTED_ANSWER_FALLBACK):
+        validation_status = "FALLBACK"
+    elif validated != ai_answer:
+        validation_status = "REPAIRED"
+    else:
+        validation_status = "PASSED"
     return {
-        "answer": "임시 답변",
-        "citations": ["임시 인용 정보"],
-        "think_trace_events": [ThinkTraceEvent(
-            type="node",
-            name="answer_directly",
-            message="외부 검색 없이 직접 답변을 생성했습니다.",
-        )],
+        "ai_answer": validated,
+        "answer_validation_status": validation_status,
     }
+
+
+
+@lru_cache(maxsize=1)
+def _build_direct_answer_llm() -> Any:
+    """공용 LLM에 direct 응답용 설정을 한 번 적용합니다."""
+
+    return get_llm()
+
+
+def answer_directly(
+    state: AgentState,
+    *,
+    llm: Any | None = None,
+) -> dict:
+    """검색이 필요 없는 인사·기능 안내 질문에 짧게 답합니다."""
+
+    print("-- answer_directly 노드 호출 --")
+
+    question = state["question_text"].strip()
+    if not question:
+        raise ValueError("question_text는 비어 있을 수 없습니다.")
+
+    direct_answer_llm = _build_direct_answer_llm() if llm is None else llm
+    messages = [
+        SystemMessage(content=sp.DIRECT_ANSWER_SYSTEM_PROMPT),
+        HumanMessage(content=question),
+    ]
+    response = invoke_with_rate_limit_retry(direct_answer_llm, messages)
+
+    # 검색을 수행하지 않았으므로 인용할 근거가 없습니다.
+    return {"ai_answer": AiAnswer(answer=str(response.content), citation=[])}
 
 def request_clarification(state: AgentState) -> dict:
-    print("request_clarification 노드 호출")
-    return {
-        "answer": " 임시 답변",
-        "citations": ["임시 인용 정보"],
-        "think_trace_events": [ThinkTraceEvent(
-            type="node",
-            name="request_clarification",
-            message="질문을 명확히 하기 위한 추가 정보를 요청했습니다.",
-        )],
-    }
+    """Question Analyzer가 만든 되묻기 질문을 그대로 사용자에게 전달합니다."""
+
+    print("-- request_clarification 노드 호출 --")
+
+    analysis = state.get("question_analysis")
+    if analysis is None:
+        raise ValueError("question_analysis가 생성되지 않았습니다.")
+    if not isinstance(analysis, QuestionAnalysis):
+        analysis = QuestionAnalysis.model_validate(analysis)
+    if analysis.decision != "clarify":
+        raise ValueError(
+            "clarify 결정이 아닌 질문은 request_clarification으로 보낼 수 없습니다"
+            f"(decision={analysis.decision})."
+        )
+    if not analysis.clarification_question:
+        raise ValueError("clarify 결정에 clarification_question이 없습니다.")
+
+    # 검색을 수행하지 않았으므로 인용할 근거가 없습니다.
+    return {"ai_answer": AiAnswer(answer=analysis.clarification_question, citation=[])}
 
 
 # Conditional Routing Function
@@ -423,6 +524,7 @@ graph_builder.add_node("question_analyzer", question_analyzer)
 graph_builder.add_node("scope_resolver", scope_resolver)
 graph_builder.add_node("retriever", retriever)
 graph_builder.add_node("answer_generator", answer_generator)
+graph_builder.add_node("answer_validator", answer_validator)
 graph_builder.add_node("answer_directly", answer_directly)
 graph_builder.add_node("request_clarification", request_clarification)
 
@@ -450,7 +552,8 @@ graph_builder.add_conditional_edges(
 )
 
 # 임시 END 노드 설정
-graph_builder.set_finish_point("answer_generator")
+graph_builder.add_edge("answer_generator", "answer_validator")
+graph_builder.set_finish_point("answer_validator")
 graph_builder.set_finish_point("answer_directly")
 graph_builder.set_finish_point("request_clarification")
 

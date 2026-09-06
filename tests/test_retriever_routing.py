@@ -74,14 +74,29 @@ def _retrieval_state():
         "retrieval_results": [
             RetrievalResult(
                 result_id="retrieval:plan_1",
-                plan_id="plan_1",
                 source="neo4j",
                 query="MATCH ...",
                 items=[{"corp_eng_name": "SAMSUNG ELECTRONICS CO., LTD."}],
                 result_count=1,
-                metadata={"plan_purpose": "영문 기업명 확인"}
             )
         ],
+    }
+
+
+def test_retriever_tools_constant_includes_correction_history():
+    """_build_retriever_llm()(운영 경로)과 retriever()의 llm 인자 경로(테스트
+
+    경로)가 서로 다른 tool 목록을 쓰면, 테스트는 통과하는데 운영에서만
+    tool이 빠지는 결함이 생긴다. 두 경로가 이 상수 하나를 공유하는지
+    확인한다.
+    """
+
+    assert {tool.name for tool in graph_module.RETRIEVER_TOOLS} == {
+        "retrieve_search",
+        "retrieve_correction_history",
+        "calculate_table_statistic",
+        "combine_numeric_results",
+        "finish",
     }
 
 

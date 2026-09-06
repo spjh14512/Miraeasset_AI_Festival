@@ -26,7 +26,6 @@ def _retrieval_result(
     prefix = "derived" if source == "derived" else "retrieval"
     return RetrievalResult(
         result_id=f"{prefix}:plan_1",
-        plan_id="plan_1",
         source=source,
         status=status,
         query="검색 쿼리",
@@ -52,6 +51,10 @@ def test_retrieval_result_accepts_qdrant_and_neo4j_sources():
     assert neo4j_result.source == "neo4j"
     assert qdrant_result.result_id == "retrieval:plan_1"
     assert neo4j_result.result_id == "retrieval:plan_1"
+
+
+def test_retrieval_result_schema_excludes_plan_information():
+    assert "plan_id" not in RetrievalResult.model_fields
 
 
 def test_retrieval_result_accepts_derived_source():

@@ -49,7 +49,6 @@ def _state() -> dict[str, Any]:
 def _successful_result(disclosure_id: str, plan_id: str) -> RetrievalResult:
     return RetrievalResult(
         result_id=f"retrieval:{plan_id}",
-        plan_id=plan_id,
         source="neo4j",
         query="fixed correction query",
         items=[{
@@ -113,7 +112,8 @@ def test_correction_history_tool_adds_retrieval_result(monkeypatch):
     assert update["next_plan_seq"] == 4
     result = update["retrieval_results"][0]
     assert result.result_id == "retrieval:plan_3"
-    assert result.metadata["plan_purpose"] == "공시 정정이력 확인"
+    # RetrievalResult는 Plan 관련 정보를 담지 않는다.
+    assert "plan_purpose" not in result.metadata
 
 
 def test_dispatch_validates_and_executes_correction_history(monkeypatch):
@@ -154,7 +154,6 @@ def test_correction_history_tool_returns_no_results(monkeypatch):
         "correction_history_executor",
         lambda disclosure_id, plan_id: RetrievalResult(
             result_id=f"retrieval:{plan_id}",
-            plan_id=plan_id,
             source="neo4j",
             query="fixed correction query",
             items=[],

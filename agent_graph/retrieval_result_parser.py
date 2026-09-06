@@ -236,7 +236,6 @@ def parse_neo4j_response(
     출력 예시:
         RetrievalResult(
             result_id="retrieval:plan_1",
-            plan_id="plan_1",
             source="neo4j",
             query="MATCH (c:Company) RETURN c LIMIT 2",
             items=[{"type": "record", "fields": {...}}, ...],
@@ -257,7 +256,6 @@ def parse_neo4j_response(
 
     return RetrievalResult(
         result_id=result_id or f"retrieval:{plan_id}",
-        plan_id=plan_id,
         source="neo4j",
         query=query,
         items=items,
@@ -847,7 +845,6 @@ def parse_qdrant_response(
     출력 예시:
         RetrievalResult(
             result_id="retrieval:plan_2",
-            plan_id="plan_2",
             source="qdrant",
             query="삼성전자 특별관계자",
             items=[{"type": "r_table", "records": [...], ...}],
@@ -895,7 +892,6 @@ def parse_qdrant_response(
     )
     return RetrievalResult(
         result_id=result_id or f"retrieval:{plan_id}",
-        plan_id=plan_id,
         source="qdrant",
         query=query,
         items=items,

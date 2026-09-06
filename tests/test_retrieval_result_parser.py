@@ -119,7 +119,6 @@ def test_parse_neo4j_response_returns_one_result_per_plan():
     )
 
     assert result.result_id == "retrieval:plan_1"
-    assert result.plan_id == "plan_1"
     assert result.source == "neo4j"
     assert result.result_count == 2
     assert len(result.items) == 2
